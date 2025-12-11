@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, User, Building2, Plus, Save, Trash2, Pencil, X } from "lucide-react"
+import { CalendarIcon, User, Building2, Plus, Save, Trash2, Pencil, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useCreateInvoice } from "@/lib/hooks"
+import type { CreateInvoicePayload, Invoice } from "@/lib/types"
 
 const formSchema = z.object({
   title: z.string().min(1, "Judul wajib diisi"),
@@ -44,7 +46,7 @@ export type BatchPayload = {
 }
 
 interface ExpeditionFormProps {
-  onSubmitSuccess?: (data: BatchPayload) => void
+  onSubmitSuccess?: (invoice: Invoice) => void
 }
 
 export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
@@ -53,6 +55,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const [title, setTitle] = React.useState<string>("")
   const [editingId, setEditingId] = React.useState<string | null>(null)
 
+  // API mutation
+  const createInvoiceMutation = useCreateInvoice()
+
   const {
     register,
     handleSubmit,
@@ -60,7 +65,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     watch,
     reset,
     setFocus,
-    formState: { errors, getValues },
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -274,8 +279,8 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     setTimeout(() => setFocus("stt"), 50)
   }
 
-  // Save entire batch
-  const handleSaveReport = () => {
+  // Save entire batch to API
+  const handleSaveReport = async () => {
     const hasFormData =
       (sttValue && sttValue.trim() !== "") ||
       (senderValue && senderValue.trim() !== "") ||
@@ -304,23 +309,67 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       return
     }
 
-    if (onSubmitSuccess) {
-      onSubmitSuccess({
-        title: titleValue,
-        createdAt: new Date().toISOString(),
-        transactions: temporaryItems,
-      })
+    // Prepare payload for API - map frontend fields to backend fields
+    const payload: CreateInvoicePayload = {
+      title: titleValue,
+      transactions: temporaryItems.map((item) => ({
+        tanggal: item.date,
+        pengirim: item.sender,
+        penerima: item.receiver,
+        coly: item.coly,
+        berat: item.kg,
+        min: item.min,
+        tarif: item.tarif,
+        total: item.total,
+        noResi: item.stt,
+      })),
     }
 
-    toast.success("✅ Laporan berhasil disimpan!", {
-      description: `${temporaryItems.length} transaksi telah ditambahkan`
-    })
+    try {
+      const result = await createInvoiceMutation.mutateAsync(payload)
+      
+      toast.success("✅ Laporan berhasil disimpan!", {
+        description: `${temporaryItems.length} transaksi telah ditambahkan ke database`
+      })
 
-    // Clear temporary items
-    setTemporaryItems([])
-    // Clear localStorage (handled below)
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("klk_invoice_draft")
+      // Clear temporary items
+      setTemporaryItems([])
+      
+      // Clear localStorage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("klk_invoice_draft")
+      }
+
+      // Reset form
+      const defaultTitle = `Invoice KLK ${format(new Date(), "dd MMM")}`
+      reset({
+        title: defaultTitle,
+        date: format(new Date(), "yyyy-MM-dd"),
+        stt: "",
+        sender: "",
+        receiver: "",
+        coly: 1,
+        kg: 1,
+        min: 10,
+        tarif: 0,
+        total: 0,
+      })
+      setTitle(defaultTitle)
+      setTarifDisplay("")
+
+      // Callback to parent with the created invoice
+      if (onSubmitSuccess) {
+        onSubmitSuccess(result)
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Gagal menyimpan laporan"
+      // Check if it's an axios error with response data
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        toast.error(axiosError.response?.data?.error || errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
     }
   }
 
@@ -534,14 +583,36 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
             </div>
             
             {/* Right Side (Add Row Button - Secondary) */}
-            <Button 
-              type="submit" 
-              variant="outline"
-              className="w-48 h-12 text-base font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              Tambah Baris (+)
-            </Button>
+            <div className="flex gap-2">
+              {editingId && (
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  className="h-12 text-base font-semibold border-2 border-slate-400 text-slate-600 hover:bg-slate-50"
+                >
+                  <X className="mr-2 h-5 w-5" />
+                  Batal
+                </Button>
+              )}
+              <Button 
+                type="submit" 
+                variant="outline"
+                className="w-48 h-12 text-base font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                {editingId ? (
+                  <>
+                    <Pencil className="mr-2 h-5 w-5" />
+                    Update Baris
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-5 w-5" />
+                    Tambah Baris (+)
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
         </form>
@@ -593,15 +664,26 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                           </span>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveItem(index)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditItem(item.stt)}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(index)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -630,10 +712,20 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
             <Button
               type="button"
               onClick={handleSaveReport}
-              className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+              disabled={createInvoiceMutation.isPending}
+              className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50"
             >
-              <Save className="mr-2 h-6 w-6" />
-              SIMPAN LAPORAN SELESAI
+              {createInvoiceMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-6 w-6" />
+                  SIMPAN LAPORAN SELESAI
+                </>
+              )}
             </Button>
             <p className="text-xs text-slate-500 text-center mt-2">
               {temporaryItems.length} transaksi akan disimpan sebagai 1 laporan

@@ -1,10 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, FileText, Package as PackageIcon, Download, Printer } from "lucide-react"
+import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Check, X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
+import { toast } from "sonner"
 
 import {
   Table,
@@ -15,21 +16,80 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ExpeditionFormData } from "./ExpeditionForm"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { useUpdateTransaksi } from "@/lib/hooks"
+import type { Transaksi } from "@/lib/types"
 
 interface TransactionTableProps {
-  data: ExpeditionFormData[]
-  onRefresh: () => void
+  data: Transaksi[]
+  onRefresh?: () => void
+  title?: string
 }
 
-export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
+export function TransactionTable({ data, onRefresh, title }: TransactionTableProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false)
+  const [editingId, setEditingId] = React.useState<number | null>(null)
+  const [editDraft, setEditDraft] = React.useState<Transaksi | null>(null)
+
+  // API mutation for updating
+  const updateTransaksiMutation = useUpdateTransaksi()
 
   const handleRefresh = () => {
+    if (!onRefresh) return
     setIsRefreshing(true)
     onRefresh()
     setTimeout(() => setIsRefreshing(false), 1000)
+  }
+
+  const startEdit = (item: Transaksi) => {
+    setEditingId(item.id)
+    setEditDraft({ ...item })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditDraft(null)
+  }
+
+  const saveEdit = async () => {
+    if (!editingId || !editDraft) return
+
+    // Recalculate total based on effective kg
+    const effectiveKg = Math.max(editDraft.berat, editDraft.min)
+    const calculatedTotal = effectiveKg * editDraft.tarif
+
+    try {
+      await updateTransaksiMutation.mutateAsync({
+        id: editingId,
+        payload: {
+          tanggal: editDraft.tanggal,
+          pengirim: editDraft.pengirim,
+          penerima: editDraft.penerima,
+          coly: editDraft.coly,
+          berat: editDraft.berat,
+          min: editDraft.min,
+          tarif: editDraft.tarif,
+          total: calculatedTotal,
+          noResi: editDraft.noResi,
+        },
+      })
+      toast.success("Transaksi berhasil diperbarui")
+      cancelEdit()
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Gagal memperbarui transaksi"
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        toast.error(axiosError.response?.data?.error || errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
+    }
+  }
+
+  const handleEditChange = (field: keyof Transaksi, value: string | number) => {
+    if (!editDraft) return
+    setEditDraft((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
   // Format number with dot separator (Indonesian format)
@@ -40,18 +100,18 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
   // Export to Excel
   const exportToExcel = () => {
     if (data.length === 0) {
-      alert("Tidak ada data untuk diekspor")
+      toast.error("Tidak ada data untuk diekspor")
       return
     }
 
     // Prepare data for Excel - format sesuai gambar
-    const excelData = data.map((item, index) => ({
-      "Hari/Tgl": item.date ? format(new Date(item.date), "dd MMM yyyy", { locale: id }) : "",
-      "No Stt": item.stt,
-      Pengirim: item.sender,
-      Penerima: item.receiver,
+    const excelData: Record<string, string | number>[] = data.map((item) => ({
+      "Hari/Tgl": item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : "",
+      "No Stt": item.noResi,
+      Pengirim: item.pengirim,
+      Penerima: item.penerima,
       C: item.coly,
-      Kg: item.kg,
+      Kg: item.berat,
       Min: item.min || "",
       Tarif: formatNumber(item.tarif || 0),
       Jumlah: formatNumber(item.total),
@@ -86,7 +146,7 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
   // Print function
   const handlePrint = () => {
     if (data.length === 0) {
-      alert("Tidak ada data untuk dicetak")
+      toast.error("Tidak ada data untuk dicetak")
       return
     }
 
@@ -149,7 +209,7 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
           </style>
         </head>
         <body>
-          <h1>perhitungan Pengiriman Barang</h1>
+          <h1>${title || 'Perhitungan Pengiriman Barang'}</h1>
           <table>
             <thead>
               <tr>
@@ -167,14 +227,14 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
             <tbody>
               ${data
                 .map(
-                  (item, index) => `
+                  (item) => `
                 <tr>
-                  <td>${item.date ? format(new Date(item.date), "dd MMM yyyy", { locale: id }) : ""}</td>
-                  <td>${item.stt}</td>
-                  <td>${item.sender}</td>
-                  <td>${item.receiver}</td>
+                  <td>${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
+                  <td>${item.noResi}</td>
+                  <td>${item.pengirim}</td>
+                  <td>${item.penerima}</td>
                   <td>${item.coly}</td>
-                  <td>${item.kg}</td>
+                  <td>${item.berat}</td>
                   <td>${item.min || ""}</td>
                   <td>${formatNumber(item.tarif || 0)}</td>
                   <td>${formatNumber(item.total)}</td>
@@ -220,19 +280,21 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-lg shadow-emerald-500/30">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              Laporan Transaksi
+              {title || 'Laporan Transaksi'}
             </CardTitle>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline" 
-              size="default"
-              onClick={handleRefresh}
-              className="gap-2 border-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              Refresh Data
-            </Button>
+            {onRefresh && (
+              <Button 
+                variant="outline" 
+                size="default"
+                onClick={handleRefresh}
+                className="gap-2 border-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="default"
@@ -277,50 +339,164 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
                     <TableHead className="font-bold text-slate-700 text-center">No</TableHead>
                     <TableHead className="font-bold text-slate-700">Tgl</TableHead>
                     <TableHead className="font-bold text-slate-700">No STT</TableHead>
-                    <TableHead className="font-bold text-slate-700">Pengirim → Penerima</TableHead>
+                    <TableHead className="font-bold text-slate-700">Pengirim</TableHead>
+                    <TableHead className="font-bold text-slate-700">Penerima</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Coly</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Kg</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Min</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Tarif</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Total</TableHead>
+                    <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.map((item, index) => {
-                    const effectiveKg = Math.max(item.kg || 0, item.min || 0)
+                    const isEditing = editingId === item.id
+                    const draft = isEditing ? editDraft : item
+                    
                     return (
                       <TableRow 
-                        key={index} 
+                        key={item.id || index} 
                         className="group hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-200 border-b border-slate-100"
                       >
                         <TableCell className="text-center text-slate-600 font-medium">
                           {index + 1}
                         </TableCell>
                         <TableCell className="text-slate-600">
-                          {item.date ? format(new Date(item.date), "dd MMM yyyy", { locale: id }) : "-"}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.tanggal ? format(new Date(draft.tanggal), "yyyy-MM-dd") : ""}
+                              type="date"
+                              className="w-32"
+                              onChange={(e) => handleEditChange("tanggal", e.target.value)}
+                            />
+                          ) : (
+                            item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : "-"
+                          )}
                         </TableCell>
                         <TableCell className="font-mono font-bold text-blue-600 group-hover:text-blue-700">
-                          {item.stt}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.noResi || ""}
+                              className="w-28"
+                              onChange={(e) => handleEditChange("noResi", e.target.value)}
+                            />
+                          ) : (
+                            item.noResi
+                          )}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
-                          {item.sender} → {item.receiver}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.pengirim || ""}
+                              className="w-32"
+                              onChange={(e) => handleEditChange("pengirim", e.target.value)}
+                            />
+                          ) : (
+                            item.pengirim
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-700">
+                          {isEditing ? (
+                            <Input
+                              value={draft?.penerima || ""}
+                              className="w-32"
+                              onChange={(e) => handleEditChange("penerima", e.target.value)}
+                            />
+                          ) : (
+                            item.penerima
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-amber-600">
-                          {item.coly}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.coly ?? 0}
+                              type="number"
+                              className="w-16 text-right"
+                              onChange={(e) => handleEditChange("coly", Number(e.target.value))}
+                            />
+                          ) : (
+                            item.coly
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium text-slate-700">
-                          {item.kg}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.berat ?? 0}
+                              type="number"
+                              step="0.1"
+                              className="w-16 text-right"
+                              onChange={(e) => handleEditChange("berat", Number(e.target.value))}
+                            />
+                          ) : (
+                            item.berat
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium text-orange-600">
-                          {item.min}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.min ?? 0}
+                              type="number"
+                              className="w-16 text-right"
+                              onChange={(e) => handleEditChange("min", Number(e.target.value))}
+                            />
+                          ) : (
+                            item.min
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-medium text-slate-600">
-                          Rp {(item.tarif || 0).toLocaleString("id-ID")}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.tarif ?? 0}
+                              type="number"
+                              className="w-20 text-right"
+                              onChange={(e) => handleEditChange("tarif", Number(e.target.value))}
+                            />
+                          ) : (
+                            `Rp ${(item.tarif || 0).toLocaleString("id-ID")}`
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <span className="font-bold text-lg text-emerald-600">
                             Rp {item.total.toLocaleString("id-ID")}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {isEditing ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-2 text-green-700 border-green-200 hover:bg-green-50"
+                                onClick={saveEdit}
+                                disabled={updateTransaksiMutation.isPending}
+                              >
+                                {updateTransaksiMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-slate-600 hover:bg-slate-100"
+                                onClick={cancelEdit}
+                                disabled={updateTransaksiMutation.isPending}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                              onClick={() => startEdit(item)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
@@ -328,7 +504,7 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
                   
                   {/* Summary Row */}
                   <TableRow className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-t-2 border-emerald-200 font-bold hover:from-emerald-100 hover:to-emerald-50">
-                    <TableCell colSpan={8} className="text-right text-emerald-800 text-base">
+                    <TableCell colSpan={9} className="text-right text-emerald-800 text-base">
                       Grand Total:
                     </TableCell>
                     <TableCell className="text-right">
@@ -336,6 +512,7 @@ export function TransactionTable({ data, onRefresh }: TransactionTableProps) {
                         Rp {data.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
                       </span>
                     </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
