@@ -7,12 +7,14 @@ import { id } from "date-fns/locale"
 import { ExpeditionFormData } from "./ExpeditionForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface InvoiceGroup {
+export interface InvoiceGroup {
   id: string
+  title?: string
   date: string
   transactions: ExpeditionFormData[]
   total: number
   count: number
+  createdAt?: string
 }
 
 interface InvoiceHistoryProps {
@@ -51,16 +53,22 @@ export function InvoiceHistory({ invoiceGroups, selectedId, onSelectBatch }: Inv
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <FileText className="h-4 w-4 text-blue-600" />
                       <span className="font-bold text-sm text-blue-600">
-                        {group.date === "No Date" 
-                          ? "Tanpa Tanggal" 
-                          : format(new Date(group.date), "dd MMM yyyy", { locale: id })}
+                        {group.title || "Invoice"}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mb-1">
-                      {group.count} transaksi
-                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>
+                        {group.createdAt
+                          ? format(new Date(group.createdAt), "dd MMM yyyy", { locale: id })
+                          : group.date === "No Date"
+                            ? "Tanpa Tanggal"
+                            : format(new Date(group.date), "dd MMM yyyy", { locale: id })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-1">{group.count} transaksi</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">

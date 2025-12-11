@@ -3,23 +3,16 @@
 import * as React from "react"
 import { FileText, Plus } from "lucide-react"
 import { toast } from "sonner"
-import { ExpeditionForm, ExpeditionFormData } from "@/components/ExpeditionForm"
+import { ExpeditionForm, ExpeditionFormData, BatchPayload } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
-import { InvoiceHistory } from "@/components/InvoiceHistory"
+import { InvoiceHistory, InvoiceGroup } from "@/components/InvoiceHistory"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 export default function Dashboard() {
   const [data, setData] = React.useState<ExpeditionFormData[]>([])
   // Invoice batches (riwayat per batch)
-  type InvoiceBatch = {
-    id: string
-    date: string
-    transactions: ExpeditionFormData[]
-    total: number
-    count: number
-  }
-  const [invoiceBatches, setInvoiceBatches] = React.useState<InvoiceBatch[]>([])
+  const [invoiceBatches, setInvoiceBatches] = React.useState<InvoiceGroup[]>([])
   const [selectedBatchId, setSelectedBatchId] = React.useState<string | null>(null)
   const [showForm, setShowForm] = React.useState(true)
   const [formKey, setFormKey] = React.useState(0)
@@ -27,35 +20,36 @@ export default function Dashboard() {
 
   /**
    * Handle batch transaction submission from ExpeditionForm
-   * Receives an array of transactions and adds them to the main data state
-   * @param batchData - Array of ExpeditionFormData items from the batch input form
+   * Receives batch payload and adds it to the main data state + history
    */
-  const handleAddTransaction = (batchData: ExpeditionFormData[]) => {
-    if (!batchData || batchData.length === 0) {
+  const handleAddTransaction = (payload: BatchPayload) => {
+    if (!payload || !payload.transactions || payload.transactions.length === 0) {
       toast.error("Tidak ada data untuk disimpan")
       return
     }
 
     // Add all transactions from the batch to the main data state (flat list)
-    setData(batchData) // tampilkan batch baru di tabel
+    setData(payload.transactions) // tampilkan batch baru di tabel
 
     // Simpan riwayat per invoice (per batch)
-    const batchDate = batchData[0]?.date || "No Date"
-    const batchTotal = batchData.reduce((sum, t) => sum + t.total, 0)
-    const batchId = `${Date.now()}-${batchData[0]?.stt || "batch"}`
-    const batchEntry: InvoiceBatch = {
+    const batchDate = payload.transactions[0]?.date || "No Date"
+    const batchId = `${Date.now()}-${payload.transactions[0]?.stt || "batch"}`
+    const batchEntry: InvoiceGroup = {
       id: batchId,
+      title: payload.title,
+      createdAt: payload.createdAt,
       date: batchDate,
-      transactions: batchData,
-      total: batchTotal,
-      count: batchData.length,
+      transactions: payload.transactions,
+      total: payload.transactions.reduce((sum, t) => sum + t.total, 0),
+      count: payload.transactions.length,
     }
     setInvoiceBatches((prev) => [batchEntry, ...prev])
     setSelectedBatchId(batchId)
+    setShowForm(false)
 
     // Show success notification
     toast.success(`✅ Laporan berhasil disimpan!`, {
-      description: `${batchData.length} transaksi telah ditambahkan ke tabel`
+      description: `${payload.transactions.length} transaksi telah ditambahkan ke tabel`
     })
   }
 

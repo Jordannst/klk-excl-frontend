@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, User, Building2, Plus, Save, Trash2 } from "lucide-react"
+import { CalendarIcon, User, Building2, Plus, Save, Trash2, Pencil, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table"
 
 const formSchema = z.object({
+  title: z.string().min(1, "Judul wajib diisi"),
   date: z.string().min(1, "Tanggal wajib diisi"),
   stt: z.string().min(3, "Nomor STT wajib diisi"),
   sender: z.string().min(2, "Nama pengirim minimal 2 karakter"),
@@ -36,13 +37,21 @@ const formSchema = z.object({
 
 export type ExpeditionFormData = z.infer<typeof formSchema>
 
+export type BatchPayload = {
+  title: string
+  createdAt: string
+  transactions: ExpeditionFormData[]
+}
+
 interface ExpeditionFormProps {
-  onSubmitSuccess?: (data: ExpeditionFormData[]) => void
+  onSubmitSuccess?: (data: BatchPayload) => void
 }
 
 export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   // State for temporary items (draft)
   const [temporaryItems, setTemporaryItems] = React.useState<ExpeditionFormData[]>([])
+  const [title, setTitle] = React.useState<string>("")
+  const [editingId, setEditingId] = React.useState<string | null>(null)
 
   const {
     register,
@@ -51,10 +60,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     watch,
     reset,
     setFocus,
-    formState: { errors },
+    formState: { errors, getValues },
   } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      title: "",
       date: format(new Date(), "yyyy-MM-dd"),
       stt: "",
       sender: "",
@@ -68,9 +78,18 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   })
 
   const currentDate = watch("date")
+  const currentTitle = watch("title")
   const kg = Number(watch("kg")) || 0
   const min = Number(watch("min")) || 0
   const tarif = Number(watch("tarif")) || 0
+  const sttValue = watch("stt")
+  const senderValue = watch("sender")
+  const receiverValue = watch("receiver")
+  const colyValue = Number(watch("coly")) || 0
+  const kgValue = Number(watch("kg")) || 0
+  const minValue = Number(watch("min")) || 0
+  const tarifValue = Number(watch("tarif")) || 0
+  const titleValue = watch("title")
 
   // Format rupiah helper functions
   const formatRupiah = (value: number | string): string => {
@@ -93,6 +112,20 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       setTarifDisplay("")
     }
   }, [tarif])
+
+  // Focus STT on mount
+  React.useEffect(() => {
+    setTimeout(() => {
+      setFocus("stt")
+    }, 50)
+  }, [setFocus])
+
+  // Set default title on mount (once)
+  React.useEffect(() => {
+    const defaultTitle = `Invoice KLK ${format(new Date(), "dd MMM")}`
+    setValue("title", defaultTitle)
+    setTitle(defaultTitle)
+  }, [setValue])
 
   // Handle tarif input change
   const handleTarifChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +159,30 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
 
   // Add item to temporary list
   const handleAddRow = (data: ExpeditionFormData) => {
+    // Ensure title exists
+    const currentTitleVal = data.title || currentTitle || titleValue
+    if (!currentTitleVal || currentTitleVal.trim() === "") {
+      toast.error("Judul wajib diisi")
+      setFocus("title")
+      return
+    }
+
+    const normalizedStt = (data.stt || "").trim()
+    if (!normalizedStt) {
+      toast.error("No STT wajib diisi")
+      setFocus("stt")
+      return
+    }
+
+    // Duplicate STT check in draft
+    const isDuplicate = temporaryItems.some(
+      (item) => item.stt.trim().toLowerCase() === normalizedStt.toLowerCase() && (editingId ? item.stt !== editingId : true)
+    )
+    if (isDuplicate) {
+      toast.error(`No STT ${normalizedStt} sudah ada di daftar draft!`)
+      return
+    }
+
     // Validate and calculate
     const effectiveKg = Math.max(data.kg, data.min)
     const calculatedTotal = effectiveKg * data.tarif
@@ -135,14 +192,26 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       total: calculatedTotal,
     }
 
-    setTemporaryItems((prev) => [...prev, newItem])
-    
-    toast.success("✅ Baris ditambahkan!", {
-      description: `STT: ${data.stt} - Total: Rp ${calculatedTotal.toLocaleString("id-ID")}`
-    })
+    if (editingId) {
+      // Update existing item
+      setTemporaryItems((prev) =>
+        prev.map((item) => (item.stt === editingId ? newItem : item))
+      )
+      toast.success("✅ Baris diperbarui!", {
+        description: `STT: ${data.stt} - Total: Rp ${calculatedTotal.toLocaleString("id-ID")}`
+      })
+      setEditingId(null)
+    } else {
+      // Add new item
+      setTemporaryItems((prev) => [...prev, newItem])
+      toast.success("✅ Baris ditambahkan!", {
+        description: `STT: ${data.stt} - Total: Rp ${calculatedTotal.toLocaleString("id-ID")}`
+      })
+    }
 
     // Reset form (except date)
     reset({
+      title: currentTitleVal,
       date: currentDate,
       stt: "",
       sender: "",
@@ -167,17 +236,80 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     toast.info("Baris dihapus dari draft")
   }
 
+  const handleEditItem = (stt: string) => {
+    const item = temporaryItems.find((t) => t.stt === stt)
+    if (!item) return
+    setEditingId(stt)
+    reset({
+      title: item.title || currentTitle || titleValue || "",
+      date: item.date,
+      stt: item.stt,
+      sender: item.sender,
+      receiver: item.receiver,
+      coly: item.coly,
+      kg: item.kg,
+      min: item.min,
+      tarif: item.tarif,
+      total: item.total,
+    })
+    setTarifDisplay(item.tarif ? formatRupiah(item.tarif) : "")
+    setTimeout(() => setFocus("stt"), 50)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    reset({
+      title: currentTitle || titleValue || "",
+      date: currentDate,
+      stt: "",
+      sender: "",
+      receiver: "",
+      coly: 1,
+      kg: 1,
+      min: 10,
+      tarif: 0,
+      total: 0,
+    })
+    setTarifDisplay("")
+    setTimeout(() => setFocus("stt"), 50)
+  }
+
   // Save entire batch
   const handleSaveReport = () => {
+    const hasFormData =
+      (sttValue && sttValue.trim() !== "") ||
+      (senderValue && senderValue.trim() !== "") ||
+      (receiverValue && receiverValue.trim() !== "") ||
+      colyValue !== 1 ||
+      kgValue !== 1 ||
+      minValue !== 10 ||
+      tarifValue !== 0
+    const hasTitle = titleValue && titleValue.trim() !== ""
+
     if (temporaryItems.length === 0) {
-      toast.error("Tidak ada data untuk disimpan", {
+      toast.error("Daftar laporan masih kosong", {
         description: "Tambahkan minimal 1 baris terlebih dahulu"
       })
       return
     }
 
+    if (hasFormData) {
+      toast.warning("Masih ada data di form yang belum ditambahkan. Klik 'Tambah Baris' atau kosongkan form dulu.")
+      return
+    }
+
+    if (!hasTitle) {
+      toast.error("Judul wajib diisi")
+      setFocus("title")
+      return
+    }
+
     if (onSubmitSuccess) {
-      onSubmitSuccess(temporaryItems)
+      onSubmitSuccess({
+        title: titleValue,
+        createdAt: new Date().toISOString(),
+        transactions: temporaryItems,
+      })
     }
 
     toast.success("✅ Laporan berhasil disimpan!", {
@@ -186,6 +318,10 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
 
     // Clear temporary items
     setTemporaryItems([])
+    // Clear localStorage (handled below)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("klk_invoice_draft")
+    }
   }
 
   // Get effective kg for display
@@ -193,6 +329,34 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   
   // Calculate grand total
   const grandTotal = temporaryItems.reduce((sum, item) => sum + item.total, 0)
+
+  // Persist draft to localStorage
+  React.useEffect(() => {
+    // load draft on mount
+    const stored = typeof window !== "undefined" ? localStorage.getItem("klk_invoice_draft") : null
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (parsed && Array.isArray(parsed.items)) {
+          setTemporaryItems(parsed.items as ExpeditionFormData[])
+          if (parsed.title) {
+            setTitle(parsed.title as string)
+            setValue("title", parsed.title as string)
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse draft from localStorage", e)
+      }
+    }
+  }, [setValue])
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem(
+      "klk_invoice_draft",
+      JSON.stringify({ items: temporaryItems, title: titleValue || currentTitle || title })
+    )
+  }, [temporaryItems, titleValue, currentTitle, title])
 
   return (
     <Card className="w-full shadow-md border-t-4 border-t-blue-600">
@@ -203,6 +367,24 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       
       <CardContent>
         <form onSubmit={handleSubmit(handleAddRow)} className="space-y-6">
+          {/* Row 0: Title (per laporan) */}
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-sm font-semibold text-slate-700">
+              Judul Laporan (contoh: Invoice KLK 20 Jan)
+            </Label>
+            <Input
+              id="title"
+              placeholder="Judul Laporan"
+              className="h-12 text-base font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+              value={titleValue}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                setValue("title", e.target.value, { shouldValidate: true })
+              }}
+            />
+            {errors.title && <p className="text-xs text-red-500">⚠️ {errors.title.message}</p>}
+          </div>
+
           {/* Row 1: Date & No STT (per transaksi) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -318,6 +500,13 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                   placeholder="0"
                   value={tarifDisplay}
                   onChange={handleTarifChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      // Trigger add row immediately
+                      handleSubmit(handleAddRow)()
+                    }
+                  }}
                   onBlur={(e) => {
                     // Ensure format is maintained on blur
                     const numValue = parseRupiah(e.target.value)
