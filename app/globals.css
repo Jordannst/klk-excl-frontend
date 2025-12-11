@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Modern blue-slate palette */
+  --background: 220 17% 97%; 
+  --foreground: 222 47% 11%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+ 
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+ 
+  /* Vibrant primary blue */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+ 
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+ 
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+ 
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+ 
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 217 91% 60%;
+ 
+  --radius: 0.75rem;
+  
+  /* Custom colors for the dashboard */
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
+}
+ 
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+ 
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+ 
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+ 
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
+ 
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+ 
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+ 
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+ 
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+ 
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 217 91% 60%;
+  
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 50%) 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 1));
+}
+
+/* Enhanced shadows */
+.shadow-soft {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 6px 20px -3px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-elevation {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 12px 28px -4px rgba(0, 0, 0, 0.12);
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
