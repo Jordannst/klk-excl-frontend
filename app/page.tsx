@@ -1,15 +1,76 @@
 "use client"
 
 import * as React from "react"
-import { Package, TrendingUp, Clock, BarChart3 } from "lucide-react"
+import { FileText, Plus } from "lucide-react"
+import { toast } from "sonner"
 import { ExpeditionForm, ExpeditionFormData } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
+import { InvoiceHistory } from "@/components/InvoiceHistory"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 export default function Dashboard() {
   const [data, setData] = React.useState<ExpeditionFormData[]>([])
+  // Invoice batches (riwayat per batch)
+  type InvoiceBatch = {
+    id: string
+    date: string
+    transactions: ExpeditionFormData[]
+    total: number
+    count: number
+  }
+  const [invoiceBatches, setInvoiceBatches] = React.useState<InvoiceBatch[]>([])
+  const [selectedBatchId, setSelectedBatchId] = React.useState<string | null>(null)
+  const [showForm, setShowForm] = React.useState(true)
+  const [formKey, setFormKey] = React.useState(0)
+  const formRef = React.useRef<HTMLDivElement>(null)
 
-  const handleAddTransaction = (newData: ExpeditionFormData) => {
-    setData((prev) => [newData, ...prev])
+  /**
+   * Handle batch transaction submission from ExpeditionForm
+   * Receives an array of transactions and adds them to the main data state
+   * @param batchData - Array of ExpeditionFormData items from the batch input form
+   */
+  const handleAddTransaction = (batchData: ExpeditionFormData[]) => {
+    if (!batchData || batchData.length === 0) {
+      toast.error("Tidak ada data untuk disimpan")
+      return
+    }
+
+    // Add all transactions from the batch to the main data state (flat list)
+    setData(batchData) // tampilkan batch baru di tabel
+
+    // Simpan riwayat per invoice (per batch)
+    const batchDate = batchData[0]?.date || "No Date"
+    const batchTotal = batchData.reduce((sum, t) => sum + t.total, 0)
+    const batchId = `${Date.now()}-${batchData[0]?.stt || "batch"}`
+    const batchEntry: InvoiceBatch = {
+      id: batchId,
+      date: batchDate,
+      transactions: batchData,
+      total: batchTotal,
+      count: batchData.length,
+    }
+    setInvoiceBatches((prev) => [batchEntry, ...prev])
+    setSelectedBatchId(batchId)
+
+    // Show success notification
+    toast.success(`✅ Laporan berhasil disimpan!`, {
+      description: `${batchData.length} transaksi telah ditambahkan ke tabel`
+    })
+  }
+
+  const handleCreateNew = () => {
+    setShowForm(true)
+    // Reset form dengan mengubah key
+    setFormKey((prev) => prev + 1)
+    // Scroll ke form
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+
+    // Clear current table view (mulai invoice baru)
+    setData([])
+    setSelectedBatchId(null)
   }
 
   const handleRefresh = () => {
@@ -17,119 +78,68 @@ export default function Dashboard() {
     console.log("Refreshing data...")
   }
 
-  // Calculate stats
-  const totalTransactions = data.length
-  const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
-  const totalWeight = data.reduce((sum, item) => sum + Math.max(item.kg || 0, item.min || 0), 0)
+  const handleSelectBatch = (id: string) => {
+    const batch = invoiceBatches.find((b) => b.id === id)
+    if (!batch) return
+    setData(batch.transactions)
+    setSelectedBatchId(id)
+    setShowForm(false)
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100">
-      {/* Enhanced Navbar with gradient */}
-      <header className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur-xl shadow-sm supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 items-center gap-4 px-4 md:px-8">
+    <div className="min-h-screen bg-slate-50">
+      {/* Navbar/Header - Fixed with blur */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm py-4 px-6 border-b border-white/20">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 shadow-lg shadow-blue-500/30">
-              <Package className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+              <FileText className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">
-                Ekspedisi Admin
-              </h1>
-              <p className="text-xs text-slate-500">Dashboard Pengiriman</p>
-            </div>
+            <h1 className="text-xl font-bold text-slate-900">KLK Invoice</h1>
           </div>
-          
-          <div className="ml-auto flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5">
-              <Clock className="h-4 w-4 text-slate-600" />
-              <span className="text-sm font-medium text-slate-700">
-                {new Date().toLocaleDateString('id-ID', { 
-                  weekday: 'short', 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              </span>
-            </div>
-          </div>
+          <Button
+            onClick={handleCreateNew}
+            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Buat Invoice Baru
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto py-6 px-4 md:py-8 md:px-8 space-y-6">
-        
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Total Transactions */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white shadow-lg shadow-blue-500/30 transition-all hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <BarChart3 className="h-6 w-6" />
-                </div>
-                <TrendingUp className="h-5 w-5 text-blue-100" />
-              </div>
-              <div className="text-3xl font-bold">{totalTransactions}</div>
-              <div className="text-sm text-blue-100 font-medium">Total Transaksi</div>
-            </div>
+      {/* Content Area */}
+      <main className="max-w-7xl mx-auto pt-24 px-6 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Sidebar - Invoice History */}
+          <div className="lg:col-span-1">
+            <InvoiceHistory
+              invoiceGroups={invoiceBatches}
+              selectedId={selectedBatchId}
+              onSelectBatch={handleSelectBatch}
+            />
           </div>
 
-          {/* Total Revenue */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 text-white shadow-lg shadow-emerald-500/30 transition-all hover:shadow-xl hover:shadow-emerald-500/40 hover:-translate-y-1">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <TrendingUp className="h-6 w-6" />
+          {/* Right Side - Form and Table */}
+          <div className="lg:col-span-3 space-y-6">
+            {showForm && (
+              <div ref={formRef}>
+                <ExpeditionForm key={formKey} onSubmitSuccess={handleAddTransaction} />
+                <div className="flex items-center mt-6">
+                  <Separator />
                 </div>
               </div>
-              <div className="text-3xl font-bold">Rp {totalRevenue.toLocaleString('id-ID')}</div>
-              <div className="text-sm text-emerald-100 font-medium">Total Pendapatan</div>
-            </div>
-          </div>
-
-          {/* Total Weight */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 text-white shadow-lg shadow-violet-500/30 transition-all hover:shadow-xl hover:shadow-violet-500/40 hover:-translate-y-1">
-            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                  <Package className="h-6 w-6" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold">{totalWeight} kg</div>
-              <div className="text-sm text-violet-100 font-medium">Total Berat Kirim</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Column: Form */}
-          <div className="xl:col-span-5 w-full">
-            <ExpeditionForm onSubmitSuccess={handleAddTransaction} />
-          </div>
-
-          {/* Right Column: Table */}
-          <div className="xl:col-span-7 w-full">
+            )}
             <TransactionTable data={data} onRefresh={handleRefresh} />
           </div>
-
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-white/60 backdrop-blur-sm mt-12">
-        <div className="container mx-auto py-6 px-4 md:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-600">
-              © 2025 Ekspedisi Admin. All rights reserved.
-            </p>
-            <p className="text-xs text-slate-500">
-              v1.0.0
-            </p>
-          </div>
+      <footer className="mt-8 py-4 px-6 border-t border-slate-200 bg-white/50">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-sm text-slate-500">
+            © 2025 KLK Invoice. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
