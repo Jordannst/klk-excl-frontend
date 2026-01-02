@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
 import { useUpdateTransaksi } from "@/lib/hooks"
 import type { Transaksi } from "@/lib/types"
 
@@ -31,6 +32,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [editingId, setEditingId] = React.useState<number | null>(null)
   const [editDraft, setEditDraft] = React.useState<Transaksi | null>(null)
+  const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
 
   // API mutation for updating
   const updateTransaksiMutation = useUpdateTransaksi()
@@ -308,12 +310,12 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
             <Button 
               variant="outline" 
               size="default"
-              onClick={handlePrint}
+              onClick={() => setIsPrintModalOpen(true)}
               disabled={data.length === 0}
               className="gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
             >
               <Printer className="h-4 w-4" />
-              Print
+              Print Invoice
             </Button>
           </div>
         </div>
@@ -520,6 +522,14 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
           </div>
         )}
       </CardContent>
+
+      {/* Print Invoice Modal */}
+      <PrintInvoiceModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        data={data}
+        invoiceTitle={title}
+      />
     </Card>
   )
 }

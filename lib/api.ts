@@ -10,13 +10,46 @@ import type {
   DeleteResponse,
 } from './types'
 
+// Get API base URL with /api suffix
+const getApiBaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+  // Add /api suffix if not present
+  return url.endsWith('/api') ? url : `${url}/api`
+}
+
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Include cookies in requests for authentication
 })
+
+// Response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Try to refresh token
+      try {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh`,
+          {},
+          { withCredentials: true }
+        )
+        // Retry the original request
+        return api.request(error.config)
+      } catch {
+        // Refresh failed, redirect to login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 
 // Invoice API
 export const invoiceApi = {

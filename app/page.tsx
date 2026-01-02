@@ -1,16 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { FileText, Plus, Loader2 } from "lucide-react"
+import { FileText, Plus, Loader2, LogOut } from "lucide-react"
 import { ExpeditionForm } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
 import { InvoiceHistory } from "@/components/InvoiceHistory"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useInvoice } from "@/lib/hooks"
+import { useAuth } from "@/lib/auth"
 import type { Invoice } from "@/lib/types"
 
-export default function Dashboard() {
+function DashboardContent() {
+  const { user, logout } = useAuth()
+  
   // Selected invoice ID from history
   const [selectedInvoiceId, setSelectedInvoiceId] = React.useState<number | null>(null)
   const [showForm, setShowForm] = React.useState(true)
@@ -63,15 +67,29 @@ export default function Dashboard() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
               <FileText className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">KLK Invoice</h1>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">KLK Invoice</h1>
+              {user && (
+                <p className="text-xs text-slate-500">Logged in as {user.username}</p>
+              )}
+            </div>
           </div>
-          <Button
-            onClick={handleCreateNew}
-            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Buat Invoice Baru
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleCreateNew}
+              className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Buat Invoice Baru
+            </Button>
+            <Button
+              onClick={logout}
+              variant="outline"
+              className="h-9 px-3 text-slate-600 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -149,5 +167,14 @@ export default function Dashboard() {
         </div>
       </footer>
     </div>
+  )
+}
+
+// Wrap with ProtectedRoute for authentication
+export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   )
 }

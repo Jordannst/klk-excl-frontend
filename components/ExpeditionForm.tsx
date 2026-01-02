@@ -419,11 +419,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           {/* Row 0: Title (per laporan) */}
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-semibold text-slate-700">
-              Judul Laporan (contoh: Invoice KLK 20 Jan)
+              Judul File (contoh: Invoice KLK 20 Jan)
             </Label>
             <Input
               id="title"
-              placeholder="Judul Laporan"
+              placeholder="Judul File"
               className="h-12 text-base font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
               value={titleValue}
               onChange={(e) => {
