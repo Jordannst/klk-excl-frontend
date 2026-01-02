@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { FileText, Plus, Loader2, LogOut } from "lucide-react"
+import Link from "next/link"
+import { FileText, Plus, Loader2, LogOut, Database } from "lucide-react"
 import { ExpeditionForm } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
 import { InvoiceHistory } from "@/components/InvoiceHistory"
@@ -74,7 +75,7 @@ function DashboardContent() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               onClick={handleCreateNew}
               className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
@@ -82,6 +83,15 @@ function DashboardContent() {
               <Plus className="h-4 w-4 mr-2" />
               Buat Invoice Baru
             </Button>
+            <Link href="/storage">
+              <Button
+                variant="outline"
+                className="h-9 px-3 text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50"
+                title="Storage Monitor"
+              >
+                <Database className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button
               onClick={logout}
               variant="outline"

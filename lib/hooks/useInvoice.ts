@@ -13,11 +13,17 @@ export const invoiceKeys = {
   detail: (id: number) => [...invoiceKeys.details(), id] as const,
 }
 
-// Get all invoices
-export function useInvoices() {
+// Get all invoices (paginated with search and date filter)
+export function useInvoices(
+  page = 1,
+  limit = 10,
+  search = '',
+  startDate?: string,
+  endDate?: string
+) {
   return useQuery({
-    queryKey: invoiceKeys.list(),
-    queryFn: () => invoiceApi.getAll(),
+    queryKey: [...invoiceKeys.list(), page, limit, search, startDate, endDate],
+    queryFn: () => invoiceApi.getAll(page, limit, search, startDate, endDate),
   })
 }
 

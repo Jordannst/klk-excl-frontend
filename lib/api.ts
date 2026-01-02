@@ -10,6 +10,17 @@ import type {
   DeleteResponse,
 } from './types'
 
+// Pagination response type
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 // Get API base URL with /api suffix
 const getApiBaseUrl = () => {
   const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
@@ -53,9 +64,19 @@ api.interceptors.response.use(
 
 // Invoice API
 export const invoiceApi = {
-  // Get all invoices
-  getAll: async (): Promise<InvoiceListItem[]> => {
-    const { data } = await api.get<InvoiceListItem[]>('/invoice')
+  // Get all invoices (paginated with search and date filter)
+  getAll: async (
+    page = 1,
+    limit = 10,
+    search = '',
+    startDate?: string,
+    endDate?: string
+  ): Promise<PaginatedResponse<InvoiceListItem>> => {
+    let url = `/invoice?page=${page}&limit=${limit}`
+    if (search) url += `&search=${encodeURIComponent(search)}`
+    if (startDate) url += `&startDate=${startDate}`
+    if (endDate) url += `&endDate=${endDate}`
+    const { data } = await api.get<PaginatedResponse<InvoiceListItem>>(url)
     return data
   },
 
@@ -125,5 +146,25 @@ export const healthApi = {
   },
 }
 
-export default api
+// Stats API
+export interface StatsResponse {
+  database: {
+    sizeBytes: number
+    sizeMB: number
+    limitMB: number
+    usagePercent: number
+  }
+  counts: {
+    invoices: number
+  }
+  updatedAt: string
+}
 
+export const statsApi = {
+  getStats: async (): Promise<StatsResponse> => {
+    const { data } = await api.get<StatsResponse>('/stats')
+    return data
+  },
+}
+
+export default api
