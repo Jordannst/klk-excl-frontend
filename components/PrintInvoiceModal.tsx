@@ -106,7 +106,6 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             /* Header */
             .header {
               display: flex;
-              justify-content: space-between;
               align-items: center;
               margin-bottom: 15px;
               padding-bottom: 10px;
@@ -115,6 +114,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             .header-info {
               text-align: center;
               flex: 1;
+              padding-right: 100px; /* Offset for logo width to truly center */
             }
             .header-info .branch {
               font-weight: bold;
