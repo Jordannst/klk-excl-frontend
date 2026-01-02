@@ -67,7 +67,7 @@ export default function LoginPage() {
 
     try {
       // First verify the key is correct with a dummy password (we'll send real one later)
-      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export default function LoginPage() {
     setIsResetting(true)
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
