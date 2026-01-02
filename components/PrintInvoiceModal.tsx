@@ -246,7 +246,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="/klkexpress.png" alt="Logo KLK" class="logo" />
+              <img src="${window.location.origin}/klkexpress.png" alt="Logo KLK" class="logo" />
               <div class="header-info">
                 <p class="branch">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
                 <p class="contact">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
