@@ -51,8 +51,22 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
     return num.toLocaleString("id-ID")
   }
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     setIsPrinting(true)
+
+    // Fetch logo and convert to base64
+    let logoBase64 = ''
+    try {
+      const response = await fetch('/klkexpress.png')
+      const blob = await response.blob()
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Failed to load logo:', error)
+    }
 
     const printWindow = window.open("", "_blank")
     if (!printWindow) {
@@ -246,7 +260,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           <div class="container">
             <!-- Header -->
             <div class="header">
-              <img src="${window.location.origin}/klkexpress.png" alt="Logo KLK" class="logo" />
+              <img src="${logoBase64}" alt="Logo KLK" class="logo" />
               <div class="header-info">
                 <p class="branch">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
                 <p class="contact">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
@@ -305,6 +319,12 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                   </tr>
                 `).join("")}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="9" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
+                  <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
+                </tr>
+              </tfoot>
             </table>
             
             <!-- Calculations -->
