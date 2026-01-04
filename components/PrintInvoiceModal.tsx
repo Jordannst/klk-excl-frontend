@@ -301,6 +301,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                   <th>Min</th>
                   <th>Tarif</th>
                   <th>Jumlah</th>
+                  <th>Ket</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,12 +317,13 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                     <td class="center">${item.min}</td>
                     <td class="number">${formatRupiah(item.tarif || 0)}</td>
                     <td class="number">${formatRupiah(item.total)}</td>
+                    <td>${item.keterangan || ""}</td>
                   </tr>
                 `).join("")}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="9" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
+                  <td colspan="10" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
                   <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
                 </tr>
               </tfoot>

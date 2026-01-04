@@ -35,6 +35,7 @@ const formSchema = z.object({
   min: z.coerce.number().min(0, "Minimal 0 kg"),
   tarif: z.coerce.number().min(0, "Tarif tidak valid"),
   total: z.coerce.number().min(0, "Total tidak valid"),
+  keterangan: z.string().optional(),
 })
 
 export type ExpeditionFormData = z.infer<typeof formSchema>
@@ -226,6 +227,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       min: 10,
       tarif: 0,
       total: 0,
+      keterangan: "",
     })
     setTarifDisplay("")
 
@@ -322,6 +324,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         tarif: item.tarif,
         total: item.total,
         noResi: item.stt,
+        keterangan: item.keterangan || undefined,
       })),
     }
 
@@ -353,6 +356,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         min: 10,
         tarif: 0,
         total: 0,
+        keterangan: "",
       })
       setTitle(defaultTitle)
       setTarifDisplay("")
@@ -566,6 +570,18 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                   className="pl-10 h-12 text-base text-center font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="keterangan" className="text-sm font-semibold text-slate-700">
+                Ket (Opsional)
+              </Label>
+              <Input 
+                id="keterangan"
+                type="text"
+                placeholder="Keterangan..."
+                className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                {...register("keterangan")}
+              />
             </div>
           </div>
 

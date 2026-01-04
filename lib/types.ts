@@ -11,6 +11,7 @@ export interface Transaksi {
   tarif: number
   total: number
   noResi: string
+  keterangan?: string | null
   invoiceId?: number | null
   createdAt: string
 }
@@ -44,6 +45,7 @@ export interface CreateTransaksiPayload {
   tarif: number
   total: number
   noResi: string
+  keterangan?: string
   invoiceId?: number
 }
 
@@ -57,6 +59,7 @@ export interface UpdateTransaksiPayload {
   tarif?: number
   total?: number
   noResi?: string
+  keterangan?: string
 }
 
 export interface CreateInvoicePayload {

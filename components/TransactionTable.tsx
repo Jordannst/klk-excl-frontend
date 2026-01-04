@@ -117,6 +117,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
       Min: item.min || "",
       Tarif: formatNumber(item.tarif || 0),
       Jumlah: formatNumber(item.total),
+      Ket: item.keterangan || "",
     }))
 
     // Add summary row - semua kolom kosong kecuali Jumlah
@@ -131,6 +132,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
       Min: "",
       Tarif: "",
       Jumlah: formatNumber(totalRevenue),
+      Ket: "",
     })
 
     // Create workbook and worksheet
@@ -143,6 +145,92 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
 
     // Save file
     XLSX.writeFile(wb, filename)
+  }
+
+  // Export to PDF function
+  const exportToPdf = async () => {
+    if (data.length === 0) {
+      toast.error("Tidak ada data untuk diekspor")
+      return
+    }
+
+    toast.loading("Membuat file PDF...", { id: "pdf-export" })
+
+    try {
+      // Dynamic import html2pdf
+      const html2pdf = (await import('html2pdf.js')).default
+
+      const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
+      
+      // Create HTML content similar to print template
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px;">
+          <h2 style="text-align: center; margin-bottom: 20px;">${title || "Perhitungan Pengiriman Barang"}</h2>
+          <p style="margin-bottom: 10px;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+              <tr style="background-color: #f0f0f0;">
+                <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
+                <th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>
+                <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
+                <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
+                <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
+                <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
+                <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
+                <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
+                <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
+                <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
+                <th style="border: 1px solid #000; padding: 6px;">Ket</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map((item, index) => `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
+                  <td style="border: 1px solid #000; padding: 4px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
+                  <td style="border: 1px solid #000; padding: 4px;">${item.noResi}</td>
+                  <td style="border: 1px solid #000; padding: 4px;">${item.pengirim}</td>
+                  <td style="border: 1px solid #000; padding: 4px;">${item.penerima}</td>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.coly}</td>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.berat}</td>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.min || ""}</td>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.tarif || 0)}</td>
+                  <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.total)}</td>
+                  <td style="border: 1px solid #000; padding: 4px;">${item.keterangan || ""}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="9" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
+                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatNumber(totalRevenue)}</td>
+                <td style="border: 1px solid #000; padding: 6px;"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      `
+
+      const element = document.createElement('div')
+      element.innerHTML = htmlContent
+      document.body.appendChild(element)
+
+      const opt = {
+        margin: 10,
+        filename: `${title || "Perhitungan_Pengiriman_Barang"}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'landscape' as const }
+      }
+
+      await html2pdf().set(opt).from(element).save()
+      document.body.removeChild(element)
+
+      toast.success("PDF berhasil diunduh!", { id: "pdf-export" })
+    } catch (error) {
+      console.error("Error exporting PDF:", error)
+      toast.error("Gagal mengexport PDF", { id: "pdf-export" })
+    }
   }
 
   // Print function
@@ -224,6 +312,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
                 <th>Min</th>
                 <th>Tarif</th>
                 <th>Jumlah</th>
+                <th>Ket</th>
               </tr>
             </thead>
             <tbody>
@@ -240,6 +329,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
                   <td>${item.min || ""}</td>
                   <td>${formatNumber(item.tarif || 0)}</td>
                   <td>${formatNumber(item.total)}</td>
+                  <td>${item.keterangan || ""}</td>
                 </tr>
               `
                 )
@@ -310,6 +400,16 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
             <Button 
               variant="outline" 
               size="default"
+              onClick={exportToPdf}
+              disabled={data.length === 0}
+              className="gap-2 border-2 hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
+            >
+              <FileText className="h-4 w-4" />
+              Export PDF
+            </Button>
+            <Button 
+              variant="outline" 
+              size="default"
               onClick={() => setIsPrintModalOpen(true)}
               disabled={data.length === 0}
               className="gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
@@ -348,6 +448,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
                     <TableHead className="font-bold text-slate-700 text-right">Min</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Tarif</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Total</TableHead>
+                    <TableHead className="font-bold text-slate-700">Ket</TableHead>
                     <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -462,6 +563,9 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
                           <span className="font-bold text-lg text-emerald-600">
                             Rp {item.total.toLocaleString("id-ID")}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {item.keterangan || "-"}
                         </TableCell>
                         <TableCell className="text-center">
                           {isEditing ? (
