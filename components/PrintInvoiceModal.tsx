@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Printer, Loader2 } from "lucide-react"
+import { X, Printer, Loader2, FileText, Download } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -38,6 +38,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
     penandatanganKiri: "",
     penandatanganKanan: "",
   })
+  const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
 
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
@@ -126,7 +127,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               font-weight: bold;
             }
             .logo {
-              width: 100px;
+              width: 140px;
               height: auto;
               margin-right: 15px;
             }
@@ -165,6 +166,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             th, td {
               border: 1px solid #000;
               padding: 4px 6px;
+              vertical-align: middle;
             }
             th {
               background-color: #f0f0f0;
@@ -392,6 +394,173 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
     }, 500)
   }
 
+  // Handle PDF download - uses same template as print
+  const handleDownloadPdf = async () => {
+    setIsDownloadingPdf(true)
+
+    // Fetch logo and convert to base64
+    let logoBase64 = ''
+    try {
+      const response = await fetch('/klkexpress.png')
+      const blob = await response.blob()
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Failed to load logo:', error)
+    }
+
+    try {
+      const html2pdf = (await import('html2pdf.js')).default
+
+      // Use the SAME template as print (without @media print)
+      const pdfContent = `
+        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px;">
+          <!-- Header -->
+          <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000;">
+            ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
+            <div style="text-align: center; flex: 1; padding-right: 100px;">
+              <p style="font-weight: bold; font-size: 13px; margin-bottom: 3px;">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
+              <p style="font-size: 10px; font-weight: bold;">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
+              <p style="font-size: 10px; font-weight: bold;">Email : klk.express.mdc@gmail.com</p>
+            </div>
+          </div>
+          
+          <!-- Letter Info -->
+          <div style="margin-bottom: 15px;">
+            <p style="margin-bottom: 3px;">${formData.tanggalSurat}</p>
+            <p style="margin-bottom: 3px;">No. ${formData.nomorInvoice}</p>
+          </div>
+          
+          <!-- Recipient -->
+          <div style="margin-bottom: 15px;">
+            <p style="margin-bottom: 2px;">Kepada Yth :</p>
+            <p style="margin-bottom: 2px; font-weight: bold;">${formData.namaPenerima}</p>
+            <p style="margin-bottom: 2px;">Di. ${formData.lokasiPenerima}</p>
+          </div>
+          
+          <!-- Intro -->
+          <div style="margin-bottom: 15px;">
+            <p style="margin-bottom: 5px;">Dengan Hormat,</p>
+            <p style="margin-bottom: 5px;">Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
+          </div>
+          
+          <!-- Table -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
+            <thead>
+              <tr>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Pengirim</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Penerima</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Coly</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Kg</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Min</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Tarif</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Jumlah</th>
+                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map((item, index) => `
+                <tr>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${index + 1}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.noResi}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.pengirim}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.penerima}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.coly}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.berat}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${formatRupiah(item.tarif || 0)}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${formatRupiah(item.total)}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.keterangan || ""}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="10" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
+                <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          
+          <!-- Calculations -->
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
+              <span style="flex: 1;">1. Biaya handling</span>
+              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(biayaHandling)}</span>
+            </div>
+            <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
+              <span style="flex: 1;">2. Biaya Kirim Doc</span>
+              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(formData.biayaKirimDoc)}</span>
+            </div>
+            <div style="display: flex; max-width: 350px; font-weight: bold; border-top: 1px solid #000; padding-top: 3px; margin-top: 5px;">
+              <span style="flex: 1;">TOTAL TAGIHAN</span>
+              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(totalTagihan)}</span>
+            </div>
+          </div>
+          
+          <!-- Payment Info -->
+          <div style="margin-bottom: 15px; font-size: 10px;">
+            <p>Jumlah tagihan bisa ditransfer melalui :</p>
+            <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
+          </div>
+          
+          <!-- Closing -->
+          <div style="margin-bottom: 15px;">
+            <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
+            <p>Hormat Kami,</p>
+          </div>
+          
+          <!-- Signatures -->
+          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 20px;">
+            <div style="width: 45%; text-align: center;">
+              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 50px;"></div>
+              <p>PT. KLK Mdc</p>
+              <p style="font-weight: bold;">${formData.penandatanganKiri}</p>
+            </div>
+            <div style="width: 45%; text-align: center;">
+              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 50px;"></div>
+              <p>Diketahui,</p>
+              <p style="font-weight: bold;">${formData.penandatanganKanan}</p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="margin-top: 80px; font-size: 10px;">
+            <p>Cc. Klk mdc</p>
+          </div>
+        </div>
+      `
+
+      const element = document.createElement('div')
+      element.innerHTML = pdfContent
+      document.body.appendChild(element)
+
+      const opt = {
+        margin: 10,
+        filename: `Invoice_${formData.nomorInvoice || 'KLK'}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
+      }
+
+      await html2pdf().set(opt).from(element).save()
+      document.body.removeChild(element)
+
+      setIsDownloadingPdf(false)
+      onClose()
+    } catch (error) {
+      console.error("Error downloading PDF:", error)
+      setIsDownloadingPdf(false)
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -522,6 +691,23 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             className="px-6"
           >
             Batal
+          </Button>
+          <Button
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf || !formData.nomorInvoice || !formData.namaPenerima}
+            className="px-6 bg-red-600 hover:bg-red-700 text-white"
+          >
+            {isDownloadingPdf ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Membuat PDF...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </>
+            )}
           </Button>
           <Button
             onClick={handlePrint}

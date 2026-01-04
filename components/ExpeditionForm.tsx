@@ -651,6 +651,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                       <TableHead className="text-right font-bold text-slate-700">Coly</TableHead>
                       <TableHead className="text-right font-bold text-slate-700">Kg</TableHead>
                       <TableHead className="text-right font-bold text-slate-700">Total</TableHead>
+                      <TableHead className="font-bold text-slate-700">Ket</TableHead>
                       <TableHead className="text-center font-bold text-slate-700">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -678,6 +679,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                           <span className="font-bold text-emerald-600">
                             Rp {item.total.toLocaleString("id-ID")}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {item.keterangan || "-"}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-1">

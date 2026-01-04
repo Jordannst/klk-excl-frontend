@@ -33,6 +33,8 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
   const [editingId, setEditingId] = React.useState<number | null>(null)
   const [editDraft, setEditDraft] = React.useState<Transaksi | null>(null)
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
+  const [pdfHtmlContent, setPdfHtmlContent] = React.useState<string>("")
 
   // API mutation for updating
   const updateTransaksiMutation = useUpdateTransaksi()
@@ -74,6 +76,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
           tarif: editDraft.tarif,
           total: calculatedTotal,
           noResi: editDraft.noResi,
+          keterangan: editDraft.keterangan || undefined,
         },
       })
       toast.success("Transaksi berhasil diperbarui")
@@ -147,72 +150,78 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
     XLSX.writeFile(wb, filename)
   }
 
-  // Export to PDF function
-  const exportToPdf = async () => {
+  // Generate PDF HTML content
+  const generatePdfHtml = () => {
+    const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
+    
+    return `
+      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px;">
+        <h2 style="text-align: center; margin-bottom: 20px;">${title || "Perhitungan Pengiriman Barang"}</h2>
+        <p style="margin-bottom: 10px;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <thead>
+            <tr style="background-color: #f0f0f0;">
+              <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
+              <th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>
+              <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
+              <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
+              <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
+              <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
+              <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
+              <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
+              <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
+              <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
+              <th style="border: 1px solid #000; padding: 6px;">Ket</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map((item, index) => `
+              <tr>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
+                <td style="border: 1px solid #000; padding: 4px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
+                <td style="border: 1px solid #000; padding: 4px;">${item.noResi}</td>
+                <td style="border: 1px solid #000; padding: 4px;">${item.pengirim}</td>
+                <td style="border: 1px solid #000; padding: 4px;">${item.penerima}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.coly}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.berat}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.min || ""}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.tarif || 0)}</td>
+                <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.total)}</td>
+                <td style="border: 1px solid #000; padding: 4px;">${item.keterangan || ""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="9" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
+              <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatNumber(totalRevenue)}</td>
+              <td style="border: 1px solid #000; padding: 6px;"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `
+  }
+
+  // Open PDF preview
+  const openPdfPreview = () => {
     if (data.length === 0) {
       toast.error("Tidak ada data untuk diekspor")
       return
     }
+    setPdfHtmlContent(generatePdfHtml())
+    setIsPdfPreviewOpen(true)
+  }
 
+  // Download PDF from preview
+  const downloadPdf = async () => {
     toast.loading("Membuat file PDF...", { id: "pdf-export" })
 
     try {
-      // Dynamic import html2pdf
       const html2pdf = (await import('html2pdf.js')).default
 
-      const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
-      
-      // Create HTML content similar to print template
-      const htmlContent = `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px;">
-          <h2 style="text-align: center; margin-bottom: 20px;">${title || "Perhitungan Pengiriman Barang"}</h2>
-          <p style="margin-bottom: 10px;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-              <tr style="background-color: #f0f0f0;">
-                <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
-                <th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>
-                <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
-                <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
-                <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
-                <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
-                <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
-                <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
-                <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
-                <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
-                <th style="border: 1px solid #000; padding: 6px;">Ket</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data.map((item, index) => `
-                <tr>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${item.noResi}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${item.pengirim}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${item.penerima}</td>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.coly}</td>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.berat}</td>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.min || ""}</td>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.tarif || 0)}</td>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: right;">${formatNumber(item.total)}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${item.keterangan || ""}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="9" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
-                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatNumber(totalRevenue)}</td>
-                <td style="border: 1px solid #000; padding: 6px;"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      `
-
       const element = document.createElement('div')
-      element.innerHTML = htmlContent
+      element.innerHTML = pdfHtmlContent
       document.body.appendChild(element)
 
       const opt = {
@@ -227,6 +236,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
       document.body.removeChild(element)
 
       toast.success("PDF berhasil diunduh!", { id: "pdf-export" })
+      setIsPdfPreviewOpen(false)
     } catch (error) {
       console.error("Error exporting PDF:", error)
       toast.error("Gagal mengexport PDF", { id: "pdf-export" })
@@ -400,22 +410,12 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
             <Button 
               variant="outline" 
               size="default"
-              onClick={exportToPdf}
-              disabled={data.length === 0}
-              className="gap-2 border-2 hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
-            >
-              <FileText className="h-4 w-4" />
-              Export PDF
-            </Button>
-            <Button 
-              variant="outline" 
-              size="default"
               onClick={() => setIsPrintModalOpen(true)}
               disabled={data.length === 0}
               className="gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
             >
               <Printer className="h-4 w-4" />
-              Print Invoice
+              Print Invoice/PDF
             </Button>
           </div>
         </div>
@@ -565,7 +565,16 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
                           </span>
                         </TableCell>
                         <TableCell className="text-slate-600">
-                          {item.keterangan || "-"}
+                          {isEditing ? (
+                            <Input
+                              value={draft?.keterangan || ""}
+                              placeholder="Ket..."
+                              className="w-24"
+                              onChange={(e) => handleEditChange("keterangan", e.target.value)}
+                            />
+                          ) : (
+                            item.keterangan || "-"
+                          )}
                         </TableCell>
                         <TableCell className="text-center">
                           {isEditing ? (
@@ -634,6 +643,39 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
         data={data}
         invoiceTitle={title}
       />
+
+      {/* PDF Preview Modal */}
+      {isPdfPreviewOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-bold text-slate-800">Preview PDF</h2>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={downloadPdf}
+                  className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsPdfPreviewOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-6 bg-slate-100">
+              <div 
+                className="bg-white shadow-lg mx-auto p-6" 
+                style={{ maxWidth: '1100px' }}
+                dangerouslySetInnerHTML={{ __html: pdfHtmlContent }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }
