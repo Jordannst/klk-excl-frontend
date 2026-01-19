@@ -225,6 +225,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             .signatures {
               display: flex;
               justify-content: space-between;
+              margin-top: 40px;
               margin-bottom: 20px;
             }
             .signature-box {
@@ -233,7 +234,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             }
             .signature-line {
               border-bottom: 1px solid #000;
-              height: 60px;
+              height: 80px;
               margin-bottom: 5px;
             }
             .signature-name {
@@ -518,14 +519,14 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           </div>
           
           <!-- Signatures -->
-          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px;">
             <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 50px;"></div>
+              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>
               <p>PT. KLK Mdc</p>
               <p style="font-weight: bold;">${formData.penandatanganKiri}</p>
             </div>
             <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 50px;"></div>
+              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>
               <p>Diketahui,</p>
               <p style="font-weight: bold;">${formData.penandatanganKanan}</p>
             </div>
