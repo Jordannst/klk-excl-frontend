@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon, User, Building2, Plus, Save, Trash2, Pencil, X, Loader2 } from "lucide-react"
+import { User, Building2, Plus, Save, Trash2, Pencil, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
+import { DateInputWithShortcuts } from "@/components/ui/date-input-with-shortcuts"
 import { Separator } from "@/components/ui/separator"
 import {
   Table,
@@ -446,15 +447,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
               <Label htmlFor="date" className="text-sm font-semibold text-slate-700">
                 Tanggal (per transaksi)
               </Label>
-              <div className="relative">
-                <CalendarIcon className="absolute left-3 top-3 h-5 w-5 text-blue-500" />
-                <Input 
-                  id="date" 
-                  type="date" 
-                  className="pl-11 h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-white" 
-                  {...register("date")} 
-                />
-              </div>
+              <DateInputWithShortcuts
+                id="date"
+                value={currentDate}
+                onChange={(val) => setValue("date", val, { shouldValidate: true })}
+              />
               {errors.date && <p className="text-xs text-red-500">⚠️ {errors.date.message}</p>}
             </div>
 

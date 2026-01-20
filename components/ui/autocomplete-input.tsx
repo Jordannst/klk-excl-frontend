@@ -133,8 +133,17 @@ export function AutocompleteInput({
         e.preventDefault()
         handleSelectSuggestion(filteredSuggestions[0])
       }
-    } else if (e.key === "Tab" && showSuggestions && selectedIndex >= 0) {
-      handleSelectSuggestion(filteredSuggestions[selectedIndex])
+    } else if (e.key === "Tab" && showSuggestions && filteredSuggestions.length > 0) {
+      e.preventDefault()
+      if (e.shiftKey) {
+        // Shift+Tab = go backwards
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1))
+      } else {
+        // Tab = go forwards (cycle through)
+        setSelectedIndex((prev) => 
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0
+        )
+      }
     }
   }
 
