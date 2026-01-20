@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { Separator } from "@/components/ui/separator"
 import {
   Table,
@@ -96,6 +97,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const minValue = Number(watch("min")) || 0
   const tarifValue = Number(watch("tarif")) || 0
   const titleValue = watch("title")
+  const keteranganValue = watch("keterangan")
 
   // Format rupiah helper functions
   const formatRupiah = (value: number | string): string => {
@@ -477,11 +479,13 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                 <User className="h-4 w-4 text-blue-500" />
                 Pengirim
               </Label>
-              <Input 
-                id="sender" 
+              <AutocompleteInput 
+                id="sender"
+                value={senderValue || ""}
+                onChange={(val) => setValue("sender", val, { shouldValidate: true })}
+                storageKey="invoice_pengirim"
                 placeholder="Nama Pengirim" 
                 className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                {...register("sender")} 
               />
               {errors.sender && <p className="text-xs text-red-500">⚠️ {errors.sender.message}</p>}
             </div>
@@ -490,11 +494,13 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                 <Building2 className="h-4 w-4 text-emerald-500" />
                 Penerima
               </Label>
-              <Input 
-                id="receiver" 
+              <AutocompleteInput 
+                id="receiver"
+                value={receiverValue || ""}
+                onChange={(val) => setValue("receiver", val, { shouldValidate: true })}
+                storageKey="invoice_penerima"
                 placeholder="Nama Penerima" 
                 className="h-12 text-base border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-                {...register("receiver")} 
               />
               {errors.receiver && <p className="text-xs text-red-500">⚠️ {errors.receiver.message}</p>}
             </div>
@@ -575,12 +581,13 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
               <Label htmlFor="keterangan" className="text-sm font-semibold text-slate-700">
                 Ket (Opsional)
               </Label>
-              <Input 
+              <AutocompleteInput 
                 id="keterangan"
-                type="text"
-                placeholder="Keterangan..."
+                value={keteranganValue || ""}
+                onChange={(val) => setValue("keterangan", val, { shouldValidate: true })}
+                storageKey="invoice_keterangan"
+                placeholder="Keterangan..." 
                 className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                {...register("keterangan")}
               />
             </div>
           </div>
