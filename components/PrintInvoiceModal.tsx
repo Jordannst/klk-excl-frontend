@@ -39,6 +39,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
     penandatanganKanan: "",
   })
   const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
+  const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
 
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
@@ -50,6 +51,26 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
 
   const formatRupiah = (num: number): string => {
     return num.toLocaleString("id-ID")
+  }
+
+  const parseRupiah = (value: string): number => {
+    return parseFloat(value.replace(/\./g, '')) || 0
+  }
+
+  const handleBiayaKirimDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    // Remove all non-digit characters
+    const cleanedValue = inputValue.replace(/\D/g, '')
+    
+    if (cleanedValue === '' || cleanedValue === '0') {
+      setBiayaKirimDocDisplay("")
+      handleChange("biayaKirimDoc", 0)
+      return
+    }
+
+    const numericValue = parseFloat(cleanedValue) || 0
+    setBiayaKirimDocDisplay(formatRupiah(numericValue))
+    handleChange("biayaKirimDoc", numericValue)
   }
 
   const handlePrint = async () => {
@@ -643,13 +664,17 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Biaya Kirim Doc</Label>
-                <Input
-                  type="number"
-                  value={formData.biayaKirimDoc || ""}
-                  onChange={(e) => handleChange("biayaKirimDoc", Number(e.target.value) || 0)}
-                  placeholder="0"
-                  className="h-10"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-sm font-medium text-slate-500">Rp</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={biayaKirimDocDisplay}
+                    onChange={handleBiayaKirimDocChange}
+                    placeholder="0"
+                    className="h-10 pl-10"
+                  />
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Total Tagihan</Label>
