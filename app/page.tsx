@@ -62,31 +62,31 @@ function DashboardContent() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar/Header - Fixed with blur */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm py-4 px-6 border-b border-white/20">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <FileText className="h-6 w-6 text-white" />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm py-3 sm:py-4 px-4 sm:px-6 border-b border-white/20">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-blue-600 flex-shrink-0">
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">KLK Invoice</h1>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">KLK Invoice</h1>
               {user && (
-                <p className="text-xs text-slate-500">Logged in as {user.username}</p>
+                <p className="text-xs text-slate-500 truncate hidden sm:block">Logged in as {user.username}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <Button
               onClick={handleCreateNew}
-              className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white"
+              className="h-8 sm:h-9 px-2 sm:px-4 bg-blue-600 hover:bg-blue-700 text-white"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Buat Invoice Baru
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Buat Invoice Baru</span>
             </Button>
             <Link href="/storage">
               <Button
                 variant="outline"
-                className="h-9 px-3 text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50"
+                className="h-8 sm:h-9 px-2 sm:px-3 text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50"
                 title="Storage Monitor"
               >
                 <Database className="h-4 w-4" />
@@ -95,7 +95,7 @@ function DashboardContent() {
             <Button
               onClick={logout}
               variant="outline"
-              className="h-9 px-3 text-slate-600 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+              className="h-8 sm:h-9 px-2 sm:px-3 text-slate-600 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -104,7 +104,7 @@ function DashboardContent() {
       </header>
 
       {/* Content Area */}
-      <main className="max-w-7xl mx-auto pt-24 px-6 pb-8">
+      <main className="max-w-7xl mx-auto pt-20 sm:pt-24 px-4 sm:px-6 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar - Invoice History */}
           <div className="lg:col-span-1">
