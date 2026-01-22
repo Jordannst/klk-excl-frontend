@@ -124,7 +124,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
 
   return (
     <>
-    <Card className="w-full shadow-md border-t-4 border-t-blue-600 flex flex-col h-[620px]">
+    <Card className="w-full shadow-md border-t-4 border-t-blue-600 flex flex-col h-auto lg:h-[620px] max-h-[80vh] lg:max-h-none">
       <CardHeader className="pb-2 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-bold">Riwayat Invoice</CardTitle>

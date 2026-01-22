@@ -609,7 +609,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
         {/* Content */}
         <div className="p-6 space-y-5">
           {/* Tanggal & Nomor Invoice */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Tanggal Surat</Label>
               <Input
@@ -631,7 +631,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           </div>
           
           {/* Penerima */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Nama Penerima</Label>
               <AutocompleteInput
@@ -656,11 +656,11 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           
           {/* Biaya */}
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
+              <div className="space-y-1 text-center sm:text-left">
                 <Label className="text-xs text-slate-500">Biaya Handling</Label>
-                <p className="text-lg font-bold text-emerald-600">Rp {formatRupiah(biayaHandling)}</p>
-                <p className="text-xs text-slate-400">Otomatis dari tabel</p>
+                <p className="text-xl font-bold text-emerald-600">Rp {formatRupiah(biayaHandling)}</p>
+                <p className="text-[10px] text-slate-400">Otomatis dari tabel</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Biaya Kirim Doc</Label>
@@ -676,16 +676,16 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                   />
                 </div>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-center sm:text-right">
                 <Label className="text-xs text-slate-500">Total Tagihan</Label>
-                <p className="text-lg font-bold text-blue-600">Rp {formatRupiah(totalTagihan)}</p>
-                <p className="text-xs text-slate-400">Handling + Kirim Doc</p>
+                <p className="text-xl font-bold text-blue-600">Rp {formatRupiah(totalTagihan)}</p>
+                <p className="text-[10px] text-slate-400">Handling + Kirim Doc</p>
               </div>
             </div>
           </div>
           
           {/* Penandatangan */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Penandatangan (PT. KLK Mdc)</Label>
               <AutocompleteInput
@@ -710,18 +710,18 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
         </div>
         
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50">
           <Button
             variant="outline"
             onClick={onClose}
-            className="px-6"
+            className="w-full sm:w-auto px-6"
           >
             Batal
           </Button>
           <Button
             onClick={handleDownloadPdf}
             disabled={isDownloadingPdf || !formData.nomorInvoice || !formData.namaPenerima}
-            className="px-6 bg-red-600 hover:bg-red-700 text-white"
+            className="w-full sm:w-auto px-6 bg-red-600 hover:bg-red-700 text-white"
           >
             {isDownloadingPdf ? (
               <>
@@ -738,7 +738,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           <Button
             onClick={handlePrint}
             disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
-            className="px-6 bg-blue-600 hover:bg-blue-700"
+            className="w-full sm:w-auto px-6 bg-blue-600 hover:bg-blue-700"
           >
             {isPrinting ? (
               <>

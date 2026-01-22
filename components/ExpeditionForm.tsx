@@ -442,7 +442,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           </div>
 
           {/* Row 1: Date & No STT (per transaksi) */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date" className="text-sm font-semibold text-slate-700">
                 Tanggal (per transaksi)
@@ -470,7 +470,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           </div>
 
           {/* Row 2: Customer Info */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="sender" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                 <User className="h-4 w-4 text-blue-500" />
@@ -504,7 +504,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           </div>
 
           {/* Row 3: The "Calculator Zone" (Visual Grouping) */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 grid grid-cols-4 gap-4 items-end">
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
             <div className="space-y-2">
               <Label htmlFor="coly" className="text-sm font-semibold text-slate-700">
                 C (Coly)
@@ -574,7 +574,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2 md:col-span-4 lg:col-span-1">
               <Label htmlFor="keterangan" className="text-sm font-semibold text-slate-700">
                 Ket (Opsional)
               </Label>
@@ -590,26 +590,26 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           </div>
 
           {/* Row 4: The Result & Action */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             {/* Left Side (Total Price) */}
-            <div className="space-y-1">
-              <Label className="text-sm font-semibold text-slate-600">TOTAL TAGIHAN</Label>
-              <div className="text-3xl font-bold text-blue-700">
+            <div className="space-y-1 w-full sm:w-auto text-center sm:text-left">
+              <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Total Tagihan</Label>
+              <div className="text-4xl font-black text-blue-700 tabular-nums">
                 Rp {(Number(watch("total")) || 0).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Berat yang digunakan: {effectiveKg} kg {kg < min ? `(Min ${min} kg)` : `(Berat ${kg} kg)`}
+                Berat yang digunakan: <span className="font-bold text-slate-700">{effectiveKg} kg</span> {kg < min ? `(Min ${min} kg)` : `(Berat ${kg} kg)`}
               </p>
             </div>
             
             {/* Right Side (Add Row Button - Secondary) */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               {editingId && (
                 <Button 
                   type="button"
                   variant="outline"
                   onClick={handleCancelEdit}
-                  className="h-12 text-base font-semibold border-2 border-slate-400 text-slate-600 hover:bg-slate-50"
+                  className="h-12 px-6 text-base font-semibold border-2 border-slate-400 text-slate-600 hover:bg-slate-50 transition-all"
                 >
                   <X className="mr-2 h-5 w-5" />
                   Batal
@@ -618,7 +618,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
               <Button 
                 type="submit" 
                 variant="outline"
-                className="w-48 h-12 text-base font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                className="h-12 px-8 text-base font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-md active:scale-95"
               >
                 {editingId ? (
                   <>

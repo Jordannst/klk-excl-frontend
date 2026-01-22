@@ -376,46 +376,48 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
       <div className="h-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500"></div>
       
       <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-lg shadow-emerald-500/30">
-                <FileText className="h-5 w-5 text-white" />
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <div className="space-y-1.5 w-full xl:w-auto">
+            <CardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              {title || 'Laporan Transaksi'}
+              <span className="truncate">{title || 'Laporan Transaksi'}</span>
             </CardTitle>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
             {onRefresh && (
               <Button 
                 variant="outline" 
-                size="default"
+                size="sm"
                 onClick={handleRefresh}
-                className="gap-2 border-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
+                className="flex-1 sm:flex-none gap-2 border-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             )}
             <Button 
               variant="outline" 
-              size="default"
+              size="sm"
               onClick={exportToExcel}
               disabled={data.length === 0}
-              className="gap-2 border-2 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
+              className="flex-1 sm:flex-none gap-2 border-2 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
             >
               <Download className="h-4 w-4" />
-              Export Excel
+              <span className="hidden sm:inline">Excel</span>
+              <span className="sm:hidden">Excel</span>
             </Button>
             <Button 
               variant="outline" 
-              size="default"
+              size="sm"
               onClick={() => setIsPrintModalOpen(true)}
               disabled={data.length === 0}
-              className="gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
+              className="flex-1 sm:flex-none gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
             >
               <Printer className="h-4 w-4" />
-              Print Invoice/PDF
+              <span className="hidden sm:inline">Print / PDF</span>
+              <span className="sm:hidden">Print</span>
             </Button>
           </div>
         </div>
