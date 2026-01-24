@@ -126,6 +126,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               font-size: 11px;
               line-height: 1.4;
               color: #000;
+              word-spacing: normal;
+              white-space: normal;
+              letter-spacing: normal;
             }
             .container {
               max-width: 21cm;
@@ -453,7 +456,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
 
       // Use the SAME template as print (without @media print)
       const pdfContent = `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal;">
           <!-- Header -->
           <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000;">
             ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
