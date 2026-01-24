@@ -9,106 +9,93 @@ interface SegmentedInvoiceInputProps {
   className?: string
 }
 
-interface Segment {
-  id: string
-  placeholder: string
-  width: string
-  defaultValue?: string
+// Auto-format invoice number: removes slashes, then inserts them at correct positions
+// Format: XXX/INV/KLK/MDC/YYYY
+const formatInvoiceNumber = (input: string): string => {
+  // Remove all slashes and spaces
+  const clean = input.replace(/[/\s]/g, "")
+  
+  if (!clean) return ""
+  
+  // Split into segments based on expected lengths
+  // First segment: variable length (numbers only)
+  // Next 3 segments: 3 chars each (INV, KLK, MDC)
+  // Last segment: 4 chars (year)
+  
+  const parts: string[] = []
+  let remaining = clean
+  
+  // Find where letters start (after the number prefix)
+  const numMatch = remaining.match(/^(\d+)/)
+  if (numMatch) {
+    parts.push(numMatch[1])
+    remaining = remaining.slice(numMatch[1].length)
+  }
+  
+  // Split remaining into chunks of 3 or 4
+  // INV, KLK, MDC = 3 chars each, Year = 4 chars
+  if (remaining.length > 0) {
+    // First 3-char segment (INV)
+    parts.push(remaining.slice(0, 3))
+    remaining = remaining.slice(3)
+  }
+  if (remaining.length > 0) {
+    // Second 3-char segment (KLK)
+    parts.push(remaining.slice(0, 3))
+    remaining = remaining.slice(3)
+  }
+  if (remaining.length > 0) {
+    // Third 3-char segment (MDC)
+    parts.push(remaining.slice(0, 3))
+    remaining = remaining.slice(3)
+  }
+  if (remaining.length > 0) {
+    // Year segment (4 chars)
+    parts.push(remaining.slice(0, 4))
+  }
+  
+  return parts.filter(p => p).join("/")
 }
-
-const SEGMENTS: Segment[] = [
-  { id: "num", placeholder: "520", width: "w-16" },
-  { id: "type", placeholder: "INV", width: "w-14", defaultValue: "INV" },
-  { id: "company", placeholder: "KLK", width: "w-14", defaultValue: "KLK" },
-  { id: "branch", placeholder: "MDC", width: "w-14", defaultValue: "MDC" },
-  { id: "year", placeholder: "2026", width: "w-16", defaultValue: new Date().getFullYear().toString() },
-]
 
 export function SegmentedInvoiceInput({
   value,
   onChange,
   className,
 }: SegmentedInvoiceInputProps) {
-  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([])
+  const [inputValue, setInputValue] = React.useState(value || "")
   
-  // Parse value into segments
-  const parseValue = (val: string): string[] => {
-    if (!val) {
-      return SEGMENTS.map(s => s.defaultValue || "")
-    }
-    const parts = val.split("/")
-    return SEGMENTS.map((s, i) => parts[i] || s.defaultValue || "")
-  }
-  
-  const [segments, setSegments] = React.useState<string[]>(() => parseValue(value))
-  
-  // Sync with external value changes
+  // Sync with external value
   React.useEffect(() => {
-    setSegments(parseValue(value))
+    if (value !== inputValue) {
+      setInputValue(value || "")
+    }
   }, [value])
   
-  // Combine segments and notify parent
-  const combineAndNotify = (newSegments: string[]) => {
-    const combined = newSegments.join("/")
-    onChange(combined)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    const formatted = formatInvoiceNumber(raw)
+    setInputValue(formatted)
+    onChange(formatted)
   }
   
-  const handleSegmentChange = (index: number, newValue: string) => {
-    // Remove any slashes from input
-    const cleanValue = newValue.replace(/\//g, "")
-    
-    const newSegments = [...segments]
-    newSegments[index] = cleanValue
-    setSegments(newSegments)
-    combineAndNotify(newSegments)
-    
-    // Auto-advance to next input when segment is filled
-    const segment = SEGMENTS[index]
-    const expectedLength = segment.placeholder.length
-    if (cleanValue.length >= expectedLength && index < SEGMENTS.length - 1) {
-      inputRefs.current[index + 1]?.focus()
-      inputRefs.current[index + 1]?.select()
-    }
-  }
-  
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Move to previous input on backspace if empty
-    if (e.key === "Backspace" && segments[index] === "" && index > 0) {
-      inputRefs.current[index - 1]?.focus()
-    }
-    // Move forward on Tab or /
-    if (e.key === "/" && index < SEGMENTS.length - 1) {
-      e.preventDefault()
-      inputRefs.current[index + 1]?.focus()
-      inputRefs.current[index + 1]?.select()
-    }
-    // Move backward on Shift+Tab (handled by browser)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow slash key to be typed but it will be auto-formatted
+    // No special handling needed
   }
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      {SEGMENTS.map((segment, index) => (
-        <React.Fragment key={segment.id}>
-          <input
-            ref={(el) => { inputRefs.current[index] = el }}
-            type="text"
-            value={segments[index]}
-            onChange={(e) => handleSegmentChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            onFocus={(e) => e.target.select()}
-            placeholder={segment.placeholder}
-            className={cn(
-              "h-10 px-2 text-center text-sm border border-slate-200 rounded-md",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-              "placeholder:text-slate-300",
-              segment.width
-            )}
-          />
-          {index < SEGMENTS.length - 1 && (
-            <span className="text-slate-400 font-medium select-none">/</span>
-          )}
-        </React.Fragment>
-      ))}
-    </div>
+    <input
+      type="text"
+      value={inputValue}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      placeholder="520/INV/KLK/MDC/2026"
+      className={cn(
+        "w-full h-10 px-3 text-sm border border-slate-200 rounded-lg",
+        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+        "placeholder:text-slate-400",
+        className
+      )}
+    />
   )
 }
