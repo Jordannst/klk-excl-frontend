@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
+import { SegmentedInvoiceInput } from "@/components/ui/segmented-invoice-input"
 import { useSignatures } from "@/lib/hooks/useSignature"
 import type { Transaksi, Signature } from "@/lib/types"
 
@@ -644,11 +645,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Nomor Invoice</Label>
-              <Input
+              <SegmentedInvoiceInput
                 value={formData.nomorInvoice}
-                onChange={(e) => handleChange("nomorInvoice", e.target.value)}
-                placeholder="545/INV/KLK/MDC/2025"
-                className="h-10"
+                onChange={(value) => handleChange("nomorInvoice", value)}
               />
             </div>
           </div>
