@@ -34,6 +34,16 @@ export interface InvoiceListItem {
   count: number
 }
 
+// Trash item (soft-deleted invoice)
+export interface TrashInvoiceItem {
+  id: number
+  title: string
+  createdAt: string
+  deletedAt: string // When the invoice was moved to trash
+  total: number
+  count: number
+}
+
 // Request payloads
 export interface CreateTransaksiPayload {
   tanggal: string

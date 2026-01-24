@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, PenTool, Database, LogOut, Menu, X } from 'lucide-react'
+import { FileText, PenTool, Database, Trash2, LogOut, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
@@ -21,6 +21,12 @@ const navItems = [
     label: 'Tanda Tangan',
     icon: PenTool,
     color: 'violet',
+  },
+  {
+    href: '/trash',
+    label: 'Sampah',
+    icon: Trash2,
+    color: 'red',
   },
   {
     href: '/storage',
@@ -88,7 +94,8 @@ export function Navbar({ className }: NavbarProps) {
                     )}
                     style={isActive ? { 
                       backgroundColor: item.color === 'blue' ? '#2563eb' : 
-                                      item.color === 'violet' ? '#7c3aed' : '#059669'
+                                      item.color === 'violet' ? '#7c3aed' : 
+                                      item.color === 'red' ? '#dc2626' : '#059669'
                     } : undefined}
                   >
                     <Icon className="h-4 w-4" />

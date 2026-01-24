@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   Invoice,
   InvoiceListItem,
+  TrashInvoiceItem,
   Transaksi,
   CreateInvoicePayload,
   UpdateInvoicePayload,
@@ -98,9 +99,27 @@ export const invoiceApi = {
     return data
   },
 
-  // Delete invoice
+  // Delete invoice (soft delete - moves to trash)
   delete: async (id: number): Promise<DeleteResponse> => {
     const { data } = await api.delete<DeleteResponse>(`/invoice/${id}`)
+    return data
+  },
+
+  // Get all invoices in trash
+  getTrash: async (): Promise<{ data: TrashInvoiceItem[] }> => {
+    const { data } = await api.get<{ data: TrashInvoiceItem[] }>('/invoice/trash/list')
+    return data
+  },
+
+  // Restore invoice from trash
+  restore: async (id: number): Promise<DeleteResponse> => {
+    const { data } = await api.post<DeleteResponse>(`/invoice/${id}/restore`)
+    return data
+  },
+
+  // Permanently delete invoice from trash
+  permanentDelete: async (id: number): Promise<DeleteResponse> => {
+    const { data } = await api.delete<DeleteResponse>(`/invoice/${id}/permanent`)
     return data
   },
 }

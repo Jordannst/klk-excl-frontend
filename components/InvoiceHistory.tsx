@@ -109,7 +109,9 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
     if (!deleteConfirmId) return
     try {
       await deleteInvoiceMutation.mutateAsync(deleteConfirmId)
-      toast.success("Invoice berhasil dihapus")
+      toast.success("Invoice dipindahkan ke Sampah", {
+        description: "Kamu dapat memulihkannya dari halaman Sampah",
+      })
       // Clear selection if deleted invoice was selected
       if (selectedId === deleteConfirmId) {
         onSelectInvoice?.(0)
@@ -347,13 +349,13 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
             </div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Hapus Invoice?</h3>
             <p className="text-sm text-slate-500 mb-1">
-              Anda yakin ingin menghapus invoice:
+              Invoice ini akan dipindahkan ke Sampah:
             </p>
             <p className="font-semibold text-slate-700 mb-4">
               {invoiceToDelete?.title || "Invoice"}
             </p>
-            <p className="text-xs text-red-500 mb-6">
-              Tindakan ini tidak dapat dibatalkan.
+            <p className="text-xs text-emerald-600 mb-6">
+              💡 Invoice dapat dipulihkan dari halaman Sampah.
             </p>
             <div className="flex gap-3">
               <Button

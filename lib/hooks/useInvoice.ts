@@ -11,6 +11,7 @@ export const invoiceKeys = {
   list: () => [...invoiceKeys.lists()] as const,
   details: () => [...invoiceKeys.all, 'detail'] as const,
   detail: (id: number) => [...invoiceKeys.details(), id] as const,
+  trash: () => [...invoiceKeys.all, 'trash'] as const,
 }
 
 // Get all invoices (paginated with search and date filter)
@@ -65,7 +66,7 @@ export function useUpdateInvoice() {
   })
 }
 
-// Delete invoice mutation
+// Delete invoice mutation (soft delete - moves to trash)
 export function useDeleteInvoice() {
   const queryClient = useQueryClient()
 
@@ -74,9 +75,50 @@ export function useDeleteInvoice() {
     onSuccess: (_data, id) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: invoiceKeys.detail(id) })
-      // Invalidate list
+      // Invalidate both list and trash
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.trash() })
     },
   })
 }
 
+// =============================================================================
+// TRASH HOOKS
+// =============================================================================
+
+// Get all invoices in trash
+export function useTrashInvoices() {
+  return useQuery({
+    queryKey: invoiceKeys.trash(),
+    queryFn: () => invoiceApi.getTrash(),
+  })
+}
+
+// Restore invoice from trash
+export function useRestoreInvoice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => invoiceApi.restore(id),
+    onSuccess: () => {
+      // Invalidate both list and trash
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.trash() })
+    },
+  })
+}
+
+// Permanently delete invoice from trash
+export function usePermanentDeleteInvoice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => invoiceApi.permanentDelete(id),
+    onSuccess: (_data, id) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: invoiceKeys.detail(id) })
+      // Invalidate trash
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.trash() })
+    },
+  })
+}
