@@ -80,3 +80,16 @@ export interface DeleteResponse {
   message: string
 }
 
+// Signature types
+export interface Signature {
+  id: string
+  label: string
+  imageData: string // Base64 encoded PNG
+  createdAt: string
+}
+
+export interface CreateSignaturePayload {
+  label: string
+  imageData: string
+}
+

@@ -167,4 +167,27 @@ export const statsApi = {
   },
 }
 
+// Signature API
+import type { Signature, CreateSignaturePayload } from './types'
+
+export const signatureApi = {
+  // Get all signatures
+  getAll: async (): Promise<Signature[]> => {
+    const { data } = await api.get<Signature[]>('/signature')
+    return data
+  },
+
+  // Create new signature
+  create: async (payload: CreateSignaturePayload): Promise<Signature> => {
+    const { data } = await api.post<Signature>('/signature', payload)
+    return data
+  },
+
+  // Delete signature
+  delete: async (id: string): Promise<DeleteResponse> => {
+    const { data } = await api.delete<DeleteResponse>(`/signature/${id}`)
+    return data
+  },
+}
+
 export default api

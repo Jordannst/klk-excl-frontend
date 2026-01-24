@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { FileText, Plus, Loader2, LogOut, Database } from "lucide-react"
+import { FileText, Plus, Loader2, LogOut, Database, PenTool } from "lucide-react"
 import { ExpeditionForm } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
 import { InvoiceHistory } from "@/components/InvoiceHistory"
@@ -83,6 +83,15 @@ function DashboardContent() {
               <Plus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Buat Invoice Baru</span>
             </Button>
+            <Link href="/signatures">
+              <Button
+                variant="outline"
+                className="h-8 sm:h-9 px-2 sm:px-3 text-slate-600 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50"
+                title="Kelola Tanda Tangan"
+              >
+                <PenTool className="h-4 w-4" />
+              </Button>
+            </Link>
             <Link href="/storage">
               <Button
                 variant="outline"

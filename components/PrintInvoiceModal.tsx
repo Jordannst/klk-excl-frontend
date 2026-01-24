@@ -1,14 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { X, Printer, Loader2, FileText, Download } from "lucide-react"
+import { X, Printer, Loader2, FileText, Download, ChevronDown } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
-import type { Transaksi } from "@/lib/types"
+import { useSignatures } from "@/lib/hooks/useSignature"
+import type { Transaksi, Signature } from "@/lib/types"
 
 interface PrintInvoiceModalProps {
   isOpen: boolean
@@ -40,6 +41,13 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
   })
   const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
   const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
+  
+  // Signature selection state
+  const [selectedSignatureKiri, setSelectedSignatureKiri] = React.useState<Signature | null>(null)
+  const [selectedSignatureKanan, setSelectedSignatureKanan] = React.useState<Signature | null>(null)
+  
+  // Fetch available signatures
+  const { data: signatures } = useSignatures()
 
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
@@ -384,12 +392,18 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             <!-- Signatures -->
             <div class="signatures">
               <div class="signature-box">
-                <div class="signature-line"></div>
+                ${selectedSignatureKiri 
+                  ? `<div class="signature-image"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+                  : `<div class="signature-line"></div>`
+                }
                 <p>PT. KLK Mdc</p>
                 <p class="signature-name">${formData.penandatanganKiri}</p>
               </div>
               <div class="signature-box">
-                <div class="signature-line"></div>
+                ${selectedSignatureKanan 
+                  ? `<div class="signature-image"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+                  : `<div class="signature-line"></div>`
+                }
                 <p>Diketahui,</p>
                 <p class="signature-name">${formData.penandatanganKanan}</p>
               </div>
@@ -542,12 +556,18 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           <!-- Signatures -->
           <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px;">
             <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>
+              ${selectedSignatureKiri 
+                ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+                : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
+              }
               <p>PT. KLK Mdc</p>
               <p style="font-weight: bold;">${formData.penandatanganKiri}</p>
             </div>
             <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>
+              ${selectedSignatureKanan 
+                ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+                : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
+              }
               <p>Diketahui,</p>
               <p style="font-weight: bold;">${formData.penandatanganKanan}</p>
             </div>
@@ -686,25 +706,81 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           
           {/* Penandatangan */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">Penandatangan (PT. KLK Mdc)</Label>
-              <AutocompleteInput
-                value={formData.penandatanganKiri}
-                onChange={(value) => handleChange("penandatanganKiri", value)}
-                storageKey="print_penandatangan_klk"
-                placeholder="Nama penandatangan"
-                className="h-10"
-              />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-slate-700">Penandatangan (PT. KLK Mdc)</Label>
+                <AutocompleteInput
+                  value={formData.penandatanganKiri}
+                  onChange={(value) => handleChange("penandatanganKiri", value)}
+                  storageKey="print_penandatangan_klk"
+                  placeholder="Nama penandatangan"
+                  className="h-10"
+                />
+              </div>
+              {/* Signature selector */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-500">Tanda Tangan (opsional)</Label>
+                <div className="relative">
+                  <select
+                    value={selectedSignatureKiri?.id || ""}
+                    onChange={(e) => {
+                      const sig = signatures?.find(s => s.id === e.target.value) || null
+                      setSelectedSignatureKiri(sig)
+                    }}
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Tanpa tanda tangan</option>
+                    {signatures?.map((sig) => (
+                      <option key={sig.id} value={sig.id}>{sig.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {/* Preview */}
+                {selectedSignatureKiri && (
+                  <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex justify-center">
+                    <img src={selectedSignatureKiri.imageData} alt="Preview" className="max-h-10 object-contain" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-slate-700">Diketahui oleh</Label>
-              <AutocompleteInput
-                value={formData.penandatanganKanan}
-                onChange={(value) => handleChange("penandatanganKanan", value)}
-                storageKey="print_penandatangan_diketahui"
-                placeholder="Nama yang mengetahui"
-                className="h-10"
-              />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-slate-700">Diketahui oleh</Label>
+                <AutocompleteInput
+                  value={formData.penandatanganKanan}
+                  onChange={(value) => handleChange("penandatanganKanan", value)}
+                  storageKey="print_penandatangan_diketahui"
+                  placeholder="Nama yang mengetahui"
+                  className="h-10"
+                />
+              </div>
+              {/* Signature selector */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-500">Tanda Tangan (opsional)</Label>
+                <div className="relative">
+                  <select
+                    value={selectedSignatureKanan?.id || ""}
+                    onChange={(e) => {
+                      const sig = signatures?.find(s => s.id === e.target.value) || null
+                      setSelectedSignatureKanan(sig)
+                    }}
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Tanpa tanda tangan</option>
+                    {signatures?.map((sig) => (
+                      <option key={sig.id} value={sig.id}>{sig.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {/* Preview */}
+                {selectedSignatureKanan && (
+                  <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-100 flex justify-center">
+                    <img src={selectedSignatureKanan.imageData} alt="Preview" className="max-h-10 object-contain" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
