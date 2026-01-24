@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Database, FileText, RefreshCw, HardDrive, AlertTriangle } from "lucide-react"
+import { Database, FileText, RefreshCw, HardDrive, AlertTriangle, PenTool, Hash } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
@@ -76,7 +76,7 @@ function StorageContent() {
         {/* Error State */}
         {error && (
           <Card className="border-red-200 bg-red-50 mb-6">
-            <CardContent className="pt-6">
+            <CardContent className="py-4">
               <div className="flex items-center gap-3 text-red-600">
                 <AlertTriangle className="h-5 w-5" />
                 <span>{error}</span>
@@ -169,7 +169,7 @@ function StorageContent() {
                   </div>
                 )}
 
-                {/* Sisa Storage */}
+                {/* Storage Breakdown */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-slate-50 rounded-lg text-center">
                     <p className="text-sm text-slate-500 mb-1">Sisa Storage</p>
@@ -177,38 +177,69 @@ function StorageContent() {
                       {(stats.database.limitMB - stats.database.sizeMB).toFixed(2)} MB
                     </p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-lg text-center">
-                    <p className="text-sm text-slate-500 mb-1">Raw Size</p>
-                    <p className="text-2xl font-bold text-slate-700">
-                      {(stats.database.sizeBytes / 1024).toFixed(0)} KB
+                  <div className="p-4 bg-violet-50 rounded-lg text-center">
+                    <p className="text-sm text-slate-500 mb-1">Signature Storage</p>
+                    <p className="text-2xl font-bold text-violet-600">
+                      {stats.storage.signatureKB.toFixed(2)} KB
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Invoice Count Card */}
-            <Card className="shadow-md">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                    <FileText className="h-5 w-5 text-emerald-600" />
+            {/* Counts Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Invoice Count */}
+              <Card className="shadow-md">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                      <FileText className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Invoice</p>
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {stats.counts.invoices}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">Total Invoice</CardTitle>
-                    <CardDescription>Jumlah invoice tersimpan</CardDescription>
+                </CardContent>
+              </Card>
+
+              {/* Transaction Count */}
+              <Card className="shadow-md">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                      <Hash className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Transaksi</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {stats.counts.transactions}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="text-4xl font-bold text-emerald-600">
-                    {stats.counts.invoices}
-                  </span>
-                  <span className="text-slate-500">invoice</span>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Signature Count */}
+              <Card className="shadow-md">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
+                      <PenTool className="h-5 w-5 text-violet-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500">Tanda Tangan</p>
+                      <p className="text-2xl font-bold text-violet-600">
+                        {stats.counts.signatures}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Last Updated */}
             <p className="text-center text-sm text-slate-400">

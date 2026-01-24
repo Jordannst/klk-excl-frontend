@@ -175,6 +175,11 @@ export interface StatsResponse {
   }
   counts: {
     invoices: number
+    transactions: number
+    signatures: number
+  }
+  storage: {
+    signatureKB: number
   }
   updatedAt: string
 }
