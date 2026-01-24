@@ -22,6 +22,7 @@
     "html2pdf.js": "^0.12.1",
     "lucide-react": "^0.560.0",
     "next": "16.0.8",
+    "next-nprogress-bar": "^2.4.7",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "react-hook-form": "^7.68.0",
