@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import { ArrowLeft, PenTool, Plus, Trash2, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { PenTool, Plus, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SignaturePad } from "@/components/SignaturePad"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { Navbar } from "@/components/Navbar"
 import { useSignatures, useCreateSignature, useDeleteSignature } from "@/lib/hooks/useSignature"
 import type { Signature } from "@/lib/types"
 
@@ -135,22 +136,38 @@ function SignaturesContent() {
       setShowCreateForm(false)
       setNewSignatureLabel("")
       setPendingImageData(null)
+      
+      // Success notification
+      toast.success("Tanda tangan berhasil disimpan", {
+        description: `Tanda tangan "${newSignatureLabel.trim()}" telah ditambahkan`,
+      })
     } catch (error) {
       console.error("Failed to save signature:", error)
-      alert("Gagal menyimpan tanda tangan. Silakan coba lagi.")
+      toast.error("Gagal menyimpan tanda tangan", {
+        description: "Silakan coba lagi atau periksa koneksi internet",
+      })
     }
   }
 
   // Handle delete
   const handleDelete = async () => {
     if (!deleteTarget) return
+    
+    const deletedLabel = deleteTarget.label
 
     try {
       await deleteSignature.mutateAsync(deleteTarget.id)
       setDeleteTarget(null)
+      
+      // Success notification
+      toast.success("Tanda tangan berhasil dihapus", {
+        description: `Tanda tangan "${deletedLabel}" telah dihapus`,
+      })
     } catch (error) {
       console.error("Failed to delete signature:", error)
-      alert("Gagal menghapus tanda tangan. Silakan coba lagi.")
+      toast.error("Gagal menghapus tanda tangan", {
+        description: "Silakan coba lagi atau periksa koneksi internet",
+      })
     }
   }
 
@@ -163,36 +180,28 @@ function SignaturesContent() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm py-3 sm:py-4 px-4 sm:px-6 border-b border-white/20">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-violet-600 flex-shrink-0">
-              <PenTool className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">Kelola Tanda Tangan</h1>
-              <p className="text-xs text-slate-500 hidden sm:block">Buat dan kelola tanda tangan untuk invoice</p>
-            </div>
-          </div>
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="h-8 sm:h-9 px-2 sm:px-4 bg-violet-600 hover:bg-violet-700 text-white"
-            disabled={showCreateForm}
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Tambah TTD</span>
-          </Button>
-        </div>
-      </header>
+      {/* Shared Navbar */}
+      <Navbar />
 
       {/* Content */}
       <main className="max-w-5xl mx-auto pt-20 sm:pt-24 px-4 sm:px-6 pb-8">
+        {/* Page Header with Action */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Kelola Tanda Tangan</h2>
+            <p className="text-sm text-slate-500">Buat dan kelola tanda tangan untuk invoice</p>
+          </div>
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-violet-600 hover:bg-violet-700 text-white"
+            disabled={showCreateForm}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Tambah TTD</span>
+            <span className="sm:hidden">Tambah</span>
+          </Button>
+        </div>
+
         {/* Create Form */}
         {showCreateForm && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">

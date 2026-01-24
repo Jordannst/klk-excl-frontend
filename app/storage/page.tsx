@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import { Database, FileText, ArrowLeft, RefreshCw, HardDrive, AlertTriangle } from "lucide-react"
+import { Database, FileText, RefreshCw, HardDrive, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 
 import { ProtectedRoute } from "@/components/ProtectedRoute"
+import { Navbar } from "@/components/Navbar"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { statsApi, type StatsResponse } from "@/lib/api"
@@ -51,41 +51,28 @@ function StorageContent() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md shadow-sm py-4 px-6 border-b border-white/20">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Kembali
-              </Button>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <Database className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Storage Monitor</h1>
-              <p className="text-xs text-slate-500">Pantau penggunaan database</p>
-            </div>
+      {/* Shared Navbar */}
+      <Navbar />
+
+      {/* Content */}
+      <main className="max-w-4xl mx-auto pt-20 sm:pt-24 px-4 sm:px-6 pb-8">
+        {/* Page Header with Action */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Storage Monitor</h2>
+            <p className="text-sm text-slate-500">Pantau penggunaan database</p>
           </div>
           <Button
             variant="outline"
-            size="sm"
             onClick={fetchStats}
             disabled={isLoading}
             className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
-      </header>
 
-      {/* Content */}
-      <main className="max-w-4xl mx-auto pt-24 px-6 pb-8">
         {/* Error State */}
         {error && (
           <Card className="border-red-200 bg-red-50 mb-6">
