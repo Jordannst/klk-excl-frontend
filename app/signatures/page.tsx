@@ -91,10 +91,10 @@ function SignatureCard({ signature, onDelete }: SignatureCardProps) {
         })}
       </p>
 
-      {/* Delete Button */}
+      {/* Delete Button - always visible on mobile, hover on desktop */}
       <button
         onClick={() => onDelete(signature)}
-        className="absolute top-2 right-2 p-2 rounded-lg bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 hover:bg-red-100 transition-all"
+        className="absolute top-2 right-2 p-2 rounded-lg bg-red-50 text-red-600 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-100 transition-all"
         title="Hapus tanda tangan"
       >
         <Trash2 className="h-4 w-4" />
