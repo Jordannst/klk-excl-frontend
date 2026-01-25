@@ -588,9 +588,15 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
       element.innerHTML = pdfContent
       document.body.appendChild(element)
 
+      // Sanitize invoiceTitle for valid filename (remove special chars)
+      const sanitizedTitle = (invoiceTitle || 'Invoice_KLK')
+        .replace(/[/\\?%*:|"<>]/g, '-')
+        .replace(/\s+/g, '_')
+        .trim()
+      
       const opt = {
         margin: 10,
-        filename: `Invoice_${formData.nomorInvoice || 'KLK'}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
+        filename: `${sanitizedTitle}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
