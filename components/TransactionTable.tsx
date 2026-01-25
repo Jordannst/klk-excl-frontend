@@ -417,7 +417,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
             >
               <Printer className="h-4 w-4" />
               <span className="hidden sm:inline">Print / PDF</span>
-              <span className="sm:hidden">Print</span>
+              <span className="sm:hidden">Print/PDF</span>
             </Button>
           </div>
         </div>
