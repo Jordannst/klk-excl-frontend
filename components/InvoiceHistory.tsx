@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { FileText, Calendar, DollarSign, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Search, X, Trash2 } from "lucide-react"
+import { FileText, Calendar, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Search, X, Trash2 } from "lucide-react"
 import { format, startOfDay, startOfWeek, startOfMonth } from "date-fns"
 import { id } from "date-fns/locale"
 import { toast } from "sonner"
@@ -289,12 +289,9 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
                   </div>
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
                     <div className="text-xs text-slate-500">Total</div>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3 text-emerald-600" />
-                      <span className="font-bold text-sm text-emerald-600">
-                        Rp {invoice.total.toLocaleString("id-ID")}
-                      </span>
-                    </div>
+                    <span className="font-bold text-sm text-emerald-600">
+                      Rp {invoice.total.toLocaleString("id-ID")}
+                    </span>
                   </div>
                 </div>
               ))}
