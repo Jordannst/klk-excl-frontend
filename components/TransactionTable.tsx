@@ -76,7 +76,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
           tarif: editDraft.tarif,
           total: calculatedTotal,
           noResi: editDraft.noResi,
-          keterangan: editDraft.keterangan || undefined,
+          keterangan: editDraft.keterangan ?? "",
         },
       })
       toast.success("Transaksi berhasil diperbarui")
