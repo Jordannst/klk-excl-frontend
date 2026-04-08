@@ -155,12 +155,12 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
     const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
     
     return `
-      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px;">
-        <h2 style="text-align: center; margin-bottom: 20px;">${title || "Perhitungan Pengiriman Barang"}</h2>
-        <p style="margin-bottom: 10px;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
+      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px; box-sizing: border-box; background: #fff;">
+        <h2 class="pdf-keep-together" style="text-align: center; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid;">${title || "Perhitungan Pengiriman Barang"}</h2>
+        <p class="pdf-keep-together" style="margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead>
-            <tr style="background-color: #f0f0f0;">
+          <thead style="display: table-header-group;">
+            <tr class="pdf-keep-together" style="background-color: #f0f0f0; break-inside: avoid; page-break-inside: avoid;">
               <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
               <th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>
               <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
@@ -176,7 +176,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
           </thead>
           <tbody>
             ${data.map((item, index) => `
-              <tr>
+              <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                 <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
                 <td style="border: 1px solid #000; padding: 4px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
                 <td style="border: 1px solid #000; padding: 4px;">${item.noResi}</td>
@@ -192,7 +192,7 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
             `).join("")}
           </tbody>
           <tfoot>
-            <tr>
+            <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
               <td colspan="9" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatNumber(totalRevenue)}</td>
               <td style="border: 1px solid #000; padding: 6px;"></td>
@@ -228,7 +228,11 @@ export function TransactionTable({ data, onRefresh, title }: TransactionTablePro
         margin: 10,
         filename: `${title || "Perhitungan_Pengiriman_Barang"}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy'] as const,
+          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
+        },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'landscape' as const }
       }
 

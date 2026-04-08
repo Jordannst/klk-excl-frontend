@@ -457,9 +457,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
 
       // Use the SAME template as print (without @media print)
       const pdfContent = `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal;">
+        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal; box-sizing: border-box; background: #fff;">
           <!-- Header -->
-          <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000;">
+          <div class="pdf-keep-together" style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000; break-inside: avoid; page-break-inside: avoid;">
             ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
             <div style="text-align: center; flex: 1; padding-right: 100px;">
               <p style="font-weight: bold; font-size: 13px; margin-bottom: 3px;">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
@@ -469,28 +469,28 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           </div>
           
           <!-- Letter Info -->
-          <div style="margin-bottom: 15px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <p style="margin-bottom: 3px;">${formData.tanggalSurat}</p>
             <p style="margin-bottom: 3px;">No. ${formData.nomorInvoice}</p>
           </div>
-          
+
           <!-- Recipient -->
-          <div style="margin-bottom: 15px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <p style="margin-bottom: 2px;">Kepada Yth :</p>
             <p style="margin-bottom: 2px; font-weight: bold;">${formData.namaPenerima}</p>
             <p style="margin-bottom: 2px;">Di. ${formData.lokasiPenerima}</p>
           </div>
-          
+
           <!-- Intro -->
-          <div style="margin-bottom: 15px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <p style="margin-bottom: 5px;">Dengan Hormat,</p>
             <p style="margin-bottom: 5px;">Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
           </div>
-          
+
           <!-- Table -->
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
-            <thead>
-              <tr>
+            <thead style="display: table-header-group;">
+              <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
@@ -506,7 +506,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             </thead>
             <tbody>
               ${data.map((item, index) => `
-                <tr>
+                <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${index + 1}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.noResi}</td>
@@ -522,7 +522,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               `).join("")}
             </tbody>
             <tfoot>
-              <tr>
+              <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                 <td colspan="10" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
                 <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
               </tr>
@@ -530,7 +530,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           </table>
           
           <!-- Calculations -->
-          <div style="margin-bottom: 15px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
               <span style="flex: 1;">1. Biaya handling</span>
               <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(biayaHandling)}</span>
@@ -544,21 +544,21 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(totalTagihan)}</span>
             </div>
           </div>
-          
+
           <!-- Payment Info -->
-          <div style="margin-bottom: 15px; font-size: 10px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
             <p>Jumlah tagihan bisa ditransfer melalui :</p>
             <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
           </div>
-          
+
           <!-- Closing -->
-          <div style="margin-bottom: 15px;">
+          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
             <p>Hormat Kami,</p>
           </div>
-          
+
           <!-- Signatures -->
-          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px;">
+          <div class="pdf-keep-together" style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px; break-inside: avoid; page-break-inside: avoid;">
             <div style="width: 45%; text-align: center;">
               ${selectedSignatureKiri 
                 ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
@@ -578,7 +578,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           </div>
           
           <!-- Footer -->
-          <div style="margin-top: 80px; font-size: 10px;">
+          <div class="pdf-keep-together" style="margin-top: 80px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
             <p>Cc. Klk mdc</p>
           </div>
         </div>
@@ -598,7 +598,11 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
         margin: 10,
         filename: `${sanitizedTitle}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy'] as const,
+          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
+        },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       }
 
