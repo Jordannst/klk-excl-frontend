@@ -69,7 +69,8 @@ const formSchema = z
     }
   })
 
-export type ExpeditionFormData = z.infer<typeof formSchema>
+export type ExpeditionFormInput = z.input<typeof formSchema>
+export type ExpeditionFormData = z.output<typeof formSchema>
 
 export type BatchPayload = {
   title: string
@@ -203,7 +204,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     reset,
     setFocus,
     formState: { errors },
-  } = useForm<ExpeditionFormData>({
+  } = useForm<ExpeditionFormInput, unknown, ExpeditionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate()),
   })
