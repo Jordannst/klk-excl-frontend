@@ -83,6 +83,8 @@ type DraftStorageShape = {
   items?: unknown
   title?: unknown
   dateMode?: unknown
+  defaultSender?: unknown
+  defaultReceiver?: unknown
 }
 
 const dateModeHelpText: Record<InvoiceDateMode, string> = {
@@ -103,17 +105,41 @@ const getStoredRowDate = (date: string | null | undefined): string => {
   return date ?? ""
 }
 
+type DraftPartyDefaults = {
+  sender: string
+  receiver: string
+}
+
+const normalizeDraftPartyValue = (value: unknown) => {
+  return typeof value === "string" ? value.trim() : ""
+}
+
+const normalizeDraftPartyDefaults = (sender: unknown, receiver: unknown): DraftPartyDefaults | null => {
+  const normalizedSender = normalizeDraftPartyValue(sender)
+  const normalizedReceiver = normalizeDraftPartyValue(receiver)
+
+  if (!normalizedSender || !normalizedReceiver) {
+    return null
+  }
+
+  return {
+    sender: normalizedSender,
+    receiver: normalizedReceiver,
+  }
+}
+
 const createEmptyRowValues = (
   title: string,
   dateMode: InvoiceDateMode,
-  date?: string | null
+  date?: string | null,
+  defaults?: DraftPartyDefaults | null
 ): ExpeditionFormData => ({
   title,
   dateMode,
   date: isDateInputEnabled(dateMode) ? date || createDefaultRowDate() : "",
   stt: "",
-  sender: "",
-  receiver: "",
+  sender: defaults?.sender ?? "",
+  receiver: defaults?.receiver ?? "",
   coly: 1,
   kg: 1,
   min: 10,
@@ -160,20 +186,55 @@ const getDraftDateText = (date: string | null | undefined, dateMode: InvoiceDate
   return getDateCellText(date, dateMode)
 }
 
-const hasPendingRowData = (values: {
-  stt?: string
-  sender?: string
-  receiver?: string
-  coly?: number
-  kg?: number
-  min?: number
-  tarif?: number
-  keterangan?: string
-}) => {
+const formatRupiah = (value: number | string): string => {
+  const numValue = typeof value === "string" ? parseFloat(value.replace(/\./g, "")) || 0 : value
+  return numValue.toLocaleString("id-ID")
+}
+
+const parseRupiah = (value: string): number => {
+  return parseFloat(value.replace(/\./g, "")) || 0
+}
+
+const focusSttField = (setFocus: ReturnType<typeof useForm<ExpeditionFormInput, unknown, ExpeditionFormData>>["setFocus"], delay = 50) => {
+  setTimeout(() => {
+    setFocus("stt")
+  }, delay)
+}
+
+const getDateHelpText = (dateMode: InvoiceDateMode, isDateEnabled: boolean) => {
+  if (isDateEnabled) {
+    return "Tanggal akan disimpan per transaksi."
+  }
+
+  if (dateMode === "blank-column") {
+    return "Tanggal transaksi tidak wajib diisi. Draft tetap menampilkan kolom tanggal kosong."
+  }
+
+  return "Tanggal transaksi tidak wajib diisi. Draft menyembunyikan kolom tanggal."
+}
+
+const hasPendingRowData = (
+  values: {
+    stt?: string
+    sender?: string
+    receiver?: string
+    coly?: number
+    kg?: number
+    min?: number
+    tarif?: number
+    keterangan?: string
+  },
+  defaults?: DraftPartyDefaults | null
+) => {
+  const normalizedSender = values.sender?.trim() ?? ""
+  const normalizedReceiver = values.receiver?.trim() ?? ""
+  const matchesDefaultSender = normalizedSender !== "" && normalizedSender === (defaults?.sender ?? "")
+  const matchesDefaultReceiver = normalizedReceiver !== "" && normalizedReceiver === (defaults?.receiver ?? "")
+
   return Boolean(
     (values.stt && values.stt.trim() !== "") ||
-      (values.sender && values.sender.trim() !== "") ||
-      (values.receiver && values.receiver.trim() !== "") ||
+      (normalizedSender !== "" && !matchesDefaultSender) ||
+      (normalizedReceiver !== "" && !matchesDefaultReceiver) ||
       values.coly !== 1 ||
       values.kg !== 1 ||
       values.min !== 10 ||
@@ -188,8 +249,9 @@ interface ExpeditionFormProps {
 
 export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const [temporaryItems, setTemporaryItems] = React.useState<ExpeditionFormData[]>([])
-  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [editingStt, setEditingStt] = React.useState<string | null>(null)
   const [tarifDisplay, setTarifDisplay] = React.useState<string>("")
+  const [draftPartyDefaults, setDraftPartyDefaults] = React.useState<DraftPartyDefaults | null>(null)
   const titleInputRef = React.useRef<HTMLInputElement>(null)
   const preservedCreateDateRef = React.useRef<string>(createDefaultRowDate())
   const preservedEditingDateRef = React.useRef<string>("")
@@ -216,38 +278,25 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const senderValue = watch("sender")
   const receiverValue = watch("receiver")
   const colyValue = Number(watch("coly")) || 0
-  const kg = Number(watch("kg")) || 0
-  const min = Number(watch("min")) || 0
-  const tarif = Number(watch("tarif")) || 0
   const kgValue = Number(watch("kg")) || 0
   const minValue = Number(watch("min")) || 0
   const tarifValue = Number(watch("tarif")) || 0
   const keteranganValue = watch("keterangan")
+  const isDraftPartyLocked = Boolean(draftPartyDefaults)
   const isDateEnabled = isDateInputEnabled(currentDateMode)
   const showDraftDateColumn = isDateColumnVisible(currentDateMode)
   const grandTotalLabelColSpan = showDraftDateColumn ? 7 : 6
 
-  const formatRupiah = (value: number | string): string => {
-    const numValue = typeof value === "string" ? parseFloat(value.replace(/\./g, "")) || 0 : value
-    return numValue.toLocaleString("id-ID")
-  }
-
-  const parseRupiah = (value: string): number => {
-    return parseFloat(value.replace(/\./g, "")) || 0
-  }
-
   React.useEffect(() => {
-    if (tarif > 0) {
-      setTarifDisplay(formatRupiah(tarif))
+    if (tarifValue > 0) {
+      setTarifDisplay(formatRupiah(tarifValue))
     } else {
       setTarifDisplay("")
     }
-  }, [tarif])
+  }, [tarifValue])
 
   React.useEffect(() => {
-    setTimeout(() => {
-      setFocus("stt")
-    }, 50)
+    focusSttField(setFocus)
   }, [setFocus])
 
   React.useEffect(() => {
@@ -263,9 +312,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         ? parsed.title
         : createDefaultDraftTitle()
       const draftItems = normalizeDraftItems(parsed?.items, draftDateMode)
+      const storedDefaults = normalizeDraftPartyDefaults(parsed?.defaultSender, parsed?.defaultReceiver)
 
       setTemporaryItems(draftItems)
-      reset(createEmptyRowValues(draftTitle, draftDateMode, createDefaultRowDate()))
+      setDraftPartyDefaults(storedDefaults)
+      reset(createEmptyRowValues(draftTitle, draftDateMode, createDefaultRowDate(), storedDefaults))
     } catch (error) {
       console.warn("Failed to parse draft from localStorage", error)
     }
@@ -276,18 +327,18 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       return
     }
 
-    if (editingId) {
+    if (editingStt) {
       preservedEditingDateRef.current = currentDate
       return
     }
 
     preservedCreateDateRef.current = currentDate
-  }, [currentDate, editingId, isDateEnabled])
+  }, [currentDate, editingStt, isDateEnabled])
 
   React.useEffect(() => {
     if (isDateEnabled) {
       if (!currentDate) {
-        if (editingId) {
+        if (editingStt) {
           if (preservedEditingDateRef.current) {
             setValue("date", preservedEditingDateRef.current, { shouldValidate: true })
           }
@@ -302,7 +353,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     if (currentDate !== "") {
       setValue("date", "", { shouldValidate: true })
     }
-  }, [currentDate, editingId, isDateEnabled, setValue])
+  }, [currentDate, editingStt, isDateEnabled, setValue])
 
   React.useEffect(() => {
     if (temporaryItems.length === 0) {
@@ -334,9 +385,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         })),
         title: titleValue,
         dateMode: currentDateMode,
+        defaultSender: draftPartyDefaults?.sender ?? null,
+        defaultReceiver: draftPartyDefaults?.receiver ?? null,
       })
     )
-  }, [temporaryItems, titleValue, currentDateMode])
+  }, [temporaryItems, titleValue, currentDateMode, draftPartyDefaults])
 
   const handleTarifChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cleanedValue = e.target.value.replace(/\D/g, "")
@@ -353,10 +406,36 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   }
 
   React.useEffect(() => {
-    const effectiveKg = Math.max(kg, min)
-    const calculatedTotal = effectiveKg * tarif
+    const effectiveKg = Math.max(kgValue, minValue)
+    const calculatedTotal = effectiveKg * tarifValue
     setValue("total", calculatedTotal)
-  }, [kg, min, tarif, setValue])
+  }, [kgValue, minValue, tarifValue, setValue])
+
+  const resetFormForNextRow = React.useCallback(
+    (title: string, dateMode: InvoiceDateMode, date?: string | null) => {
+      reset(createEmptyRowValues(title, dateMode, date, draftPartyDefaults))
+    },
+    [draftPartyDefaults, reset]
+  )
+
+  const handleLockDraftParties = () => {
+    const nextDefaults = normalizeDraftPartyDefaults(senderValue, receiverValue)
+
+    if (!nextDefaults) {
+      toast.error("Isi Pengirim dan Penerima terlebih dahulu sebelum mengunci default invoice")
+      return
+    }
+
+    setDraftPartyDefaults(nextDefaults)
+    setValue("sender", nextDefaults.sender, { shouldValidate: true })
+    setValue("receiver", nextDefaults.receiver, { shouldValidate: true })
+    toast.success("Pengirim dan Penerima dikunci sebagai default invoice draft")
+  }
+
+  const handleUnlockDraftParties = () => {
+    setDraftPartyDefaults(null)
+    toast.info("Default Pengirim dan Penerima untuk invoice draft dilepas")
+  }
 
   const handleAddRow = (data: ExpeditionFormData) => {
     const dateMode = normalizeInvoiceDateMode(data.dateMode ?? currentDateMode)
@@ -376,7 +455,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     }
 
     const isDuplicate = temporaryItems.some(
-      (item) => item.stt.trim().toLowerCase() === normalizedStt.toLowerCase() && (editingId ? item.stt !== editingId : true)
+      (item) => item.stt.trim().toLowerCase() === normalizedStt.toLowerCase() && (editingStt ? item.stt !== editingStt : true)
     )
     if (isDuplicate) {
       toast.error(`No STT ${normalizedStt} sudah ada di daftar draft`)
@@ -386,8 +465,8 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     const effectiveKg = Math.max(data.kg, data.min)
     const calculatedTotal = effectiveKg * data.tarif
 
-    const existingEditingItem = editingId
-      ? temporaryItems.find((item) => item.stt === editingId)
+    const existingEditingItem = editingStt
+      ? temporaryItems.find((item) => item.stt === editingStt)
       : null
 
     const nextStoredDate = isDateInputEnabled(dateMode)
@@ -403,12 +482,12 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       total: calculatedTotal,
     }
 
-    if (editingId) {
-      setTemporaryItems((prev) => prev.map((item) => (item.stt === editingId ? newItem : item)))
+    if (editingStt) {
+      setTemporaryItems((prev) => prev.map((item) => (item.stt === editingStt ? newItem : item)))
       toast.success("Baris diperbarui", {
         description: `STT: ${newItem.stt} - Total: Rp ${calculatedTotal.toLocaleString("id-ID")}`,
       })
-      setEditingId(null)
+      setEditingStt(null)
       preservedEditingDateRef.current = ""
     } else {
       setTemporaryItems((prev) => [...prev, newItem])
@@ -417,12 +496,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       })
     }
 
-    reset(createEmptyRowValues(normalizedTitle, dateMode, currentDate))
+    resetFormForNextRow(normalizedTitle, dateMode, currentDate)
     setTarifDisplay("")
-
-    setTimeout(() => {
-      setFocus("stt")
-    }, 100)
+    focusSttField(setFocus, 100)
   }
 
   const handleRemoveItem = (index: number) => {
@@ -437,7 +513,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     const itemDateMode = normalizeInvoiceDateMode(item.dateMode ?? currentDateMode)
 
     preservedEditingDateRef.current = item.date ?? ""
-    setEditingId(stt)
+    setEditingStt(stt)
     reset({
       title: titleValue || item.title || createDefaultDraftTitle(),
       dateMode: itemDateMode,
@@ -453,28 +529,31 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       keterangan: item.keterangan || "",
     })
     setTarifDisplay(item.tarif ? formatRupiah(item.tarif) : "")
-    setTimeout(() => setFocus("stt"), 50)
+    focusSttField(setFocus)
   }
 
   const handleCancelEdit = () => {
-    setEditingId(null)
+    setEditingStt(null)
     preservedEditingDateRef.current = ""
-    reset(createEmptyRowValues(titleValue || createDefaultDraftTitle(), currentDateMode, currentDate))
+    resetFormForNextRow(titleValue || createDefaultDraftTitle(), currentDateMode, currentDate)
     setTarifDisplay("")
-    setTimeout(() => setFocus("stt"), 50)
+    focusSttField(setFocus)
   }
 
   const handleSaveReport = async () => {
-    const hasFormData = hasPendingRowData({
-      stt: sttValue,
-      sender: senderValue,
-      receiver: receiverValue,
-      coly: colyValue,
-      kg: kgValue,
-      min: minValue,
-      tarif: tarifValue,
-      keterangan: keteranganValue,
-    })
+    const hasFormData = hasPendingRowData(
+      {
+        stt: sttValue,
+        sender: senderValue,
+        receiver: receiverValue,
+        coly: colyValue,
+        kg: kgValue,
+        min: minValue,
+        tarif: tarifValue,
+        keterangan: keteranganValue,
+      },
+      draftPartyDefaults
+    )
 
     if (temporaryItems.length === 0) {
       toast.error("Daftar laporan masih kosong", {
@@ -524,13 +603,14 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       })
 
       setTemporaryItems([])
+      setDraftPartyDefaults(null)
       if (typeof window !== "undefined") {
         localStorage.removeItem(DRAFT_STORAGE_KEY)
       }
 
       reset(createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate()))
       setTarifDisplay("")
-      setEditingId(null)
+      setEditingStt(null)
 
       if (onSubmitSuccess) {
         onSubmitSuccess(result)
@@ -546,7 +626,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     }
   }
 
-  const effectiveKg = Math.max(kg, min)
+  const effectiveKg = Math.max(kgValue, minValue)
   const grandTotal = temporaryItems.reduce((sum, item) => sum + item.total, 0)
 
   return (
@@ -616,46 +696,70 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
           </div>
 
           <p className="text-xs text-slate-500 -mt-2">
-            {isDateEnabled
-              ? "Tanggal akan disimpan per transaksi."
-              : currentDateMode === "blank-column"
-                ? "Tanggal transaksi tidak wajib diisi. Draft tetap menampilkan kolom tanggal kosong."
-                : "Tanggal transaksi tidak wajib diisi. Draft menyembunyikan kolom tanggal."}
+            {getDateHelpText(currentDateMode, isDateEnabled)}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sender" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <User className="h-4 w-4 text-blue-500" />
-                Pengirim
-              </Label>
-              <AutocompleteInput
-                id="sender"
-                value={senderValue || ""}
-                onChange={(val) => setValue("sender", val, { shouldValidate: true })}
-                storageKey="invoice_pengirim"
-                placeholder="Nama Pengirim"
-                className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-              />
-              {errors.sender && <p className="text-xs text-red-500">{errors.sender.message}</p>}
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Default Pengirim & Penerima invoice</p>
+                <p className="text-xs text-slate-500">
+                  Kunci kedua field ini agar otomatis terisi lagi saat menambah baris baru dalam draft yang sama.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={draftPartyDefaults ? "outline" : "default"}
+                size="sm"
+                onClick={draftPartyDefaults ? handleUnlockDraftParties : handleLockDraftParties}
+                disabled={!draftPartyDefaults && (!senderValue?.trim() || !receiverValue?.trim())}
+                className="shrink-0"
+              >
+                {draftPartyDefaults ? "Lepas default draft" : "Gunakan sebagai default invoice ini"}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="receiver" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-emerald-500" />
-                Penerima
-              </Label>
-              <AutocompleteInput
-                id="receiver"
-                value={receiverValue || ""}
-                onChange={(val) => setValue("receiver", val, { shouldValidate: true })}
-                storageKey="invoice_penerima"
-                placeholder="Nama Penerima"
-                className="h-12 text-base border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-              />
-              {errors.receiver && <p className="text-xs text-red-500">{errors.receiver.message}</p>}
+
+            {draftPartyDefaults && (
+              <p className="text-xs text-emerald-600">
+                Default draft aktif. Setelah tambah/update/batal edit, Pengirim dan Penerima akan kembali ke nilai ini.
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sender" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <User className="h-4 w-4 text-blue-500" />
+                  Pengirim
+                </Label>
+                <AutocompleteInput
+                  id="sender"
+                  value={senderValue || ""}
+                  onChange={(val) => setValue("sender", val, { shouldValidate: true })}
+                  storageKey="invoice_pengirim"
+                  placeholder="Nama Pengirim"
+                  disabled={isDraftPartyLocked}
+                  className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+                {errors.sender && <p className="text-xs text-red-500">{errors.sender.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="receiver" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-emerald-500" />
+                  Penerima
+                </Label>
+                <AutocompleteInput
+                  id="receiver"
+                  value={receiverValue || ""}
+                  onChange={(val) => setValue("receiver", val, { shouldValidate: true })}
+                  storageKey="invoice_penerima"
+                  placeholder="Nama Penerima"
+                  disabled={isDraftPartyLocked}
+                  className="h-12 text-base border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
+                />
+                {errors.receiver && <p className="text-xs text-red-500">{errors.receiver.message}</p>}
+              </div>
             </div>
           </div>
-
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
             <div className="space-y-2">
               <Label htmlFor="coly" className="text-sm font-semibold text-slate-700">
@@ -747,12 +851,12 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
               </div>
               <p className="text-xs text-slate-500 mt-1">
                 Berat yang digunakan: <span className="font-bold text-slate-700">{effectiveKg} kg</span>{" "}
-                {kg < min ? `(Min ${min} kg)` : `(Berat ${kg} kg)`}
+                {kgValue < minValue ? `(Min ${minValue} kg)` : `(Berat ${kgValue} kg)`}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {editingId && (
+              {editingStt && (
                 <Button
                   type="button"
                   variant="outline"
@@ -768,7 +872,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                 variant="outline"
                 className="h-12 px-8 text-base font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-md active:scale-95"
               >
-                {editingId ? (
+                {editingStt ? (
                   <>
                     <Pencil className="mr-2 h-5 w-5" />
                     Update Baris
