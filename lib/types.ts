@@ -27,6 +27,7 @@ export interface Invoice {
   total: number
   count: number
   dateMode: InvoiceDateMode
+  showKeteranganColumn: boolean
   transactions: Transaksi[]
 }
 
@@ -37,6 +38,7 @@ export interface InvoiceListItem {
   createdAt: string
   total: number
   count: number
+  showKeteranganColumn: boolean
 }
 
 // Trash item (soft-deleted invoice)
@@ -80,12 +82,14 @@ export interface UpdateTransaksiPayload {
 export interface CreateInvoicePayload {
   title: string
   dateMode?: InvoiceDateMode
+  showKeteranganColumn?: boolean
   transactions: CreateTransaksiPayload[]
 }
 
 export interface UpdateInvoicePayload {
   title?: string
   dateMode?: InvoiceDateMode
+  showKeteranganColumn?: boolean
 }
 
 // API Response types

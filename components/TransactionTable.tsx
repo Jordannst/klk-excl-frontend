@@ -45,6 +45,7 @@ interface TransactionTableProps {
   title?: string
   invoiceId?: number | null
   dateMode?: InvoiceDateMode
+  showKeteranganColumn?: boolean
 }
 
 export function TransactionTable({
@@ -53,6 +54,7 @@ export function TransactionTable({
   title,
   invoiceId,
   dateMode,
+  showKeteranganColumn,
 }: TransactionTableProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [editingId, setEditingId] = React.useState<number | null>(null)
@@ -63,6 +65,9 @@ export function TransactionTable({
   const [currentDateMode, setCurrentDateMode] = React.useState<InvoiceDateMode>(() =>
     normalizeInvoiceDateMode(dateMode)
   )
+  const [currentShowKeteranganColumn, setCurrentShowKeteranganColumn] = React.useState<boolean>(
+    showKeteranganColumn !== false
+  )
 
   const updateTransaksiMutation = useUpdateTransaksi()
   const updateInvoiceMutation = useUpdateInvoice()
@@ -71,10 +76,15 @@ export function TransactionTable({
     setCurrentDateMode(normalizeInvoiceDateMode(dateMode))
   }, [dateMode])
 
+  React.useEffect(() => {
+    setCurrentShowKeteranganColumn(showKeteranganColumn !== false)
+  }, [showKeteranganColumn])
+
   const isSelectedInvoiceDetail = invoiceId !== null && invoiceId !== undefined
   const showDateColumn = isDateColumnVisible(currentDateMode)
   const canEditRowDate = isDateInputEnabled(currentDateMode)
   const summaryLabelColSpan = showDateColumn ? 9 : 8
+  const trailingSummaryCells = currentShowKeteranganColumn ? 2 : 1
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("id-ID")
@@ -127,6 +137,34 @@ export function TransactionTable({
     } catch (error: unknown) {
       setCurrentDateMode(previousMode)
       const errorMessage = error instanceof Error ? error.message : "Gagal memperbarui mode tanggal invoice"
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        toast.error(axiosError.response?.data?.error || errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
+    }
+  }
+
+  const handleKeteranganColumnChange = async (nextValue: boolean) => {
+    if (!isSelectedInvoiceDetail || !invoiceId || nextValue === currentShowKeteranganColumn || updateInvoiceMutation.isPending) {
+      return
+    }
+
+    const previousValue = currentShowKeteranganColumn
+    setCurrentShowKeteranganColumn(nextValue)
+
+    try {
+      await updateInvoiceMutation.mutateAsync({
+        id: invoiceId,
+        payload: {
+          showKeteranganColumn: nextValue,
+        },
+      })
+      toast.success("Visibilitas kolom Ket berhasil diperbarui")
+    } catch (error: unknown) {
+      setCurrentShowKeteranganColumn(previousValue)
+      const errorMessage = error instanceof Error ? error.message : "Gagal memperbarui visibilitas kolom Ket"
       if (typeof error === "object" && error !== null && "response" in error) {
         const axiosError = error as { response?: { data?: { error?: string } } }
         toast.error(axiosError.response?.data?.error || errorMessage)
@@ -211,7 +249,7 @@ export function TransactionTable({
       Min: item.min || "",
       Tarif: formatNumber(item.tarif || 0),
       Jumlah: formatNumber(item.total),
-      Ket: item.keterangan || "",
+      ...(currentShowKeteranganColumn ? { Ket: item.keterangan || "" } : {}),
     }))
 
     const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
@@ -225,7 +263,7 @@ export function TransactionTable({
       Min: "",
       Tarif: "",
       Jumlah: formatNumber(totalRevenue),
-      Ket: "",
+      ...(currentShowKeteranganColumn ? { Ket: "" } : {}),
     })
 
     // Create workbook and worksheet
@@ -260,7 +298,7 @@ export function TransactionTable({
               <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
               <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
               <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
-              <th style="border: 1px solid #000; padding: 6px;">Ket</th>
+              ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 6px;">Ket</th>' : ""}
             </tr>
           </thead>
           <tbody>
@@ -279,22 +317,22 @@ export function TransactionTable({
                   <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.min || ""}</td>
                   <td style="border: 1px solid #000; padding: 4px; text-align: right;">${escapeHtml((item.tarif || 0).toLocaleString("id-ID"))}</td>
                   <td style="border: 1px solid #000; padding: 4px; text-align: right;">${escapeHtml(item.total.toLocaleString("id-ID"))}</td>
-                  <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.keterangan || "")}</td>
+                  ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.keterangan || "")}</td>` : ""}
                 </tr>
               `
             }).join("")}
           </tbody>
           <tfoot>
             <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
-              <td colspan="${showDateColumn ? 9 : 8}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
+              <td colspan="${summaryLabelColSpan}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${totalRevenue.toLocaleString("id-ID")}</td>
-              <td style="border: 1px solid #000; padding: 6px;"></td>
+              ${currentShowKeteranganColumn ? '<td style="border: 1px solid #000; padding: 6px;"></td>' : ""}
             </tr>
           </tfoot>
         </table>
       </div>
     `
-  }, [data, formatVisibleDate, showDateColumn, title])
+  }, [currentShowKeteranganColumn, data, formatVisibleDate, showDateColumn, summaryLabelColSpan, title])
 
   const openPdfPreview = () => {
     if (data.length === 0) {
@@ -416,9 +454,9 @@ export function TransactionTable({
             <div className="rounded-xl border border-slate-200 bg-white/80 p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-800">Mode tanggal invoice</h3>
+                  <h3 className="text-sm font-semibold text-slate-800">Pengaturan tampilan invoice</h3>
                   <p className="text-xs text-slate-500">
-                    Atur tampilan tanggal untuk detail invoice, print, dan PDF.
+                    Atur tampilan tanggal dan kolom Ket untuk detail invoice, print/PDF, dan Excel.
                   </p>
                 </div>
                 {updateInvoiceMutation.isPending && (
@@ -428,11 +466,37 @@ export function TransactionTable({
                   </div>
                 )}
               </div>
-              <InvoiceDateModeField
-                value={currentDateMode}
-                onChange={handleDateModeChange}
-                disabled={updateInvoiceMutation.isPending}
-              />
+              <div className="space-y-4">
+                <InvoiceDateModeField
+                  value={currentDateMode}
+                  onChange={handleDateModeChange}
+                  disabled={updateInvoiceMutation.isPending}
+                />
+
+                <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Tampilkan kolom Ket</p>
+                    <p className="text-xs text-slate-500">
+                      Kolom Keterangan bersifat opsional dan setting ini disimpan per invoice.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={currentShowKeteranganColumn ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleKeteranganColumnChange(!currentShowKeteranganColumn)}
+                    disabled={updateInvoiceMutation.isPending}
+                  >
+                    {currentShowKeteranganColumn ? "Kolom Ket tampil" : "Kolom Ket disembunyikan"}
+                  </Button>
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  {currentShowKeteranganColumn
+                    ? "Kolom Ket akan ditampilkan pada detail invoice, print/PDF, dan Excel."
+                    : "Kolom Ket disembunyikan pada detail invoice, print/PDF, dan Excel, tetapi data keterangannya tetap tersimpan."}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -465,7 +529,7 @@ export function TransactionTable({
                     <TableHead className="font-bold text-slate-700 text-right">Min</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Tarif</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Total</TableHead>
-                    <TableHead className="font-bold text-slate-700">Ket</TableHead>
+                    {currentShowKeteranganColumn && <TableHead className="font-bold text-slate-700">Ket</TableHead>}
                     <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -584,18 +648,20 @@ export function TransactionTable({
                             Rp {rowTotal.toLocaleString("id-ID")}
                           </span>
                         </TableCell>
-                        <TableCell className="text-slate-600">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.keterangan || ""}
-                              placeholder="Ket..."
-                              className="w-24"
-                              onChange={(e) => handleEditChange("keterangan", e.target.value)}
-                            />
-                          ) : (
-                            item.keterangan || "-"
-                          )}
-                        </TableCell>
+                        {currentShowKeteranganColumn && (
+                          <TableCell className="text-slate-600">
+                            {isEditing ? (
+                              <Input
+                                value={draft?.keterangan || ""}
+                                placeholder="Ket..."
+                                className="w-24"
+                                onChange={(e) => handleEditChange("keterangan", e.target.value)}
+                              />
+                            ) : (
+                              item.keterangan || "-"
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">
                           {isEditing ? (
                             <div className="flex items-center justify-center gap-1">
@@ -646,8 +712,9 @@ export function TransactionTable({
                         Rp {data.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
                       </span>
                     </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
+                    {Array.from({ length: trailingSummaryCells }, (_, index) => (
+                      <TableCell key={index}></TableCell>
+                    ))}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -663,6 +730,7 @@ export function TransactionTable({
         data={data}
         invoiceTitle={title}
         dateMode={currentDateMode}
+        showKeteranganColumn={currentShowKeteranganColumn}
         invoiceKey={invoiceId ? String(invoiceId) : title || "new-invoice"}
       />
 
