@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local worktrees used for isolated feature work:
+    ".worktrees/**",
   ]),
 ]);
 

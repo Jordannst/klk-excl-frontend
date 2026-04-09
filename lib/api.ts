@@ -29,9 +29,11 @@ const getApiBaseUrl = () => {
   return url.endsWith('/api') ? url : `${url}/api`
 }
 
+const apiBaseUrl = getApiBaseUrl()
+
 // Create axios instance with base URL
 const api = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,7 +48,7 @@ api.interceptors.response.use(
       // Try to refresh token
       try {
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/refresh`,
+          `${apiBaseUrl}/auth/refresh`,
           {},
           { withCredentials: true }
         )
@@ -81,7 +83,7 @@ export const invoiceApi = {
     return data
   },
 
-  // Get invoice by ID with transactions
+  // Get invoice by ID with date mode and transactions
   getById: async (id: number): Promise<Invoice> => {
     const { data } = await api.get<Invoice>(`/invoice/${id}`)
     return data

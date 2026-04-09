@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Printer, Loader2, FileText, Download, ChevronDown } from "lucide-react"
+import { X, Printer, Loader2, Download, ChevronDown } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -10,13 +10,31 @@ import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/ui/autocomplete-input"
 import { SegmentedInvoiceInput } from "@/components/ui/segmented-invoice-input"
 import { useSignatures } from "@/lib/hooks/useSignature"
+import {
+  isDateColumnVisible,
+  isDateInputEnabled,
+  normalizeInvoiceDateMode,
+  type InvoiceDateMode,
+} from "@/lib/invoice-date-mode"
 import type { Transaksi, Signature } from "@/lib/types"
+
+const escapeHtml = (value: string | number | null | undefined) => {
+  const stringValue = String(value ?? "")
+  return stringValue
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
 
 interface PrintInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
   data: Transaksi[]
   invoiceTitle?: string
+  dateMode?: InvoiceDateMode
+  invoiceKey?: string
 }
 
 interface PrintFormData {
@@ -29,7 +47,7 @@ interface PrintFormData {
   penandatanganKanan: string
 }
 
-export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: PrintInvoiceModalProps) {
+export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMode, invoiceKey }: PrintInvoiceModalProps) {
   const [isPrinting, setIsPrinting] = React.useState(false)
   const [formData, setFormData] = React.useState<PrintFormData>({
     tanggalSurat: `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
@@ -50,9 +68,38 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
   // Fetch available signatures
   const { data: signatures } = useSignatures()
 
+  const currentDateMode = normalizeInvoiceDateMode(dateMode)
+  const showDateColumn = isDateColumnVisible(currentDateMode)
+  const isDateEnabled = isDateInputEnabled(currentDateMode)
+
+  React.useEffect(() => {
+    setFormData({
+      tanggalSurat: `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
+      nomorInvoice: "",
+      namaPenerima: "",
+      lokasiPenerima: "Jakarta",
+      biayaKirimDoc: 0,
+      penandatanganKiri: "",
+      penandatanganKanan: "",
+    })
+    setBiayaKirimDocDisplay("")
+    setSelectedSignatureKiri(null)
+    setSelectedSignatureKanan(null)
+  }, [invoiceKey])
+
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
   const totalTagihan = biayaHandling + formData.biayaKirimDoc
+
+  const formatTransactionDate = (tanggal: string | null | undefined) => {
+    if (!showDateColumn || !isDateEnabled) {
+      return ""
+    }
+
+    return tanggal ? format(new Date(tanggal), "dd MMM yyyy", { locale: id }) : "-"
+  }
+
+  const getTableTotalColSpan = () => (showDateColumn ? 9 : 8)
 
   const handleChange = (field: keyof PrintFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -60,10 +107,6 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
 
   const formatRupiah = (num: number): string => {
     return num.toLocaleString("id-ID")
-  }
-
-  const parseRupiah = (value: string): number => {
-    return parseFloat(value.replace(/\./g, '')) || 0
   }
 
   const handleBiayaKirimDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +152,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Invoice - ${invoiceTitle || 'KLK Express'}</title>
+          <title>Invoice - ${escapeHtml(invoiceTitle || 'KLK Express')}</title>
           <style>
             @media print {
               @page {
@@ -306,15 +349,15 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             
             <!-- Letter Info -->
             <div class="letter-info">
-              <p>${formData.tanggalSurat}</p>
-              <p>No. ${formData.nomorInvoice}</p>
+              <p>${escapeHtml(formData.tanggalSurat)}</p>
+              <p>No. ${escapeHtml(formData.nomorInvoice)}</p>
             </div>
             
             <!-- Recipient -->
             <div class="recipient">
               <p>Kepada Yth :</p>
-              <p><strong>${formData.namaPenerima}</strong></p>
-              <p>Di. ${formData.lokasiPenerima}</p>
+              <p><strong>${escapeHtml(formData.namaPenerima)}</strong></p>
+              <p>Di. ${escapeHtml(formData.lokasiPenerima)}</p>
             </div>
             
             <!-- Intro -->
@@ -328,7 +371,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               <thead>
                 <tr>
                   <th>No</th>
-                  <th>Hari/Tgl</th>
+                  ${showDateColumn ? '<th>Hari/Tgl</th>' : ''}
                   <th>No Stt</th>
                   <th>Pengirim</th>
                   <th>Penerima</th>
@@ -344,23 +387,24 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                 ${data.map((item, index) => `
                   <tr>
                     <td class="center">${index + 1}</td>
-                    <td>${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
-                    <td>${item.noResi}</td>
-                    <td>${item.pengirim}</td>
-                    <td>${item.penerima}</td>
+                    ${showDateColumn ? `<td>${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
+                    <td>${escapeHtml(item.noResi)}</td>
+                    <td>${escapeHtml(item.pengirim)}</td>
+                    <td>${escapeHtml(item.penerima)}</td>
                     <td class="center">${item.coly}</td>
                     <td class="center">${item.berat}</td>
                     <td class="center">${item.min}</td>
-                    <td class="number">${formatRupiah(item.tarif || 0)}</td>
-                    <td class="number">${formatRupiah(item.total)}</td>
-                    <td>${item.keterangan || ""}</td>
+                    <td class="number">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
+                    <td class="number">${escapeHtml(formatRupiah(item.total))}</td>
+                    <td>${escapeHtml(item.keterangan || "")}</td>
                   </tr>
                 `).join("")}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="10" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
+                  <td colspan="${getTableTotalColSpan()}" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
                   <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
+                  <td style="border: 1px solid #000;"></td>
                 </tr>
               </tfoot>
             </table>
@@ -401,7 +445,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                   : `<div class="signature-line"></div>`
                 }
                 <p>PT. KLK Mdc</p>
-                <p class="signature-name">${formData.penandatanganKiri}</p>
+                <p class="signature-name">${escapeHtml(formData.penandatanganKiri)}</p>
               </div>
               <div class="signature-box">
                 ${selectedSignatureKanan 
@@ -409,7 +453,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                   : `<div class="signature-line"></div>`
                 }
                 <p>Diketahui,</p>
-                <p class="signature-name">${formData.penandatanganKanan}</p>
+                <p class="signature-name">${escapeHtml(formData.penandatanganKanan)}</p>
               </div>
             </div>
             
@@ -470,15 +514,15 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
           
           <!-- Letter Info -->
           <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <p style="margin-bottom: 3px;">${formData.tanggalSurat}</p>
-            <p style="margin-bottom: 3px;">No. ${formData.nomorInvoice}</p>
+            <p style="margin-bottom: 3px;">${escapeHtml(formData.tanggalSurat)}</p>
+            <p style="margin-bottom: 3px;">No. ${escapeHtml(formData.nomorInvoice)}</p>
           </div>
 
           <!-- Recipient -->
           <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
             <p style="margin-bottom: 2px;">Kepada Yth :</p>
-            <p style="margin-bottom: 2px; font-weight: bold;">${formData.namaPenerima}</p>
-            <p style="margin-bottom: 2px;">Di. ${formData.lokasiPenerima}</p>
+            <p style="margin-bottom: 2px; font-weight: bold;">${escapeHtml(formData.namaPenerima)}</p>
+            <p style="margin-bottom: 2px;">Di. ${escapeHtml(formData.lokasiPenerima)}</p>
           </div>
 
           <!-- Intro -->
@@ -492,7 +536,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
             <thead style="display: table-header-group;">
               <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>
+                ${showDateColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>' : ''}
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Pengirim</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Penerima</th>
@@ -508,23 +552,24 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
               ${data.map((item, index) => `
                 <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${index + 1}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.tanggal ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id }) : ""}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.noResi}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.pengirim}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.penerima}</td>
+                  ${showDateColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.noResi)}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.pengirim)}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.penerima)}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.coly}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.berat}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${formatRupiah(item.tarif || 0)}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${formatRupiah(item.total)}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${item.keterangan || ""}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.total))}</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.keterangan || "")}</td>
                 </tr>
               `).join("")}
             </tbody>
             <tfoot>
               <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
-                <td colspan="10" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
+                <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
                 <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
+                <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;"></td>
               </tr>
             </tfoot>
           </table>
@@ -565,7 +610,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                 : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
               }
               <p>PT. KLK Mdc</p>
-              <p style="font-weight: bold;">${formData.penandatanganKiri}</p>
+              <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKiri)}</p>
             </div>
             <div style="width: 45%; text-align: center;">
               ${selectedSignatureKanan 
@@ -573,7 +618,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle }: Print
                 : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
               }
               <p>Diketahui,</p>
-              <p style="font-weight: bold;">${formData.penandatanganKanan}</p>
+              <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKanan)}</p>
             </div>
           </div>
           
