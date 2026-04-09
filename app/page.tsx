@@ -115,6 +115,7 @@ function DashboardContent() {
                 title={selectedInvoice.title}
                 invoiceId={selectedInvoice.id}
                 dateMode={selectedInvoice.dateMode}
+                showKeteranganColumn={selectedInvoice.showKeteranganColumn}
               />
             )}
 
