@@ -150,7 +150,7 @@ const createEmptyRowValues = (
   receiver: defaults?.receiver ?? "",
   coly: 1,
   kg: 1,
-  min: 10,
+  min: 0,
   tarif: 0,
   total: 0,
   keterangan: "",
@@ -172,7 +172,7 @@ const normalizeDraftItem = (
     receiver: typeof item.receiver === "string" ? item.receiver : "",
     coly: typeof item.coly === "number" ? item.coly : 1,
     kg: typeof item.kg === "number" ? item.kg : 1,
-    min: typeof item.min === "number" ? item.min : 10,
+    min: typeof item.min === "number" ? item.min : 0,
     tarif: typeof item.tarif === "number" ? item.tarif : 0,
     total: typeof item.total === "number" ? item.total : 0,
     keterangan: typeof item.keterangan === "string" ? item.keterangan : "",
@@ -246,7 +246,7 @@ const hasPendingRowData = (
       (normalizedReceiver !== "" && !matchesDefaultReceiver) ||
       values.coly !== 1 ||
       values.kg !== 1 ||
-      values.min !== 10 ||
+      values.min !== 0 ||
       values.tarif !== 0 ||
       (values.keterangan && values.keterangan.trim() !== "")
   )
