@@ -5,12 +5,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import {
-  invoiceDateModes,
-  isDateColumnVisible,
-  isDateInputEnabled,
-  type InvoiceDateMode,
-} from "@/lib/invoice-date-mode"
+import { invoiceDateModes, type InvoiceDateMode } from "@/lib/invoice-date-mode"
 
 interface InvoiceDateModeFieldProps {
   value: InvoiceDateMode
@@ -19,22 +14,19 @@ interface InvoiceDateModeFieldProps {
   disabled?: boolean
 }
 
-const modeLabels: Record<InvoiceDateMode, string> = {
-  enabled: "Tanggal aktif",
-  "blank-column": "Kolom kosong",
-  "hidden-column": "Sembunyikan kolom",
-}
-
-function getModeDescription(mode: InvoiceDateMode) {
-  if (isDateInputEnabled(mode)) {
-    return "Setiap transaksi memakai tanggal masing-masing."
-  }
-
-  if (isDateColumnVisible(mode)) {
-    return "Kolom tanggal tetap tampil, tetapi nilainya kosong."
-  }
-
-  return "Kolom tanggal disembunyikan di draft invoice ini."
+const modeCopy: Record<InvoiceDateMode, { label: string; description: string }> = {
+  enabled: {
+    label: "Tanggal aktif",
+    description: "Setiap transaksi memakai tanggal masing-masing.",
+  },
+  "blank-column": {
+    label: "Kolom kosong",
+    description: "Kolom tanggal tetap tampil, tetapi nilainya kosong.",
+  },
+  "hidden-column": {
+    label: "Sembunyikan kolom",
+    description: "Kolom tanggal disembunyikan di draft invoice ini.",
+  },
 }
 
 export function InvoiceDateModeField({
@@ -56,6 +48,7 @@ export function InvoiceDateModeField({
       >
         {invoiceDateModes.map((mode) => {
           const isActive = mode === value
+          const { label, description } = modeCopy[mode]
 
           return (
             <Button
@@ -73,9 +66,9 @@ export function InvoiceDateModeField({
               )}
               aria-pressed={isActive}
             >
-              <span className="text-sm font-bold">{modeLabels[mode]}</span>
+              <span className="text-sm font-bold">{label}</span>
               <span className={cn("text-xs leading-relaxed", isActive ? "text-blue-100" : "text-slate-500")}>
-                {getModeDescription(mode)}
+                {description}
               </span>
             </Button>
           )
