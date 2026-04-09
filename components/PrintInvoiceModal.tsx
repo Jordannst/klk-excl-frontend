@@ -34,6 +34,7 @@ interface PrintInvoiceModalProps {
   data: Transaksi[]
   invoiceTitle?: string
   dateMode?: InvoiceDateMode
+  showKeteranganColumn?: boolean
   invoiceKey?: string
 }
 
@@ -47,7 +48,7 @@ interface PrintFormData {
   penandatanganKanan: string
 }
 
-export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMode, invoiceKey }: PrintInvoiceModalProps) {
+export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMode, showKeteranganColumn, invoiceKey }: PrintInvoiceModalProps) {
   const [isPrinting, setIsPrinting] = React.useState(false)
   const [formData, setFormData] = React.useState<PrintFormData>({
     tanggalSurat: `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
@@ -71,6 +72,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   const currentDateMode = normalizeInvoiceDateMode(dateMode)
   const showDateColumn = isDateColumnVisible(currentDateMode)
   const isDateEnabled = isDateInputEnabled(currentDateMode)
+  const currentShowKeteranganColumn = showKeteranganColumn !== false
 
   React.useEffect(() => {
     setFormData({
@@ -100,6 +102,24 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   }
 
   const getTableTotalColSpan = () => (showDateColumn ? 9 : 8)
+
+  const trailingFooterCells = currentShowKeteranganColumn ? 1 : 0
+
+  const renderFooterCellsHtml = (count: number, html: string) => {
+    return Array.from({ length: count }, () => html).join("")
+  }
+
+  const printFooterCellsHtml = renderFooterCellsHtml(
+    trailingFooterCells,
+    '<td style="border: 1px solid #000; padding: 6px;"></td>'
+  )
+
+  const pdfFooterCellsHtml = renderFooterCellsHtml(
+    trailingFooterCells,
+    '<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;"></td>'
+  )
+
+  const getKeteranganText = (value: string | null | undefined) => value || ""
 
   const handleChange = (field: keyof PrintFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -380,7 +400,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                   <th>Min</th>
                   <th>Tarif</th>
                   <th>Jumlah</th>
-                  <th>Ket</th>
+                  ${currentShowKeteranganColumn ? '<th>Ket</th>' : ''}
                 </tr>
               </thead>
               <tbody>
@@ -396,7 +416,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                     <td class="center">${item.min}</td>
                     <td class="number">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
                     <td class="number">${escapeHtml(formatRupiah(item.total))}</td>
-                    <td>${escapeHtml(item.keterangan || "")}</td>
+                    ${currentShowKeteranganColumn ? `<td>${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
                   </tr>
                 `).join("")}
               </tbody>
@@ -404,7 +424,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                 <tr>
                   <td colspan="${getTableTotalColSpan()}" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
                   <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
-                  <td style="border: 1px solid #000;"></td>
+                  ${printFooterCellsHtml}
                 </tr>
               </tfoot>
             </table>
@@ -545,7 +565,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Min</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Tarif</th>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Jumlah</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>
+                ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>' : ''}
               </tr>
             </thead>
             <tbody>
@@ -561,7 +581,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.total))}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.keterangan || "")}</td>
+                  ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
                 </tr>
               `).join("")}
             </tbody>
@@ -569,7 +589,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
                 <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
                 <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
-                <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;"></td>
+                ${pdfFooterCellsHtml}
               </tr>
             </tfoot>
           </table>

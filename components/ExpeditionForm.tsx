@@ -48,6 +48,7 @@ const formSchema = z
         return false
       }
     }, "Mode tanggal tidak valid"),
+    showKeteranganColumn: z.boolean(),
     date: z.string(),
     stt: z.string().min(3, "Nomor STT wajib diisi"),
     sender: z.string().min(2, "Nama pengirim minimal 2 karakter"),
@@ -83,6 +84,7 @@ type DraftStorageShape = {
   items?: unknown
   title?: unknown
   dateMode?: unknown
+  showKeteranganColumn?: unknown
   defaultSender?: unknown
   defaultReceiver?: unknown
 }
@@ -128,14 +130,20 @@ const normalizeDraftPartyDefaults = (sender: unknown, receiver: unknown): DraftP
   }
 }
 
+const normalizeShowKeteranganColumn = (value: unknown) => {
+  return typeof value === "boolean" ? value : true
+}
+
 const createEmptyRowValues = (
   title: string,
   dateMode: InvoiceDateMode,
   date?: string | null,
-  defaults?: DraftPartyDefaults | null
+  defaults?: DraftPartyDefaults | null,
+  showKeteranganColumn = true
 ): ExpeditionFormData => ({
   title,
   dateMode,
+  showKeteranganColumn,
   date: isDateInputEnabled(dateMode) ? date || createDefaultRowDate() : "",
   stt: "",
   sender: defaults?.sender ?? "",
@@ -157,6 +165,7 @@ const normalizeDraftItem = (
   return {
     title: typeof item.title === "string" ? item.title : "",
     dateMode,
+    showKeteranganColumn: normalizeShowKeteranganColumn((item as Partial<ExpeditionFormData> & { showKeteranganColumn?: unknown }).showKeteranganColumn),
     date: getStoredRowDate(item.date),
     stt: typeof item.stt === "string" ? item.stt : "",
     sender: typeof item.sender === "string" ? item.sender : "",
@@ -268,10 +277,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     formState: { errors },
   } = useForm<ExpeditionFormInput, unknown, ExpeditionFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate()),
+    defaultValues: createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate(), null, true),
   })
 
   const currentDateMode = watch("dateMode")
+  const currentShowKeteranganColumn = watch("showKeteranganColumn")
   const currentDate = watch("date")
   const titleValue = watch("title")
   const sttValue = watch("stt")
@@ -285,6 +295,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const isDraftPartyLocked = Boolean(draftPartyDefaults)
   const isDateEnabled = isDateInputEnabled(currentDateMode)
   const showDraftDateColumn = isDateColumnVisible(currentDateMode)
+  const showDraftKeteranganColumn = currentShowKeteranganColumn !== false
   const grandTotalLabelColSpan = showDraftDateColumn ? 7 : 6
 
   React.useEffect(() => {
@@ -313,10 +324,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         : createDefaultDraftTitle()
       const draftItems = normalizeDraftItems(parsed?.items, draftDateMode)
       const storedDefaults = normalizeDraftPartyDefaults(parsed?.defaultSender, parsed?.defaultReceiver)
+      const storedShowKeteranganColumn = normalizeShowKeteranganColumn(parsed?.showKeteranganColumn)
 
       setTemporaryItems(draftItems)
       setDraftPartyDefaults(storedDefaults)
-      reset(createEmptyRowValues(draftTitle, draftDateMode, createDefaultRowDate(), storedDefaults))
+      reset(createEmptyRowValues(draftTitle, draftDateMode, createDefaultRowDate(), storedDefaults, storedShowKeteranganColumn))
     } catch (error) {
       console.warn("Failed to parse draft from localStorage", error)
     }
@@ -385,11 +397,12 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         })),
         title: titleValue,
         dateMode: currentDateMode,
+        showKeteranganColumn: currentShowKeteranganColumn,
         defaultSender: draftPartyDefaults?.sender ?? null,
         defaultReceiver: draftPartyDefaults?.receiver ?? null,
       })
     )
-  }, [temporaryItems, titleValue, currentDateMode, draftPartyDefaults])
+  }, [temporaryItems, titleValue, currentDateMode, currentShowKeteranganColumn, draftPartyDefaults])
 
   const handleTarifChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cleanedValue = e.target.value.replace(/\D/g, "")
@@ -413,9 +426,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
 
   const resetFormForNextRow = React.useCallback(
     (title: string, dateMode: InvoiceDateMode, date?: string | null) => {
-      reset(createEmptyRowValues(title, dateMode, date, draftPartyDefaults))
+      reset(createEmptyRowValues(title, dateMode, date, draftPartyDefaults, currentShowKeteranganColumn))
     },
-    [draftPartyDefaults, reset]
+    [currentShowKeteranganColumn, draftPartyDefaults, reset]
   )
 
   const handleLockDraftParties = () => {
@@ -477,6 +490,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
       ...data,
       title: normalizedTitle,
       dateMode,
+      showKeteranganColumn: currentShowKeteranganColumn,
       date: nextStoredDate,
       stt: normalizedStt,
       total: calculatedTotal,
@@ -517,6 +531,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     reset({
       title: titleValue || item.title || createDefaultDraftTitle(),
       dateMode: itemDateMode,
+      showKeteranganColumn: currentShowKeteranganColumn,
       date: getRowDateValue(itemDateMode, item.date),
       stt: item.stt,
       sender: item.sender,
@@ -581,6 +596,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     const payload: CreateInvoicePayload = {
       title: titleValue,
       dateMode: currentDateMode,
+      showKeteranganColumn: currentShowKeteranganColumn,
       transactions: temporaryItems.map((item) => ({
         tanggal: currentDateMode === "enabled" ? getStoredRowDate(item.date) || null : null,
         pengirim: item.sender,
@@ -608,7 +624,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         localStorage.removeItem(DRAFT_STORAGE_KEY)
       }
 
-      reset(createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate()))
+      reset(createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate(), null, true))
       setTarifDisplay("")
       setEditingStt(null)
 
@@ -653,10 +669,35 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
             {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
           </div>
 
-          <InvoiceDateModeField
-            value={currentDateMode}
-            onChange={(value) => setValue("dateMode", value, { shouldValidate: true })}
-          />
+          <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+            <InvoiceDateModeField
+              value={currentDateMode}
+              onChange={(value) => setValue("dateMode", value, { shouldValidate: true })}
+            />
+
+            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Tampilkan kolom Ket</p>
+                <p className="text-xs text-slate-500">
+                  Kolom Keterangan bersifat opsional dan pengaturan ini akan disimpan untuk invoice ini.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={showDraftKeteranganColumn ? "default" : "outline"}
+                size="sm"
+                onClick={() => setValue("showKeteranganColumn", !showDraftKeteranganColumn, { shouldValidate: true })}
+              >
+                {showDraftKeteranganColumn ? "Kolom Ket tampil" : "Kolom Ket disembunyikan"}
+              </Button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              {showDraftKeteranganColumn
+                ? "Kolom Ket akan ditampilkan pada draft, detail invoice, print/PDF, dan Excel."
+                : "Kolom Ket disembunyikan pada draft, detail invoice, print/PDF, dan Excel, tetapi data keterangannya tetap tersimpan."}
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -907,7 +948,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                       <TableHead className="text-right font-bold text-slate-700">Coly</TableHead>
                       <TableHead className="text-right font-bold text-slate-700">Kg</TableHead>
                       <TableHead className="text-right font-bold text-slate-700">Total</TableHead>
-                      <TableHead className="font-bold text-slate-700">Ket</TableHead>
+                      {showDraftKeteranganColumn && (
+                        <TableHead className="font-bold text-slate-700">Ket</TableHead>
+                      )}
                       <TableHead className="text-center font-bold text-slate-700">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -928,7 +971,9 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                         <TableCell className="text-right">
                           <span className="font-bold text-emerald-600">Rp {item.total.toLocaleString("id-ID")}</span>
                         </TableCell>
-                        <TableCell className="text-slate-600">{item.keterangan || "-"}</TableCell>
+                        {showDraftKeteranganColumn && (
+                          <TableCell className="text-slate-600">{item.keterangan || "-"}</TableCell>
+                        )}
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-1">
                             <Button
@@ -960,7 +1005,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
                       <TableCell className="text-right">
                         <span className="text-xl text-emerald-700">Rp {grandTotal.toLocaleString("id-ID")}</span>
                       </TableCell>
-                      <TableCell></TableCell>
+                      {showDraftKeteranganColumn ? <TableCell></TableCell> : null}
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
