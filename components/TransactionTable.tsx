@@ -80,28 +80,23 @@ export function TransactionTable({
     return num.toLocaleString("id-ID")
   }
 
+  const formatVisibleDate = React.useCallback(
+    (tanggal: string | null | undefined, emptyText = "-"): string => {
+      if (!showDateColumn || !canEditRowDate) {
+        return ""
+      }
+
+      return tanggal ? format(new Date(tanggal), "dd MMM yyyy", { locale: id }) : emptyText
+    },
+    [canEditRowDate, showDateColumn]
+  )
+
   const formatTableDate = (tanggal: string | null | undefined): string => {
-    if (!showDateColumn) {
-      return ""
-    }
-
-    if (!canEditRowDate) {
-      return ""
-    }
-
-    return tanggal ? format(new Date(tanggal), "dd MMM yyyy", { locale: id }) : "-"
+    return formatVisibleDate(tanggal)
   }
 
   const formatOutputDate = (tanggal: string | null | undefined): string => {
-    if (!showDateColumn) {
-      return ""
-    }
-
-    if (!canEditRowDate) {
-      return ""
-    }
-
-    return tanggal ? format(new Date(tanggal), "dd MMM yyyy", { locale: id }) : "-"
+    return formatVisibleDate(tanggal)
   }
 
   const getDraftTotal = (item: Transaksi) => {
@@ -270,13 +265,7 @@ export function TransactionTable({
           </thead>
           <tbody>
             ${data.map((item, index) => {
-              const outputDate = !showDateColumn
-                ? ""
-                : !canEditRowDate
-                  ? ""
-                  : item.tanggal
-                    ? format(new Date(item.tanggal), "dd MMM yyyy", { locale: id })
-                    : ""
+              const outputDate = formatVisibleDate(item.tanggal, "")
 
               return `
                 <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
@@ -305,7 +294,7 @@ export function TransactionTable({
         </table>
       </div>
     `
-  }, [canEditRowDate, data, showDateColumn, title])
+  }, [data, formatVisibleDate, showDateColumn, title])
 
   const openPdfPreview = () => {
     if (data.length === 0) {
