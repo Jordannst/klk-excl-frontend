@@ -12,6 +12,7 @@ interface AutocompleteInputProps {
   placeholder?: string
   className?: string
   id?: string
+  disabled?: boolean
 }
 
 export function AutocompleteInput({
@@ -21,6 +22,7 @@ export function AutocompleteInput({
   placeholder,
   className,
   id,
+  disabled = false,
 }: AutocompleteInputProps) {
   const [suggestions, setSuggestions] = React.useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = React.useState(false)
@@ -43,6 +45,12 @@ export function AutocompleteInput({
 
   // Filter suggestions based on input
   React.useEffect(() => {
+    if (disabled) {
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+      return
+    }
+
     if (value.length > 0) {
       const filtered = suggestions.filter((s) =>
         s.toLowerCase().includes(value.toLowerCase())
@@ -52,7 +60,7 @@ export function AutocompleteInput({
       setFilteredSuggestions(suggestions.slice(0, 5)) // Show last 5 when empty
     }
     setSelectedIndex(-1) // Reset selection when suggestions change
-  }, [value, suggestions])
+  }, [disabled, value, suggestions])
 
   // Save new value to localStorage
   const saveToHistory = (newValue: string) => {
@@ -80,6 +88,8 @@ export function AutocompleteInput({
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return
+
     onChange(e.target.value)
     setShowSuggestions(true)
   }
@@ -105,10 +115,14 @@ export function AutocompleteInput({
   }
 
   const handleFocus = () => {
+    if (disabled) return
+
     setShowSuggestions(true)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return
+
     if (e.key === "Escape") {
       setShowSuggestions(false)
       setSelectedIndex(-1)
@@ -161,9 +175,11 @@ export function AutocompleteInput({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          disabled={disabled}
           className={cn(
             "pr-10 transition-all duration-200",
             showSuggestions && filteredSuggestions.length > 0 && "rounded-b-none border-b-transparent ring-1 ring-blue-100",
+            disabled && "cursor-not-allowed bg-slate-100 text-slate-500",
             className
           )}
           autoComplete="off"
