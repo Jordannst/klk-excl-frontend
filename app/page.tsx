@@ -109,10 +109,12 @@ function DashboardContent() {
 
             {/* Show selected invoice transactions */}
             {!showForm && !isLoadingInvoice && selectedInvoice && (
-              <TransactionTable 
-                data={selectedInvoice.transactions} 
+              <TransactionTable
+                data={selectedInvoice.transactions}
                 onRefresh={handleRefresh}
                 title={selectedInvoice.title}
+                invoiceId={selectedInvoice.id}
+                dateMode={selectedInvoice.dateMode}
               />
             )}
 

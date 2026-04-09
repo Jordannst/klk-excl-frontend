@@ -1,8 +1,12 @@
 // Backend API Types - synchronized with Prisma schema
 
+import type { InvoiceDateMode } from './invoice-date-mode'
+
+export type { InvoiceDateMode } from './invoice-date-mode'
+
 export interface Transaksi {
   id: number
-  tanggal: string  // ISO date string
+  tanggal: string | null // ISO date string when present
   pengirim: string
   penerima: string
   coly: number
@@ -22,6 +26,7 @@ export interface Invoice {
   createdAt: string
   total: number
   count: number
+  dateMode: InvoiceDateMode
   transactions: Transaksi[]
 }
 
@@ -46,7 +51,7 @@ export interface TrashInvoiceItem {
 
 // Request payloads
 export interface CreateTransaksiPayload {
-  tanggal: string
+  tanggal?: string | null
   pengirim: string
   penerima: string
   coly: number
@@ -55,12 +60,12 @@ export interface CreateTransaksiPayload {
   tarif: number
   total: number
   noResi: string
-  keterangan?: string
-  invoiceId?: number
+  keterangan?: string | null
+  invoiceId?: number | null
 }
 
 export interface UpdateTransaksiPayload {
-  tanggal?: string
+  tanggal?: string | null
   pengirim?: string
   penerima?: string
   coly?: number
@@ -69,16 +74,18 @@ export interface UpdateTransaksiPayload {
   tarif?: number
   total?: number
   noResi?: string
-  keterangan?: string
+  keterangan?: string | null
 }
 
 export interface CreateInvoicePayload {
   title: string
+  dateMode?: InvoiceDateMode
   transactions: CreateTransaksiPayload[]
 }
 
 export interface UpdateInvoicePayload {
-  title: string
+  title?: string
+  dateMode?: InvoiceDateMode
 }
 
 // API Response types
@@ -102,4 +109,3 @@ export interface CreateSignaturePayload {
   label: string
   imageData: string
 }
-
