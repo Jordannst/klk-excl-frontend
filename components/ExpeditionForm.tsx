@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useCreateInvoice } from "@/lib/hooks"
+import { useCreateInvoice, useCreateTransaksi, useUpdateInvoice } from "@/lib/hooks"
 import {
   getDateCellText,
   isDateColumnVisible,
@@ -252,11 +252,20 @@ const hasPendingRowData = (
   )
 }
 
+type ExpeditionFormMode = "create" | "append"
+
 interface ExpeditionFormProps {
+  mode?: ExpeditionFormMode
+  invoice?: Invoice
   onSubmitSuccess?: (invoice: Invoice) => void
 }
 
-export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
+export function ExpeditionForm({
+  mode = "create",
+  invoice,
+  onSubmitSuccess,
+}: ExpeditionFormProps) {
+  const isAppendMode = mode === "append"
   const [temporaryItems, setTemporaryItems] = React.useState<ExpeditionFormData[]>([])
   const [editingStt, setEditingStt] = React.useState<string | null>(null)
   const [tarifDisplay, setTarifDisplay] = React.useState<string>("")
@@ -266,6 +275,12 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   const preservedEditingDateRef = React.useRef<string>("")
 
   const createInvoiceMutation = useCreateInvoice()
+  const updateInvoiceMutation = useUpdateInvoice()
+  const createTransaksiMutation = useCreateTransaksi()
+  const isSubmitting =
+    createInvoiceMutation.isPending ||
+    updateInvoiceMutation.isPending ||
+    createTransaksiMutation.isPending
 
   const {
     register,
@@ -277,7 +292,13 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     formState: { errors },
   } = useForm<ExpeditionFormInput, unknown, ExpeditionFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: createEmptyRowValues(createDefaultDraftTitle(), "enabled", createDefaultRowDate(), null, true),
+    defaultValues: createEmptyRowValues(
+      invoice?.title ?? createDefaultDraftTitle(),
+      invoice?.dateMode ?? "enabled",
+      createDefaultRowDate(),
+      null,
+      invoice?.showKeteranganColumn ?? true
+    ),
   })
 
   const currentDateMode = watch("dateMode")
@@ -311,6 +332,10 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   }, [setFocus])
 
   React.useEffect(() => {
+    if (isAppendMode) {
+      return
+    }
+
     const stored = typeof window !== "undefined" ? localStorage.getItem(DRAFT_STORAGE_KEY) : null
     if (!stored) {
       return
@@ -332,7 +357,30 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     } catch (error) {
       console.warn("Failed to parse draft from localStorage", error)
     }
-  }, [reset])
+  }, [isAppendMode, reset])
+
+  React.useEffect(() => {
+    if (!isAppendMode || !invoice) return
+
+    const nextDate = isDateInputEnabled(invoice.dateMode) ? createDefaultRowDate() : ""
+    setTemporaryItems([])
+    setDraftPartyDefaults(null)
+    setEditingStt(null)
+    setTarifDisplay("")
+    preservedCreateDateRef.current = nextDate || createDefaultRowDate()
+    preservedEditingDateRef.current = ""
+    reset(createEmptyRowValues(
+      invoice.title,
+      invoice.dateMode,
+      nextDate,
+      null,
+      invoice.showKeteranganColumn
+    ))
+  }, [
+    isAppendMode,
+    invoice,
+    reset,
+  ])
 
   React.useEffect(() => {
     if (!isDateEnabled || !currentDate) {
@@ -385,7 +433,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   }, [currentDateMode, temporaryItems.length])
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return
+    if (isAppendMode || typeof window === "undefined") return
 
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
@@ -402,7 +450,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
         defaultReceiver: draftPartyDefaults?.receiver ?? null,
       })
     )
-  }, [temporaryItems, titleValue, currentDateMode, currentShowKeteranganColumn, draftPartyDefaults])
+  }, [isAppendMode, temporaryItems, titleValue, currentDateMode, currentShowKeteranganColumn, draftPartyDefaults])
 
   const handleTarifChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cleanedValue = e.target.value.replace(/\D/g, "")
@@ -555,6 +603,65 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
     focusSttField(setFocus)
   }
 
+  const buildTransactionPayloads = (items: ExpeditionFormData[], invoiceId: number) =>
+    items.map((item) => ({
+      tanggal: currentDateMode === "enabled" ? getStoredRowDate(item.date) || null : null,
+      pengirim: item.sender,
+      penerima: item.receiver,
+      coly: item.coly,
+      berat: item.kg,
+      min: item.min,
+      tarif: item.tarif,
+      total: item.total,
+      noResi: item.stt,
+      keterangan: item.keterangan || undefined,
+      invoiceId,
+    }))
+
+  const handleAppendToInvoice = async () => {
+    if (!invoice) {
+      toast.error("Invoice belum dipilih")
+      return
+    }
+
+    try {
+      const updatedInvoice = await updateInvoiceMutation.mutateAsync({
+        id: invoice.id,
+        payload: {
+          title: titleValue.trim(),
+          dateMode: currentDateMode,
+          showKeteranganColumn: currentShowKeteranganColumn,
+        },
+      })
+
+      const transactionPayloads = buildTransactionPayloads(temporaryItems, invoice.id)
+
+      for (const payload of transactionPayloads) {
+        await createTransaksiMutation.mutateAsync(payload)
+      }
+
+      toast.success("Invoice berhasil dilanjutkan", {
+        description: `${temporaryItems.length} transaksi baru ditambahkan`,
+      })
+
+      setTemporaryItems([])
+      setDraftPartyDefaults(null)
+      reset(createEmptyRowValues(updatedInvoice.title, updatedInvoice.dateMode, createDefaultRowDate(), null, updatedInvoice.showKeteranganColumn))
+      setTarifDisplay("")
+      setEditingStt(null)
+
+      onSubmitSuccess?.(updatedInvoice)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Gagal melanjutkan invoice"
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        toast.error(axiosError.response?.data?.error || errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
+    }
+  }
+
   const handleSaveReport = async () => {
     const hasFormData = hasPendingRowData(
       {
@@ -590,6 +697,11 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
 
     if (currentDateMode === "enabled" && temporaryItems.some((item) => !item.date)) {
       toast.error("Semua tanggal transaksi harus diisi saat mode tanggal aktif")
+      return
+    }
+
+    if (isAppendMode) {
+      await handleAppendToInvoice()
       return
     }
 
@@ -648,8 +760,12 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
   return (
     <Card className="w-full shadow-md border-t-4 border-t-blue-600">
       <CardHeader>
-        <CardTitle>Input Transaksi / STT</CardTitle>
-        <CardDescription>Masukkan data pengiriman baru (Batch Input)</CardDescription>
+        <CardTitle>{isAppendMode ? "Lanjutkan Invoice" : "Input Transaksi / STT"}</CardTitle>
+        <CardDescription>
+          {isAppendMode
+            ? "Tambahkan transaksi baru ke invoice yang sudah tersimpan"
+            : "Masukkan data pengiriman baru (Batch Input)"}
+        </CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -1020,10 +1136,10 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
             <Button
               type="button"
               onClick={handleSaveReport}
-              disabled={createInvoiceMutation.isPending}
+              disabled={isSubmitting}
               className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50"
             >
-              {createInvoiceMutation.isPending ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                   Menyimpan...
@@ -1031,7 +1147,7 @@ export function ExpeditionForm({ onSubmitSuccess }: ExpeditionFormProps) {
               ) : (
                 <>
                   <Save className="mr-2 h-6 w-6" />
-                  SIMPAN LAPORAN SELESAI
+                  {isAppendMode ? "TAMBAHKAN KE INVOICE" : "SIMPAN LAPORAN SELESAI"}
                 </>
               )}
             </Button>

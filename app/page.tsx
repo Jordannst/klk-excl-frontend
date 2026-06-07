@@ -17,6 +17,7 @@ function DashboardContent() {
   const [selectedInvoiceId, setSelectedInvoiceId] = React.useState<number | null>(null)
   const [showForm, setShowForm] = React.useState(true)
   const [formKey, setFormKey] = React.useState(0)
+  const [isContinuingInvoice, setIsContinuingInvoice] = React.useState(false)
   const formRef = React.useRef<HTMLDivElement>(null)
 
   // Fetch selected invoice details
@@ -33,7 +34,14 @@ function DashboardContent() {
     setShowForm(false)
   }
 
+  const handleInvoiceContinued = (invoice: Invoice) => {
+    setSelectedInvoiceId(invoice.id)
+    setIsContinuingInvoice(false)
+    setShowForm(false)
+  }
+
   const handleCreateNew = () => {
+    setIsContinuingInvoice(false)
     setShowForm(true)
     // Reset form dengan mengubah key
     setFormKey((prev) => prev + 1)
@@ -48,7 +56,20 @@ function DashboardContent() {
 
   const handleSelectInvoice = (id: number) => {
     setSelectedInvoiceId(id)
+    setIsContinuingInvoice(false)
     setShowForm(false)
+  }
+
+  const handleContinueInvoice = () => {
+    if (!selectedInvoice) return
+
+    setIsContinuingInvoice(true)
+    setShowForm(true)
+    setFormKey((prev) => prev + 1)
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
   const handleRefresh = () => {
@@ -92,7 +113,12 @@ function DashboardContent() {
           <div className="lg:col-span-3 space-y-6">
             {showForm && (
               <div ref={formRef}>
-                <ExpeditionForm key={formKey} onSubmitSuccess={handleInvoiceCreated} />
+                <ExpeditionForm
+                  key={formKey}
+                  mode={isContinuingInvoice ? "append" : "create"}
+                  invoice={isContinuingInvoice ? selectedInvoice ?? undefined : undefined}
+                  onSubmitSuccess={isContinuingInvoice ? handleInvoiceContinued : handleInvoiceCreated}
+                />
                 <div className="flex items-center mt-6">
                   <Separator />
                 </div>
@@ -109,14 +135,26 @@ function DashboardContent() {
 
             {/* Show selected invoice transactions */}
             {!showForm && !isLoadingInvoice && selectedInvoice && (
-              <TransactionTable
-                data={selectedInvoice.transactions}
-                onRefresh={handleRefresh}
-                title={selectedInvoice.title}
-                invoiceId={selectedInvoice.id}
-                dateMode={selectedInvoice.dateMode}
-                showKeteranganColumn={selectedInvoice.showKeteranganColumn}
-              />
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleContinueInvoice}
+                    variant="outline"
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Lanjutkan Invoice
+                  </Button>
+                </div>
+                <TransactionTable
+                  data={selectedInvoice.transactions}
+                  onRefresh={handleRefresh}
+                  title={selectedInvoice.title}
+                  invoiceId={selectedInvoice.id}
+                  dateMode={selectedInvoice.dateMode}
+                  showKeteranganColumn={selectedInvoice.showKeteranganColumn}
+                />
+              </div>
             )}
 
             {/* Empty state when no invoice selected and form hidden */}
