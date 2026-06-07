@@ -37,8 +37,13 @@ export function useCreateTransaksi() {
 
   return useMutation({
     mutationFn: (payload: CreateTransaksiPayload) => transaksiApi.create(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: transaksiKeys.lists() })
+
+      if (data.invoiceId) {
+        queryClient.invalidateQueries({ queryKey: invoiceKeys.detail(data.invoiceId) })
+        queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() })
+      }
     },
   })
 }
