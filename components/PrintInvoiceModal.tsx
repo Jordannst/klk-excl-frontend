@@ -554,7 +554,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <!-- Table -->
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
             <thead style="display: table-header-group;">
-              <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
+              <tr>
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
                 ${showDateColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>' : ''}
                 <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
@@ -570,7 +570,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             </thead>
             <tbody>
               ${data.map((item, index) => `
-                <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
+                <tr>
                   <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${index + 1}</td>
                   ${showDateColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
                   <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.noResi)}</td>
@@ -585,8 +585,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                 </tr>
               `).join("")}
             </tbody>
-            <tfoot>
-              <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
+            <tfoot style="display: table-row-group;">
+              <tr>
                 <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
                 <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
                 ${pdfFooterCellsHtml}
@@ -665,8 +665,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         image: { type: 'png' as const, quality: 1 },
         html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'] as const,
-          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
+          mode: ['css', 'legacy'] as const,
+          avoid: ['.pdf-keep-together']
         },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       }

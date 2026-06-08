@@ -287,7 +287,7 @@ export function TransactionTable({
         <p class="pdf-keep-together" style="margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <thead style="display: table-header-group;">
-            <tr class="pdf-keep-together" style="background-color: #f0f0f0; break-inside: avoid; page-break-inside: avoid;">
+            <tr style="background-color: #f0f0f0;">
               <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
               ${showDateColumn ? '<th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>' : ""}
               <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
@@ -306,7 +306,7 @@ export function TransactionTable({
               const outputDate = formatVisibleDate(item.tanggal, "")
 
               return `
-                <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
+                <tr>
                   <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
                   ${showDateColumn ? `<td style="border: 1px solid #000; padding: 4px;">${escapeHtml(outputDate)}</td>` : ""}
                   <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.noResi)}</td>
@@ -322,8 +322,8 @@ export function TransactionTable({
               `
             }).join("")}
           </tbody>
-          <tfoot>
-            <tr class="pdf-keep-together" style="break-inside: avoid; page-break-inside: avoid;">
+          <tfoot style="display: table-row-group;">
+            <tr>
               <td colspan="${summaryLabelColSpan}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${totalRevenue.toLocaleString("id-ID")}</td>
               ${currentShowKeteranganColumn ? '<td style="border: 1px solid #000; padding: 6px;"></td>' : ""}
@@ -368,8 +368,8 @@ export function TransactionTable({
         image: { type: 'png' as const, quality: 1 },
       html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'] as const,
-          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
+          mode: ['css', 'legacy'] as const,
+          avoid: ['.pdf-keep-together']
         },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'landscape' as const }
       }
