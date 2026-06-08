@@ -662,7 +662,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       const opt = {
         margin: 10,
         filename: `${sanitizedTitle}.pdf`,
-        image: { type: 'png', quality: 1 } as unknown as { type: 'jpeg'; quality: 1 },
+        image: { type: 'png' as const, quality: 1 },
         html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
           mode: ['avoid-all', 'css', 'legacy'] as const,
