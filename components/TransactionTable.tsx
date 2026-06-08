@@ -365,7 +365,7 @@ export function TransactionTable({
       const opt = {
         margin: 10,
         filename: `${title || "Perhitungan_Pengiriman_Barang"}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
-        image: { type: 'png', quality: 1 } as unknown as { type: 'jpeg'; quality: 1 },
+        image: { type: 'png' as const, quality: 1 },
       html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
           mode: ['avoid-all', 'css', 'legacy'] as const,
