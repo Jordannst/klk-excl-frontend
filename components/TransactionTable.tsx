@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Check, X, Loader2 } from "lucide-react"
+import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { EditTransactionDialog } from "@/components/EditTransactionDialog"
 import { InvoiceDateModeField } from "@/components/InvoiceDateModeField"
 import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
 import { useUpdateInvoice, useUpdateTransaksi } from "@/lib/hooks"
@@ -27,7 +27,7 @@ import {
   normalizeInvoiceDateMode,
   type InvoiceDateMode,
 } from "@/lib/invoice-date-mode"
-import type { Transaksi } from "@/lib/types"
+import type { Transaksi, UpdateTransaksiPayload } from "@/lib/types"
 
 const escapeHtml = (value: string | number | null | undefined) => {
   const stringValue = String(value ?? "")
@@ -37,6 +37,19 @@ const escapeHtml = (value: string | number | null | undefined) => {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;")
+}
+
+const chunkRows = <T,>(rows: T[], firstPageSize: number, nextPageSize: number) => {
+  if (rows.length <= firstPageSize) {
+    return [rows]
+  }
+
+  const chunks = [rows.slice(0, firstPageSize)]
+  for (let index = firstPageSize; index < rows.length; index += nextPageSize) {
+    chunks.push(rows.slice(index, index + nextPageSize))
+  }
+
+  return chunks
 }
 
 interface TransactionTableProps {
@@ -57,8 +70,7 @@ export function TransactionTable({
   showKeteranganColumn,
 }: TransactionTableProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false)
-  const [editingId, setEditingId] = React.useState<number | null>(null)
-  const [editDraft, setEditDraft] = React.useState<Transaksi | null>(null)
+  const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
   const [pdfHtmlContent, setPdfHtmlContent] = React.useState<string>("")
@@ -83,8 +95,8 @@ export function TransactionTable({
   const isSelectedInvoiceDetail = invoiceId !== null && invoiceId !== undefined
   const showDateColumn = isDateColumnVisible(currentDateMode)
   const canEditRowDate = isDateInputEnabled(currentDateMode)
-  const summaryLabelColSpan = showDateColumn ? 9 : 8
-  const trailingSummaryCells = currentShowKeteranganColumn ? 2 : 1
+  const summaryLabelColSpan = showDateColumn ? 10 : 9
+  const trailingSummaryCells = currentShowKeteranganColumn ? 1 : 0
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("id-ID")
@@ -107,10 +119,6 @@ export function TransactionTable({
 
   const formatOutputDate = (tanggal: string | null | undefined): string => {
     return formatVisibleDate(tanggal)
-  }
-
-  const getDraftTotal = (item: Transaksi) => {
-    return Math.max(item.berat, item.min) * item.tarif
   }
 
   const handleDateModeChange = async (nextMode: InvoiceDateMode) => {
@@ -184,35 +192,20 @@ export function TransactionTable({
   }
 
   const startEdit = (item: Transaksi) => {
-    setEditingId(item.id)
-    setEditDraft({ ...item })
+    setEditingItem(item)
   }
 
   const cancelEdit = () => {
-    setEditingId(null)
-    setEditDraft(null)
+    setEditingItem(null)
   }
 
-  const saveEdit = async () => {
-    if (!editingId || !editDraft) return
-
-    const calculatedTotal = getDraftTotal(editDraft)
+  const saveEdit = async (payload: UpdateTransaksiPayload) => {
+    if (!editingItem) return
 
     try {
       await updateTransaksiMutation.mutateAsync({
-        id: editingId,
-        payload: {
-          tanggal: editDraft.tanggal,
-          pengirim: editDraft.pengirim,
-          penerima: editDraft.penerima,
-          coly: editDraft.coly,
-          berat: editDraft.berat,
-          min: editDraft.min,
-          tarif: editDraft.tarif,
-          total: calculatedTotal,
-          noResi: editDraft.noResi,
-          keterangan: editDraft.keterangan ?? "",
-        },
+        id: editingItem.id,
+        payload,
       })
       toast.success("Transaksi berhasil diperbarui")
       cancelEdit()
@@ -225,11 +218,6 @@ export function TransactionTable({
         toast.error(errorMessage)
       }
     }
-  }
-
-  const handleEditChange = (field: keyof Transaksi, value: string | number) => {
-    if (!editDraft) return
-    setEditDraft((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
   // Export to Excel
@@ -280,34 +268,44 @@ export function TransactionTable({
 
   const generatePdfHtml = React.useCallback(() => {
     const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
+    const tableHeaderHtml = `
+      <thead>
+        <tr class="pdf-table-row" style="background-color: #f0f0f0; break-inside: avoid; page-break-inside: avoid;">
+          <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
+          ${showDateColumn ? '<th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>' : ""}
+          <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
+          <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
+          <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
+          <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
+          <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
+          <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
+          <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
+          <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
+          ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 6px;">Ket</th>' : ""}
+        </tr>
+      </thead>
+    `
 
-    return `
-      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px; box-sizing: border-box; background: #fff;">
-        <h2 class="pdf-keep-together" style="text-align: center; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid;">${escapeHtml(title || "Perhitungan Pengiriman Barang")}</h2>
-        <p class="pdf-keep-together" style="margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead style="display: table-header-group;">
-            <tr style="background-color: #f0f0f0;">
-              <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
-              ${showDateColumn ? '<th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>' : ""}
-              <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
-              <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
-              <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
-              <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
-              <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
-              <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
-              <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
-              <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
-              ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 6px;">Ket</th>' : ""}
-            </tr>
-          </thead>
+    const transactionFirstPageRows = currentShowKeteranganColumn ? 18 : 20
+    const transactionNextPageRows = currentShowKeteranganColumn ? 30 : 34
+    const transactionRowChunks = chunkRows(data, transactionFirstPageRows, transactionNextPageRows)
+    const transactionTablesHtml = transactionRowChunks.map((chunk, chunkIndex) => {
+      const firstRowNumber = transactionRowChunks
+        .slice(0, chunkIndex)
+        .reduce((sum, pageRows) => sum + pageRows.length, 0)
+      const isLastChunk = chunkIndex === transactionRowChunks.length - 1
+
+      return `
+        <div style="${chunkIndex > 0 ? 'break-before: page; page-break-before: always; padding-top: 12px;' : ''}">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          ${tableHeaderHtml}
           <tbody>
-            ${data.map((item, index) => {
+            ${chunk.map((item, index) => {
               const outputDate = formatVisibleDate(item.tanggal, "")
 
               return `
-                <tr>
-                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${index + 1}</td>
+                <tr class="pdf-table-row" style="break-inside: avoid; page-break-inside: avoid;">
+                  <td style="border: 1px solid #000; padding: 4px; text-align: center;">${firstRowNumber + index + 1}</td>
                   ${showDateColumn ? `<td style="border: 1px solid #000; padding: 4px;">${escapeHtml(outputDate)}</td>` : ""}
                   <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.noResi)}</td>
                   <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.pengirim)}</td>
@@ -322,14 +320,25 @@ export function TransactionTable({
               `
             }).join("")}
           </tbody>
-          <tfoot style="display: table-row-group;">
-            <tr>
-              <td colspan="${summaryLabelColSpan}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${totalRevenue.toLocaleString("id-ID")}</td>
-              ${currentShowKeteranganColumn ? '<td style="border: 1px solid #000; padding: 6px;"></td>' : ""}
-            </tr>
-          </tfoot>
-        </table>
+          ${isLastChunk ? `
+            <tfoot style="display: table-row-group;">
+              <tr class="pdf-table-row" style="break-inside: avoid; page-break-inside: avoid;">
+                <td colspan="${summaryLabelColSpan}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
+                <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${totalRevenue.toLocaleString("id-ID")}</td>
+                ${currentShowKeteranganColumn ? '<td style="border: 1px solid #000; padding: 6px;"></td>' : ""}
+              </tr>
+            </tfoot>
+          ` : ''}
+          </table>
+        </div>
+      `
+    }).join("")
+
+    return `
+      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px; box-sizing: border-box; background: #fff;">
+        <h2 class="pdf-keep-together" style="text-align: center; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid;">${escapeHtml(title || "Perhitungan Pengiriman Barang")}</h2>
+        <p class="pdf-keep-together" style="margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
+        ${transactionTablesHtml}
       </div>
     `
   }, [currentShowKeteranganColumn, data, formatVisibleDate, showDateColumn, summaryLabelColSpan, title])
@@ -515,11 +524,12 @@ export function TransactionTable({
           </div>
         ) : (
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="transaction-table-scroll overflow-x-auto">
+              <Table className="min-w-[980px]">
                 <TableHeader>
                   <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50 border-b-2 border-slate-200">
                     <TableHead className="font-bold text-slate-700 text-center">No</TableHead>
+                    <TableHead className="font-bold text-slate-700 text-center">Edit</TableHead>
                     {showDateColumn && <TableHead className="font-bold text-slate-700">Tgl</TableHead>}
                     <TableHead className="font-bold text-slate-700">No STT</TableHead>
                     <TableHead className="font-bold text-slate-700">Pengirim</TableHead>
@@ -530,14 +540,11 @@ export function TransactionTable({
                     <TableHead className="font-bold text-slate-700 text-right">Tarif</TableHead>
                     <TableHead className="font-bold text-slate-700 text-right">Total</TableHead>
                     {currentShowKeteranganColumn && <TableHead className="font-bold text-slate-700">Ket</TableHead>}
-                    <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.map((item, index) => {
-                    const isEditing = editingId === item.id
-                    const draft = isEditing ? editDraft : item
-                    const rowTotal = draft ? getDraftTotal(draft) : item.total
+                    const rowTotal = item.total
 
                     return (
                       <TableRow
@@ -547,101 +554,42 @@ export function TransactionTable({
                         <TableCell className="text-center text-slate-600 font-medium">
                           {index + 1}
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                            onClick={() => startEdit(item)}
+                            aria-label={`Edit transaksi STT ${item.noResi}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                         {showDateColumn && (
                           <TableCell className="text-slate-600">
-                            {isEditing && canEditRowDate ? (
-                              <Input
-                                value={draft?.tanggal ? format(new Date(draft.tanggal), "yyyy-MM-dd") : ""}
-                                type="date"
-                                className="w-32"
-                                onChange={(e) => handleEditChange("tanggal", e.target.value)}
-                              />
-                            ) : (
-                              <span>{formatTableDate(draft?.tanggal)}</span>
-                            )}
+                            <span>{formatTableDate(item.tanggal)}</span>
                           </TableCell>
                         )}
                         <TableCell className="font-mono font-bold text-blue-600 group-hover:text-blue-700">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.noResi || ""}
-                              className="w-28"
-                              onChange={(e) => handleEditChange("noResi", e.target.value)}
-                            />
-                          ) : (
-                            item.noResi
-                          )}
+                          {item.noResi}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.pengirim || ""}
-                              className="w-32"
-                              onChange={(e) => handleEditChange("pengirim", e.target.value)}
-                            />
-                          ) : (
-                            item.pengirim
-                          )}
+                          {item.pengirim}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.penerima || ""}
-                              className="w-32"
-                              onChange={(e) => handleEditChange("penerima", e.target.value)}
-                            />
-                          ) : (
-                            item.penerima
-                          )}
+                          {item.penerima}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-amber-600">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.coly ?? 0}
-                              type="number"
-                              className="w-16 text-right"
-                              onChange={(e) => handleEditChange("coly", Number(e.target.value))}
-                            />
-                          ) : (
-                            item.coly
-                          )}
+                          {item.coly}
                         </TableCell>
                         <TableCell className="text-right font-medium text-slate-700">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.berat ?? 0}
-                              type="number"
-                              step="0.1"
-                              className="w-16 text-right"
-                              onChange={(e) => handleEditChange("berat", Number(e.target.value))}
-                            />
-                          ) : (
-                            item.berat
-                          )}
+                          {item.berat}
                         </TableCell>
                         <TableCell className="text-right font-medium text-orange-600">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.min ?? 0}
-                              type="number"
-                              className="w-16 text-right"
-                              onChange={(e) => handleEditChange("min", Number(e.target.value))}
-                            />
-                          ) : (
-                            item.min
-                          )}
+                          {item.min}
                         </TableCell>
                         <TableCell className="text-right font-medium text-slate-600">
-                          {isEditing ? (
-                            <Input
-                              value={draft?.tarif ?? 0}
-                              type="number"
-                              className="w-20 text-right"
-                              onChange={(e) => handleEditChange("tarif", Number(e.target.value))}
-                            />
-                          ) : (
-                            `Rp ${(item.tarif || 0).toLocaleString("id-ID")}`
-                          )}
+                          Rp {(item.tarif || 0).toLocaleString("id-ID")}
                         </TableCell>
                         <TableCell className="text-right">
                           <span className="font-bold text-lg text-emerald-600">
@@ -650,55 +598,9 @@ export function TransactionTable({
                         </TableCell>
                         {currentShowKeteranganColumn && (
                           <TableCell className="text-slate-600">
-                            {isEditing ? (
-                              <Input
-                                value={draft?.keterangan || ""}
-                                placeholder="Ket..."
-                                className="w-24"
-                                onChange={(e) => handleEditChange("keterangan", e.target.value)}
-                              />
-                            ) : (
-                              item.keterangan || "-"
-                            )}
+                            {item.keterangan || "-"}
                           </TableCell>
                         )}
-                        <TableCell className="text-center">
-                          {isEditing ? (
-                            <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 px-2 text-green-700 border-green-200 hover:bg-green-50"
-                                onClick={saveEdit}
-                                disabled={updateTransaksiMutation.isPending}
-                              >
-                                {updateTransaksiMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Check className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 px-2 text-slate-600 hover:bg-slate-100"
-                                onClick={cancelEdit}
-                                disabled={updateTransaksiMutation.isPending}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-blue-600 hover:bg-blue-50"
-                              onClick={() => startEdit(item)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
                       </TableRow>
                     )
                   })}
@@ -732,6 +634,17 @@ export function TransactionTable({
         dateMode={currentDateMode}
         showKeteranganColumn={currentShowKeteranganColumn}
         invoiceKey={invoiceId ? String(invoiceId) : title || "new-invoice"}
+      />
+
+      <EditTransactionDialog
+        isOpen={editingItem !== null}
+        transaction={editingItem}
+        canEditDate={canEditRowDate}
+        showDateField={showDateColumn}
+        showKeteranganField={currentShowKeteranganColumn}
+        isSaving={updateTransaksiMutation.isPending}
+        onClose={cancelEdit}
+        onSave={saveEdit}
       />
 
       {/* PDF Preview Modal */}

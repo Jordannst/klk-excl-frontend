@@ -28,6 +28,84 @@ const escapeHtml = (value: string | number | null | undefined) => {
     .replace(/'/g, "&#39;")
 }
 
+interface InvoicePdfPaginationOptions {
+  pageContentHeight: number
+  firstPageBeforeTableHeight: number
+  tableHeaderHeight: number
+  rowHeights: number[]
+  finalPageReserveHeight: number
+}
+
+const A4_PORTRAIT_WIDTH_MM = 210
+const A4_PORTRAIT_HEIGHT_MM = 297
+const PDF_MARGIN_MM = 10
+const PDF_CONTINUATION_TOP_PADDING = 12
+
+const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPaginationOptions) => {
+  if (rows.length === 0) {
+    return [rows]
+  }
+
+  const chunks: Transaksi[][] = []
+  let rowIndex = 0
+
+  const getTableCapacity = (isFirstPage: boolean, includesFinalFooter: boolean) => {
+    const beforeTableHeight = isFirstPage
+      ? options.firstPageBeforeTableHeight
+      : PDF_CONTINUATION_TOP_PADDING
+    const tableCapacity = options.pageContentHeight - beforeTableHeight - options.tableHeaderHeight
+
+    return includesFinalFooter ? tableCapacity - options.finalPageReserveHeight : tableCapacity
+  }
+
+  const getRowsHeight = (startIndex: number, endIndex: number) => {
+    let height = 0
+    for (let index = startIndex; index < endIndex; index += 1) {
+      height += options.rowHeights[index] || 0
+    }
+    return height
+  }
+
+  const getPageEndIndex = (startIndex: number, capacity: number) => {
+    let usedHeight = 0
+    let endIndex = startIndex
+
+    while (endIndex < rows.length) {
+      const nextHeight = options.rowHeights[endIndex] || 0
+      if (endIndex > startIndex && usedHeight + nextHeight > capacity) {
+        break
+      }
+
+      usedHeight += nextHeight
+      endIndex += 1
+    }
+
+    return endIndex
+  }
+
+  while (rowIndex < rows.length) {
+    const isFirstPage = chunks.length === 0
+    const finalCapacity = getTableCapacity(isFirstPage, true)
+
+    if (getRowsHeight(rowIndex, rows.length) <= finalCapacity) {
+      chunks.push(rows.slice(rowIndex))
+      break
+    }
+
+    const normalCapacity = getTableCapacity(isFirstPage, false)
+    let pageEndIndex = getPageEndIndex(rowIndex, normalCapacity)
+
+    if (pageEndIndex >= rows.length) {
+      pageEndIndex = Math.max(rowIndex + 1, rows.length - 1)
+    }
+
+    chunks.push(rows.slice(rowIndex, pageEndIndex))
+    rowIndex = pageEndIndex
+  }
+
+  return chunks
+}
+
 interface PrintInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
@@ -128,6 +206,276 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   const formatRupiah = (num: number): string => {
     return num.toLocaleString("id-ID")
   }
+
+  const renderInvoiceTablesHtml = (mode: "print" | "pdf", rowChunks: Transaksi[][] = [data]) => {
+    const isPdf = mode === "pdf"
+    const tableHeaderHtml = isPdf ? `
+      <thead style="display: table-header-group;">
+        <tr>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
+          ${showDateColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>' : ''}
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Pengirim</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Penerima</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Coly</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Kg</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Min</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Tarif</th>
+          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Jumlah</th>
+          ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>' : ''}
+        </tr>
+      </thead>
+    ` : `
+      <thead>
+        <tr>
+          <th>No</th>
+          ${showDateColumn ? '<th>Hari/Tgl</th>' : ''}
+          <th>No Stt</th>
+          <th>Pengirim</th>
+          <th>Penerima</th>
+          <th>Coly</th>
+          <th>Kg</th>
+          <th>Min</th>
+          <th>Tarif</th>
+          <th>Jumlah</th>
+          ${currentShowKeteranganColumn ? '<th>Ket</th>' : ''}
+        </tr>
+      </thead>
+    `
+    const invoiceRowChunks = rowChunks.length > 0 ? rowChunks : [[]]
+
+    return invoiceRowChunks.map((chunk, chunkIndex) => {
+      const firstRowNumber = invoiceRowChunks
+        .slice(0, chunkIndex)
+        .reduce((sum, pageRows) => sum + pageRows.length, 0)
+      const isLastChunk = chunkIndex === invoiceRowChunks.length - 1
+      const wrapperStyle = chunkIndex > 0
+        ? `break-before: page; page-break-before: always;${isPdf ? ' padding-top: 12px;' : ''}`
+        : ''
+      const tableAttributes = isPdf
+        ? ` data-pdf-table="true" style="width: 100%; border-collapse: collapse; margin-bottom: ${isLastChunk ? '15px' : '0'}; font-size: 10px;"`
+        : ''
+
+      return `
+        <div style="${wrapperStyle}">
+          <table${tableAttributes}>
+            ${tableHeaderHtml}
+            <tbody>
+              ${chunk.map((item, index) => {
+                const rowNumber = firstRowNumber + index + 1
+
+                return isPdf ? `
+                  <tr style="break-inside: avoid; page-break-inside: avoid;">
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${rowNumber}</td>
+                    ${showDateColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
+                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.noResi)}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.pengirim)}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.penerima)}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.coly}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.berat}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
+                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.total))}</td>
+                    ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
+                  </tr>
+                ` : `
+                  <tr style="break-inside: avoid; page-break-inside: avoid;">
+                    <td class="center">${rowNumber}</td>
+                    ${showDateColumn ? `<td>${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
+                    <td>${escapeHtml(item.noResi)}</td>
+                    <td>${escapeHtml(item.pengirim)}</td>
+                    <td>${escapeHtml(item.penerima)}</td>
+                    <td class="center">${item.coly}</td>
+                    <td class="center">${item.berat}</td>
+                    <td class="center">${item.min}</td>
+                    <td class="number">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
+                    <td class="number">${escapeHtml(formatRupiah(item.total))}</td>
+                    ${currentShowKeteranganColumn ? `<td>${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
+                  </tr>
+                `
+              }).join("")}
+            </tbody>
+            ${isLastChunk ? isPdf ? `
+              <tfoot style="display: table-row-group;">
+                <tr style="break-inside: avoid; page-break-inside: avoid;">
+                  <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
+                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
+                  ${pdfFooterCellsHtml}
+                </tr>
+              </tfoot>
+            ` : `
+              <tfoot>
+                <tr style="break-inside: avoid; page-break-inside: avoid;">
+                  <td colspan="${getTableTotalColSpan()}" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
+                  <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
+                  ${printFooterCellsHtml}
+                </tr>
+              </tfoot>
+            ` : ''}
+          </table>
+        </div>
+      `
+    }).join("")
+  }
+
+  const waitForImagesToLoad = async (container: HTMLElement) => {
+    const images = Array.from(container.querySelectorAll("img"))
+    await Promise.all(images.map((image) => {
+      if (image.complete) {
+        return Promise.resolve()
+      }
+
+      return new Promise<void>((resolve) => {
+        image.onload = () => resolve()
+        image.onerror = () => resolve()
+      })
+    }))
+  }
+
+  const measureInvoicePdfChunks = async (pdfContent: string) => {
+    const measurementContainer = document.createElement("div")
+    measurementContainer.style.position = "absolute"
+    measurementContainer.style.left = "-10000px"
+    measurementContainer.style.top = "0"
+    measurementContainer.style.width = "21cm"
+    measurementContainer.style.visibility = "hidden"
+    measurementContainer.style.pointerEvents = "none"
+    measurementContainer.style.zIndex = "-1"
+    measurementContainer.style.background = "#fff"
+    measurementContainer.innerHTML = pdfContent
+    document.body.appendChild(measurementContainer)
+
+    try {
+      await waitForImagesToLoad(measurementContainer)
+
+      const root = measurementContainer.firstElementChild as HTMLElement | null
+      const table = measurementContainer.querySelector('[data-pdf-table="true"]') as HTMLTableElement | null
+      const tableHeader = table?.querySelector("thead") as HTMLElement | null
+      const tableFooter = table?.querySelector("tfoot") as HTMLElement | null
+      const tableRows = Array.from(table?.querySelectorAll("tbody tr") || []) as HTMLTableRowElement[]
+      const afterTable = measurementContainer.querySelector('[data-pdf-after-table="true"]') as HTMLElement | null
+
+      if (!root || !table || !tableHeader || tableRows.length !== data.length) {
+        return [data]
+      }
+
+      const rootRect = root.getBoundingClientRect()
+      const tableRect = table.getBoundingClientRect()
+      const tableStyle = window.getComputedStyle(table)
+      const rootStyle = window.getComputedStyle(root)
+      const pageInnerWidthMm = A4_PORTRAIT_WIDTH_MM - PDF_MARGIN_MM * 2
+      const pageInnerHeightMm = A4_PORTRAIT_HEIGHT_MM - PDF_MARGIN_MM * 2
+      const pageContentHeight = rootRect.width * (pageInnerHeightMm / pageInnerWidthMm)
+      const tableBottomMargin = parseFloat(tableStyle.marginBottom) || 0
+      const rootPaddingBottom = parseFloat(rootStyle.paddingBottom) || 0
+      const finalPageReserveHeight =
+        (tableFooter?.getBoundingClientRect().height || 0) +
+        tableBottomMargin +
+        (afterTable?.getBoundingClientRect().height || 0) +
+        rootPaddingBottom
+
+      return paginateInvoicePdfRows(data, {
+        pageContentHeight,
+        firstPageBeforeTableHeight: tableRect.top - rootRect.top,
+        tableHeaderHeight: tableHeader.getBoundingClientRect().height,
+        rowHeights: tableRows.map((row) => row.getBoundingClientRect().height),
+        finalPageReserveHeight,
+      })
+    } finally {
+      document.body.removeChild(measurementContainer)
+    }
+  }
+
+  const renderPdfDocumentHtml = (invoiceTablesHtml: string, logoBase64: string) => `
+    <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal; box-sizing: border-box; background: #fff;">
+      <!-- Header -->
+      <div class="pdf-keep-together" style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000; break-inside: avoid; page-break-inside: avoid;">
+        ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
+        <div style="text-align: center; flex: 1; padding-right: 100px;">
+          <p style="font-weight: bold; font-size: 13px; margin-bottom: 3px;">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
+          <p style="font-size: 10px; font-weight: bold;">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
+          <p style="font-size: 10px; font-weight: bold;">Email : klk.express.mdc@gmail.com</p>
+        </div>
+      </div>
+      
+      <!-- Letter Info -->
+      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
+        <p style="margin-bottom: 3px;">${escapeHtml(formData.tanggalSurat)}</p>
+        <p style="margin-bottom: 3px;">No. ${escapeHtml(formData.nomorInvoice)}</p>
+      </div>
+
+      <!-- Recipient -->
+      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
+        <p style="margin-bottom: 2px;">Kepada Yth :</p>
+        <p style="margin-bottom: 2px; font-weight: bold;">${escapeHtml(formData.namaPenerima)}</p>
+        <p style="margin-bottom: 2px;">Di. ${escapeHtml(formData.lokasiPenerima)}</p>
+      </div>
+
+      <!-- Intro -->
+      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
+        <p style="margin-bottom: 5px;">Dengan Hormat,</p>
+        <p style="margin-bottom: 5px;">Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
+      </div>
+
+      <!-- Table -->
+      ${invoiceTablesHtml}
+      
+      <div data-pdf-after-table="true" style="display: flow-root;">
+        <!-- Calculations -->
+        <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
+          <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
+            <span style="flex: 1;">1. Biaya handling</span>
+            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(biayaHandling)}</span>
+          </div>
+          <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
+            <span style="flex: 1;">2. Biaya Kirim Doc</span>
+            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(formData.biayaKirimDoc)}</span>
+          </div>
+          <div style="display: flex; max-width: 350px; font-weight: bold; border-top: 1px solid #000; padding-top: 3px; margin-top: 5px;">
+            <span style="flex: 1;">TOTAL TAGIHAN</span>
+            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(totalTagihan)}</span>
+          </div>
+        </div>
+
+        <!-- Payment Info -->
+        <div class="pdf-keep-together" style="margin-bottom: 15px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
+          <p>Jumlah tagihan bisa ditransfer melalui :</p>
+          <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
+        </div>
+
+        <!-- Closing -->
+        <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
+          <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
+          <p>Hormat Kami,</p>
+        </div>
+
+        <!-- Signatures -->
+        <div class="pdf-keep-together" style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px; break-inside: avoid; page-break-inside: avoid;">
+          <div style="width: 45%; text-align: center;">
+            ${selectedSignatureKiri 
+              ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+              : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
+            }
+            <p>PT. KLK Mdc</p>
+            <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKiri)}</p>
+          </div>
+          <div style="width: 45%; text-align: center;">
+            ${selectedSignatureKanan 
+              ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
+              : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
+            }
+            <p>Diketahui,</p>
+            <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKanan)}</p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="pdf-keep-together" style="margin-top: 80px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
+          <p>Cc. Klk mdc</p>
+        </div>
+      </div>
+    </div>
+  `
 
   const handleBiayaKirimDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
@@ -269,6 +617,16 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               font-weight: bold;
               text-align: center;
             }
+            thead {
+              display: table-header-group;
+            }
+            tfoot {
+              display: table-row-group;
+            }
+            tr {
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
             td {
               text-align: left;
             }
@@ -387,47 +745,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             </div>
             
             <!-- Table -->
-            <table>
-              <thead>
-                <tr>
-                  <th>No</th>
-                  ${showDateColumn ? '<th>Hari/Tgl</th>' : ''}
-                  <th>No Stt</th>
-                  <th>Pengirim</th>
-                  <th>Penerima</th>
-                  <th>Coly</th>
-                  <th>Kg</th>
-                  <th>Min</th>
-                  <th>Tarif</th>
-                  <th>Jumlah</th>
-                  ${currentShowKeteranganColumn ? '<th>Ket</th>' : ''}
-                </tr>
-              </thead>
-              <tbody>
-                ${data.map((item, index) => `
-                  <tr>
-                    <td class="center">${index + 1}</td>
-                    ${showDateColumn ? `<td>${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
-                    <td>${escapeHtml(item.noResi)}</td>
-                    <td>${escapeHtml(item.pengirim)}</td>
-                    <td>${escapeHtml(item.penerima)}</td>
-                    <td class="center">${item.coly}</td>
-                    <td class="center">${item.berat}</td>
-                    <td class="center">${item.min}</td>
-                    <td class="number">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
-                    <td class="number">${escapeHtml(formatRupiah(item.total))}</td>
-                    ${currentShowKeteranganColumn ? `<td>${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
-                  </tr>
-                `).join("")}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="${getTableTotalColSpan()}" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
-                  <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
-                  ${printFooterCellsHtml}
-                </tr>
-              </tfoot>
-            </table>
+            ${renderInvoiceTablesHtml("print")}
             
             <!-- Calculations -->
             <div class="calculations">
@@ -518,136 +836,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
 
     try {
       const html2pdf = (await import('html2pdf.js')).default
-
-      // Use the SAME template as print (without @media print)
-      const pdfContent = `
-        <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal; box-sizing: border-box; background: #fff;">
-          <!-- Header -->
-          <div class="pdf-keep-together" style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000; break-inside: avoid; page-break-inside: avoid;">
-            ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
-            <div style="text-align: center; flex: 1; padding-right: 100px;">
-              <p style="font-weight: bold; font-size: 13px; margin-bottom: 3px;">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
-              <p style="font-size: 10px; font-weight: bold;">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
-              <p style="font-size: 10px; font-weight: bold;">Email : klk.express.mdc@gmail.com</p>
-            </div>
-          </div>
-          
-          <!-- Letter Info -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <p style="margin-bottom: 3px;">${escapeHtml(formData.tanggalSurat)}</p>
-            <p style="margin-bottom: 3px;">No. ${escapeHtml(formData.nomorInvoice)}</p>
-          </div>
-
-          <!-- Recipient -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <p style="margin-bottom: 2px;">Kepada Yth :</p>
-            <p style="margin-bottom: 2px; font-weight: bold;">${escapeHtml(formData.namaPenerima)}</p>
-            <p style="margin-bottom: 2px;">Di. ${escapeHtml(formData.lokasiPenerima)}</p>
-          </div>
-
-          <!-- Intro -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <p style="margin-bottom: 5px;">Dengan Hormat,</p>
-            <p style="margin-bottom: 5px;">Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
-          </div>
-
-          <!-- Table -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
-            <thead style="display: table-header-group;">
-              <tr>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
-                ${showDateColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>' : ''}
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Pengirim</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Penerima</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Coly</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Kg</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Min</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Tarif</th>
-                <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Jumlah</th>
-                ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-              ${data.map((item, index) => `
-                <tr>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${index + 1}</td>
-                  ${showDateColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.noResi)}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.pengirim)}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.penerima)}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.coly}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.berat}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.total))}</td>
-                  ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
-                </tr>
-              `).join("")}
-            </tbody>
-            <tfoot style="display: table-row-group;">
-              <tr>
-                <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
-                <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
-                ${pdfFooterCellsHtml}
-              </tr>
-            </tfoot>
-          </table>
-          
-          <!-- Calculations -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
-              <span style="flex: 1;">1. Biaya handling</span>
-              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(biayaHandling)}</span>
-            </div>
-            <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
-              <span style="flex: 1;">2. Biaya Kirim Doc</span>
-              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(formData.biayaKirimDoc)}</span>
-            </div>
-            <div style="display: flex; max-width: 350px; font-weight: bold; border-top: 1px solid #000; padding-top: 3px; margin-top: 5px;">
-              <span style="flex: 1;">TOTAL TAGIHAN</span>
-              <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(totalTagihan)}</span>
-            </div>
-          </div>
-
-          <!-- Payment Info -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
-            <p>Jumlah tagihan bisa ditransfer melalui :</p>
-            <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
-          </div>
-
-          <!-- Closing -->
-          <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-            <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
-            <p>Hormat Kami,</p>
-          </div>
-
-          <!-- Signatures -->
-          <div class="pdf-keep-together" style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px; break-inside: avoid; page-break-inside: avoid;">
-            <div style="width: 45%; text-align: center;">
-              ${selectedSignatureKiri 
-                ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-                : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
-              }
-              <p>PT. KLK Mdc</p>
-              <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKiri)}</p>
-            </div>
-            <div style="width: 45%; text-align: center;">
-              ${selectedSignatureKanan 
-                ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-                : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
-              }
-              <p>Diketahui,</p>
-              <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKanan)}</p>
-            </div>
-          </div>
-          
-          <!-- Footer -->
-          <div class="pdf-keep-together" style="margin-top: 80px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
-            <p>Cc. Klk mdc</p>
-          </div>
-        </div>
-      `
+      const measurementPdfContent = renderPdfDocumentHtml(renderInvoiceTablesHtml("pdf", [data]), logoBase64)
+      const measuredRowChunks = await measureInvoicePdfChunks(measurementPdfContent)
+      const pdfContent = renderPdfDocumentHtml(renderInvoiceTablesHtml("pdf", measuredRowChunks), logoBase64)
 
       const element = document.createElement('div')
       element.innerHTML = pdfContent
@@ -666,13 +857,18 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
           mode: ['css', 'legacy'] as const,
-          avoid: ['.pdf-keep-together']
+          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
         },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       }
 
-      await html2pdf().set(opt).from(element).save()
-      document.body.removeChild(element)
+      try {
+        await html2pdf().set(opt).from(element).save()
+      } finally {
+        if (element.parentNode) {
+          element.parentNode.removeChild(element)
+        }
+      }
 
       setIsDownloadingPdf(false)
       onClose()
