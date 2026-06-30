@@ -34,12 +34,15 @@ interface InvoicePdfPaginationOptions {
   tableHeaderHeight: number
   rowHeights: number[]
   finalPageReserveHeight: number
+  safetyReserveHeight: number
+  firstPageSafetyReserveHeight: number
 }
 
 const A4_PORTRAIT_WIDTH_MM = 210
 const A4_PORTRAIT_HEIGHT_MM = 297
 const PDF_MARGIN_MM = 10
 const PDF_CONTINUATION_TOP_PADDING = 12
+const PDF_MIN_MIDDLE_PAGE_ROWS = 8
 
 const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPaginationOptions) => {
   if (rows.length === 0) {
@@ -53,7 +56,14 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
     const beforeTableHeight = isFirstPage
       ? options.firstPageBeforeTableHeight
       : PDF_CONTINUATION_TOP_PADDING
-    const tableCapacity = options.pageContentHeight - beforeTableHeight - options.tableHeaderHeight
+    // Subtract a safety reserve so a chunk's content never reaches html2pdf's
+    // fixed auto-slice boundary (prevents the "few rows then blank" drift).
+    const tableCapacity =
+      options.pageContentHeight -
+      beforeTableHeight -
+      options.tableHeaderHeight -
+      options.safetyReserveHeight -
+      (isFirstPage ? options.firstPageSafetyReserveHeight : 0)
 
     return includesFinalFooter ? tableCapacity - options.finalPageReserveHeight : tableCapacity
   }
@@ -96,7 +106,20 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
     let pageEndIndex = getPageEndIndex(rowIndex, normalCapacity)
 
     if (pageEndIndex >= rows.length) {
-      pageEndIndex = Math.max(rowIndex + 1, rows.length - 1)
+      const nextFinalCapacity = getTableCapacity(false, true)
+      let finalStartIndex = rows.length - 1
+
+      for (let index = rowIndex + 1; index < rows.length; index += 1) {
+        if (getRowsHeight(index, rows.length) <= nextFinalCapacity) {
+          finalStartIndex = index
+          break
+        }
+      }
+
+      const middlePageRows = finalStartIndex - rowIndex
+      pageEndIndex = middlePageRows >= PDF_MIN_MIDDLE_PAGE_ROWS
+        ? finalStartIndex
+        : Math.max(rowIndex + 1, rows.length - 1)
     }
 
     chunks.push(rows.slice(rowIndex, pageEndIndex))
@@ -104,6 +127,14 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
   }
 
   return chunks
+}
+
+interface InvoicePdfMeasurement {
+  rowChunks: Transaksi[][]
+  pageContentHeight: number
+  firstPageBeforeTableHeight: number
+  tableHeaderHeight: number
+  rowHeights: number[]
 }
 
 interface PrintInvoiceModalProps {
@@ -207,7 +238,11 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     return num.toLocaleString("id-ID")
   }
 
-  const renderInvoiceTablesHtml = (mode: "print" | "pdf", rowChunks: Transaksi[][] = [data]) => {
+  const renderInvoiceTablesHtml = (
+    mode: "print" | "pdf",
+    rowChunks: Transaksi[][] = [data],
+    measurement?: InvoicePdfMeasurement
+  ) => {
     const isPdf = mode === "pdf"
     const tableHeaderHtml = isPdf ? `
       <thead style="display: table-header-group;">
@@ -249,15 +284,26 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         .slice(0, chunkIndex)
         .reduce((sum, pageRows) => sum + pageRows.length, 0)
       const isLastChunk = chunkIndex === invoiceRowChunks.length - 1
-      const wrapperStyle = chunkIndex > 0
-        ? `break-before: page; page-break-before: always;${isPdf ? ' padding-top: 12px;' : ''}`
+      const wrapperStyle = chunkIndex > 0 && isPdf && !isLastChunk
+        ? 'padding-top: 12px;'
         : ''
+      const usedRowsHeight = measurement
+        ? measurement.rowHeights
+          .slice(firstRowNumber, firstRowNumber + chunk.length)
+          .reduce((sum, height) => sum + height, 0)
+        : 0
+      const beforeTableHeight = chunkIndex === 0
+        ? measurement?.firstPageBeforeTableHeight ?? 0
+        : PDF_CONTINUATION_TOP_PADDING
+      const spacerHeight = isPdf && measurement && !isLastChunk
+        ? Math.max(0, measurement.pageContentHeight - beforeTableHeight - measurement.tableHeaderHeight - usedRowsHeight)
+        : 0
       const tableAttributes = isPdf
         ? ` data-pdf-table="true" style="width: 100%; border-collapse: collapse; margin-bottom: ${isLastChunk ? '15px' : '0'}; font-size: 10px;"`
         : ''
 
       return `
-        <div style="${wrapperStyle}">
+        <div data-pdf-chunk-index="${chunkIndex}" style="${wrapperStyle}">
           <table${tableAttributes}>
             ${tableHeaderHtml}
             <tbody>
@@ -314,6 +360,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             ` : ''}
           </table>
         </div>
+        ${spacerHeight > 0 ? `<div data-pdf-spacer-after="${chunkIndex}" style="height: ${spacerHeight}px;"></div>` : ''}
       `
     }).join("")
   }
@@ -356,7 +403,13 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       const afterTable = measurementContainer.querySelector('[data-pdf-after-table="true"]') as HTMLElement | null
 
       if (!root || !table || !tableHeader || tableRows.length !== data.length) {
-        return [data]
+        return {
+          rowChunks: [data],
+          pageContentHeight: 0,
+          firstPageBeforeTableHeight: 0,
+          tableHeaderHeight: 0,
+          rowHeights: [],
+        }
       }
 
       const rootRect = root.getBoundingClientRect()
@@ -374,13 +427,34 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         (afterTable?.getBoundingClientRect().height || 0) +
         rootPaddingBottom
 
-      return paginateInvoicePdfRows(data, {
+      const rowHeights = tableRows.map((row) => row.getBoundingClientRect().height)
+      // Keep each chunk strictly below html2pdf's fixed auto-slice boundary so a
+      // single tall row crossing it cannot trigger the "few rows then blank" drift.
+      const safetyReserveHeight = Math.max(...rowHeights, 24)
+      // The first invoice page has dense letterhead/intro content before the table.
+      // html2pdf's canvas slice can still clip the last measured-fit rows there, so
+      // reserve extra first-page room to prevent orphan rows before the next header.
+      const firstPageSafetyReserveHeight = safetyReserveHeight * 3
+      const firstPageBeforeTableHeight = tableRect.top - rootRect.top
+      const tableHeaderHeight = tableHeader.getBoundingClientRect().height
+
+      const computedChunks = paginateInvoicePdfRows(data, {
         pageContentHeight,
-        firstPageBeforeTableHeight: tableRect.top - rootRect.top,
-        tableHeaderHeight: tableHeader.getBoundingClientRect().height,
-        rowHeights: tableRows.map((row) => row.getBoundingClientRect().height),
+        firstPageBeforeTableHeight,
+        tableHeaderHeight,
+        rowHeights,
         finalPageReserveHeight,
+        safetyReserveHeight,
+        firstPageSafetyReserveHeight,
       })
+
+      return {
+        rowChunks: computedChunks,
+        pageContentHeight,
+        firstPageBeforeTableHeight,
+        tableHeaderHeight,
+        rowHeights,
+      }
     } finally {
       document.body.removeChild(measurementContainer)
     }
@@ -837,8 +911,11 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     try {
       const html2pdf = (await import('html2pdf.js')).default
       const measurementPdfContent = renderPdfDocumentHtml(renderInvoiceTablesHtml("pdf", [data]), logoBase64)
-      const measuredRowChunks = await measureInvoicePdfChunks(measurementPdfContent)
-      const pdfContent = renderPdfDocumentHtml(renderInvoiceTablesHtml("pdf", measuredRowChunks), logoBase64)
+      const measurement = await measureInvoicePdfChunks(measurementPdfContent)
+      const pdfContent = renderPdfDocumentHtml(
+        renderInvoiceTablesHtml("pdf", measurement.rowChunks, measurement),
+        logoBase64
+      )
 
       const element = document.createElement('div')
       element.innerHTML = pdfContent
@@ -856,8 +933,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         image: { type: 'png' as const, quality: 1 },
         html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
         pagebreak: {
-          mode: ['css', 'legacy'] as const,
-          avoid: ['tr', 'thead', 'tfoot', '.pdf-keep-together']
+          mode: ['css'] as const,
+          avoid: ['.pdf-keep-together']
         },
         jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
       }
