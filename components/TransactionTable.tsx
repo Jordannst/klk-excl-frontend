@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EditTransactionDialog } from "@/components/EditTransactionDialog"
 import { InvoiceDateModeField } from "@/components/InvoiceDateModeField"
 import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
+import { downloadTransactionsPdf } from "@/lib/api"
 import { useUpdateInvoice, useUpdateTransaksi } from "@/lib/hooks"
 import {
   isDateColumnVisible,
@@ -29,100 +30,15 @@ import {
 } from "@/lib/invoice-date-mode"
 import type { Transaksi, UpdateTransaksiPayload } from "@/lib/types"
 
-const escapeHtml = (value: string | number | null | undefined) => {
-  const stringValue = String(value ?? "")
-  return stringValue
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
-
-interface TransactionPdfPaginationOptions {
-  pageContentHeight: number
-  firstPageBeforeTableHeight: number
-  tableHeaderHeight: number
-  rowHeights: number[]
-  finalPageReserveHeight: number
-  safetyReserveHeight: number
-}
-
-// Landscape A4 geometry (mm). Transaction PDF is exported in landscape.
-const A4_LANDSCAPE_WIDTH_MM = 297
-const A4_LANDSCAPE_HEIGHT_MM = 210
-const TRANSACTION_PDF_MARGIN_MM = 10
-const TRANSACTION_PDF_CONTINUATION_TOP_PADDING = 12
-
-const paginateTransactionPdfRows = (
-  rows: Transaksi[],
-  options: TransactionPdfPaginationOptions
-): Transaksi[][] => {
-  if (rows.length === 0) {
-    return [rows]
-  }
-
-  const chunks: Transaksi[][] = []
-  let rowIndex = 0
-
-  const getTableCapacity = (isFirstPage: boolean, includesFinalFooter: boolean) => {
-    const beforeTableHeight = isFirstPage
-      ? options.firstPageBeforeTableHeight
-      : TRANSACTION_PDF_CONTINUATION_TOP_PADDING
-    // Subtract a safety reserve so a chunk's content never reaches html2pdf's
-    // fixed auto-slice boundary (prevents the "few rows then blank" drift).
-    const tableCapacity =
-      options.pageContentHeight - beforeTableHeight - options.tableHeaderHeight - options.safetyReserveHeight
-
-    return includesFinalFooter ? tableCapacity - options.finalPageReserveHeight : tableCapacity
-  }
-
-  const getRowsHeight = (startIndex: number, endIndex: number) => {
-    let height = 0
-    for (let index = startIndex; index < endIndex; index += 1) {
-      height += options.rowHeights[index] || 0
-    }
-    return height
-  }
-
-  const getPageEndIndex = (startIndex: number, capacity: number) => {
-    let usedHeight = 0
-    let endIndex = startIndex
-
-    while (endIndex < rows.length) {
-      const nextHeight = options.rowHeights[endIndex] || 0
-      if (endIndex > startIndex && usedHeight + nextHeight > capacity) {
-        break
-      }
-
-      usedHeight += nextHeight
-      endIndex += 1
-    }
-
-    return endIndex
-  }
-
-  while (rowIndex < rows.length) {
-    const isFirstPage = chunks.length === 0
-    const finalCapacity = getTableCapacity(isFirstPage, true)
-
-    if (getRowsHeight(rowIndex, rows.length) <= finalCapacity) {
-      chunks.push(rows.slice(rowIndex))
-      break
-    }
-
-    const normalCapacity = getTableCapacity(isFirstPage, false)
-    let pageEndIndex = getPageEndIndex(rowIndex, normalCapacity)
-
-    if (pageEndIndex >= rows.length) {
-      pageEndIndex = Math.max(rowIndex + 1, rows.length - 1)
-    }
-
-    chunks.push(rows.slice(rowIndex, pageEndIndex))
-    rowIndex = pageEndIndex
-  }
-
-  return chunks
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 interface TransactionTableProps {
@@ -146,7 +62,6 @@ export function TransactionTable({
   const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
-  const [pdfHtmlContent, setPdfHtmlContent] = React.useState<string>("")
   const [currentDateMode, setCurrentDateMode] = React.useState<InvoiceDateMode>(() =>
     normalizeInvoiceDateMode(dateMode)
   )
@@ -169,8 +84,6 @@ export function TransactionTable({
   const showDateColumn = isDateColumnVisible(currentDateMode)
   const canEditRowDate = isDateInputEnabled(currentDateMode)
   const summaryLabelColSpan = showDateColumn ? 10 : 9
-  const pdfSummaryLabelColSpan = showDateColumn ? 9 : 8
-  const trailingSummaryCells = currentShowKeteranganColumn ? 1 : 0
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("id-ID")
@@ -256,8 +169,6 @@ export function TransactionTable({
     }
   }
 
-  // API mutation for updating
-
   const handleRefresh = () => {
     if (!onRefresh) return
     setIsRefreshing(true)
@@ -294,7 +205,6 @@ export function TransactionTable({
     }
   }
 
-  // Export to Excel
   const exportToExcel = () => {
     if (data.length === 0) {
       toast.error("Tidak ada data untuk diekspor")
@@ -328,226 +238,45 @@ export function TransactionTable({
       ...(currentShowKeteranganColumn ? { Ket: "" } : {}),
     })
 
-    // Create workbook and worksheet
     const ws = XLSX.utils.json_to_sheet(excelData)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Perhitungan Pengiriman Barang")
 
-    // Generate filename with current date
     const filename = `Perhitungan_Pengiriman_Barang_${format(new Date(), "yyyy-MM-dd")}.xlsx`
-
-    // Save file
     XLSX.writeFile(wb, filename)
   }
-
-  const generatePdfHtml = React.useCallback((rowChunks: Transaksi[][] = [data]) => {
-    const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
-    const tableHeaderHtml = `
-      <thead style="display: table-header-group;">
-        <tr style="background-color: #f0f0f0;">
-          <th style="border: 1px solid #000; padding: 6px; text-align: center;">No</th>
-          ${showDateColumn ? '<th style="border: 1px solid #000; padding: 6px;">Hari/Tgl</th>' : ""}
-          <th style="border: 1px solid #000; padding: 6px;">No Stt</th>
-          <th style="border: 1px solid #000; padding: 6px;">Pengirim</th>
-          <th style="border: 1px solid #000; padding: 6px;">Penerima</th>
-          <th style="border: 1px solid #000; padding: 6px; text-align: center;">C</th>
-          <th style="border: 1px solid #000; padding: 6px; text-align: center;">Kg</th>
-          <th style="border: 1px solid #000; padding: 6px; text-align: center;">Min</th>
-          <th style="border: 1px solid #000; padding: 6px; text-align: right;">Tarif</th>
-          <th style="border: 1px solid #000; padding: 6px; text-align: right;">Jumlah</th>
-          ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 6px;">Ket</th>' : ""}
-        </tr>
-      </thead>
-    `
-
-    const transactionRowChunks = rowChunks.length > 0 ? rowChunks : [[]]
-
-    const tablesHtml = transactionRowChunks.map((chunk, chunkIndex) => {
-      const firstRowNumber = transactionRowChunks
-        .slice(0, chunkIndex)
-        .reduce((sum, pageRows) => sum + pageRows.length, 0)
-      const isLastChunk = chunkIndex === transactionRowChunks.length - 1
-      const wrapperStyle = chunkIndex > 0
-        ? 'break-before: page; page-break-before: always; padding-top: 12px;'
-        : ''
-
-      const rowsHtml = chunk.map((item, index) => {
-        const rowNumber = firstRowNumber + index + 1
-        const outputDate = formatVisibleDate(item.tanggal, "")
-
-        return `
-          <tr style="break-inside: avoid; page-break-inside: avoid;">
-            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${rowNumber}</td>
-            ${showDateColumn ? `<td style="border: 1px solid #000; padding: 4px;">${escapeHtml(outputDate)}</td>` : ""}
-            <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.noResi)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.pengirim)}</td>
-            <td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.penerima)}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.coly}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.berat}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: center;">${item.min || ""}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${escapeHtml((item.tarif || 0).toLocaleString("id-ID"))}</td>
-            <td style="border: 1px solid #000; padding: 4px; text-align: right;">${escapeHtml(item.total.toLocaleString("id-ID"))}</td>
-            ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 4px;">${escapeHtml(item.keterangan || "")}</td>` : ""}
-          </tr>
-        `
-      }).join("")
-
-      const footerHtml = isLastChunk ? `
-        <tfoot style="display: table-row-group;">
-          <tr style="break-inside: avoid; page-break-inside: avoid;">
-            <td colspan="${pdfSummaryLabelColSpan}" style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">TOTAL</td>
-            <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${totalRevenue.toLocaleString("id-ID")}</td>
-            ${currentShowKeteranganColumn ? '<td style="border: 1px solid #000; padding: 6px;"></td>' : ""}
-          </tr>
-        </tfoot>
-      ` : ""
-
-      return `
-        <div style="${wrapperStyle}">
-          <table data-pdf-table="true" style="width: 100%; border-collapse: collapse; margin-bottom: ${isLastChunk ? '20px' : '0'};">
-            ${tableHeaderHtml}
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-            ${footerHtml}
-          </table>
-        </div>
-      `
-    }).join("")
-
-    return `
-      <div style="font-family: Arial, sans-serif; font-size: 11px; padding: 20px; box-sizing: border-box; background: #fff;">
-        <h2 class="pdf-keep-together" style="text-align: center; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid;">${escapeHtml(title || "Perhitungan Pengiriman Barang")}</h2>
-        <p class="pdf-keep-together" style="margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid;">Tanggal: ${format(new Date(), "dd MMMM yyyy", { locale: id })}</p>
-        ${tablesHtml}
-      </div>
-    `
-  }, [currentShowKeteranganColumn, data, formatVisibleDate, pdfSummaryLabelColSpan, showDateColumn, title])
 
   const openPdfPreview = () => {
     if (data.length === 0) {
       toast.error("Tidak ada data untuk diekspor")
       return
     }
-    setPdfHtmlContent(generatePdfHtml())
     setIsPdfPreviewOpen(true)
-  }
-
-  // Download PDF from preview
-  React.useEffect(() => {
-    if (!isPdfPreviewOpen) {
-      return
-    }
-
-    setPdfHtmlContent(generatePdfHtml())
-  }, [generatePdfHtml, isPdfPreviewOpen])
-
-  const measureTransactionPdfChunks = async (pdfContent: string): Promise<Transaksi[][]> => {
-    const measurementContainer = document.createElement("div")
-    measurementContainer.style.position = "absolute"
-    measurementContainer.style.left = "-10000px"
-    measurementContainer.style.top = "0"
-    measurementContainer.style.width = `${A4_LANDSCAPE_WIDTH_MM}mm`
-    measurementContainer.style.visibility = "hidden"
-    measurementContainer.style.pointerEvents = "none"
-    measurementContainer.style.zIndex = "-1"
-    measurementContainer.style.background = "#fff"
-    measurementContainer.innerHTML = pdfContent
-    document.body.appendChild(measurementContainer)
-
-    try {
-      const root = measurementContainer.firstElementChild as HTMLElement | null
-      const table = measurementContainer.querySelector('[data-pdf-table="true"]') as HTMLTableElement | null
-      const tableHeader = table?.querySelector("thead") as HTMLElement | null
-      const tableFooter = table?.querySelector("tfoot") as HTMLElement | null
-      const tableRows = Array.from(table?.querySelectorAll("tbody tr") || []) as HTMLTableRowElement[]
-
-      if (!root || !table || !tableHeader || tableRows.length !== data.length) {
-        return [data]
-      }
-
-      const rootRect = root.getBoundingClientRect()
-      const tableRect = table.getBoundingClientRect()
-      const tableStyle = window.getComputedStyle(table)
-      const rootStyle = window.getComputedStyle(root)
-      const pageInnerWidthMm = A4_LANDSCAPE_WIDTH_MM - TRANSACTION_PDF_MARGIN_MM * 2
-      const pageInnerHeightMm = A4_LANDSCAPE_HEIGHT_MM - TRANSACTION_PDF_MARGIN_MM * 2
-      const pageContentHeight = rootRect.width * (pageInnerHeightMm / pageInnerWidthMm)
-      const tableBottomMargin = parseFloat(tableStyle.marginBottom) || 0
-      const rootPaddingBottom = parseFloat(rootStyle.paddingBottom) || 0
-      const finalPageReserveHeight =
-        (tableFooter?.getBoundingClientRect().height || 0) +
-        tableBottomMargin +
-        rootPaddingBottom
-
-      const rowHeights = tableRows.map((row) => row.getBoundingClientRect().height)
-      const firstPageBeforeTableHeight = tableRect.top - rootRect.top
-      const tableHeaderHeight = tableHeader.getBoundingClientRect().height
-      // Keep each chunk strictly below html2pdf's fixed auto-slice boundary.
-      // scale:3 canvas rounding can leave the real boundary ~1-2px short, and a
-      // single tall row crossing it triggers the "few rows then blank" drift.
-      const safetyReserveHeight = Math.max(...rowHeights, 24)
-
-      const computedChunks = paginateTransactionPdfRows(data, {
-        pageContentHeight,
-        firstPageBeforeTableHeight,
-        tableHeaderHeight,
-        rowHeights,
-        finalPageReserveHeight,
-        safetyReserveHeight,
-      })
-
-      return computedChunks
-    } finally {
-      document.body.removeChild(measurementContainer)
-    }
   }
 
   const downloadPdf = async () => {
     toast.loading("Membuat file PDF...", { id: "pdf-export" })
 
     try {
-      const html2pdf = (await import('html2pdf.js')).default
+      const sanitizedTitle = (title || "Perhitungan_Pengiriman_Barang")
+        .replace(/[/\\?%*:|"<>]/g, "-")
+        .replace(/\s+/g, "_")
+        .trim()
 
-      const measuredRowChunks = await measureTransactionPdfChunks(generatePdfHtml([data]))
-      const pdfContent = generatePdfHtml(measuredRowChunks)
+      const pdf = await downloadTransactionsPdf({
+        title: title || "Perhitungan Pengiriman Barang",
+        dateMode: currentDateMode,
+        showKeteranganColumn: currentShowKeteranganColumn,
+        transactions: data,
+      })
 
-      const element = document.createElement('div')
-      element.style.position = 'absolute'
-      element.style.left = '-10000px'
-      element.style.top = '0'
-      element.style.width = `${A4_LANDSCAPE_WIDTH_MM}mm`
-      element.innerHTML = pdfContent
-      document.body.appendChild(element)
-
-      const opt = {
-        margin: 10,
-        filename: `${title || "Perhitungan_Pengiriman_Barang"}_${format(new Date(), "yyyy-MM-dd")}.pdf`,
-        image: { type: 'png' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
-        pagebreak: {
-          mode: ['css'] as const,
-          avoid: ['.pdf-keep-together']
-        },
-        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'landscape' as const }
-      }
-
-      try {
-        await html2pdf().set(opt).from(element).save()
-      } finally {
-        if (element.parentNode) {
-          element.parentNode.removeChild(element)
-        }
-      }
-
+      saveBlob(pdf, `${sanitizedTitle}_${format(new Date(), "yyyy-MM-dd")}.pdf`)
       toast.success("PDF berhasil diunduh!", { id: "pdf-export" })
-      setIsPdfPreviewOpen(false)
     } catch (error) {
-      console.error("Error exporting PDF:", error)
+      console.error("Error downloading PDF:", error)
       toast.error("Gagal mengexport PDF", { id: "pdf-export" })
     }
   }
-
 
   return (
     <Card className="w-full shadow-elevation border-0 overflow-hidden bg-gradient-to-br from-white to-slate-50/50">
@@ -768,9 +497,7 @@ export function TransactionTable({
                         Rp {data.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
                       </span>
                     </TableCell>
-                    {Array.from({ length: trailingSummaryCells }, (_, index) => (
-                      <TableCell key={index}></TableCell>
-                    ))}
+                    {currentShowKeteranganColumn && <TableCell></TableCell>}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -779,7 +506,6 @@ export function TransactionTable({
         )}
       </CardContent>
 
-      {/* Print Invoice Modal */}
       <PrintInvoiceModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
@@ -824,11 +550,62 @@ export function TransactionTable({
               </div>
             </div>
             <div className="flex-1 overflow-auto p-6 bg-slate-100">
-              <div 
-                className="bg-white shadow-lg mx-auto p-6" 
+              <div
+                className="bg-white shadow-lg mx-auto p-6"
                 style={{ maxWidth: '1100px' }}
-                dangerouslySetInnerHTML={{ __html: pdfHtmlContent }} 
-              />
+              >
+                <div style={{ fontFamily: "Arial, sans-serif", fontSize: "11px", padding: "20px", boxSizing: "border-box", background: "#fff" }}>
+                  <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+                    {title || "Perhitungan Pengiriman Barang"}
+                  </h2>
+                  <p style={{ marginBottom: "10px" }}>
+                    Tanggal: {format(new Date(), "dd MMMM yyyy", { locale: id })}
+                  </p>
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+                    <thead>
+                      <tr style={{ backgroundColor: "#f0f0f0" }}>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>No</th>
+                        {showDateColumn && <th style={{ border: "1px solid #000", padding: "6px" }}>Hari/Tgl</th>}
+                        <th style={{ border: "1px solid #000", padding: "6px" }}>No Stt</th>
+                        <th style={{ border: "1px solid #000", padding: "6px" }}>Pengirim</th>
+                        <th style={{ border: "1px solid #000", padding: "6px" }}>Penerima</th>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>C</th>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>Kg</th>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>Min</th>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "right" }}>Tarif</th>
+                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "right" }}>Jumlah</th>
+                        {currentShowKeteranganColumn && <th style={{ border: "1px solid #000", padding: "6px" }}>Ket</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map((item, index) => (
+                        <tr key={item.id || item.noResi}>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{index + 1}</td>
+                          {showDateColumn && <td style={{ border: "1px solid #000", padding: "4px" }}>{formatVisibleDate(item.tanggal, "")}</td>}
+                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.noResi}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.pengirim}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.penerima}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.coly}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.berat}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.min || ""}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "right" }}>{formatNumber(item.tarif || 0)}</td>
+                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "right" }}>{formatNumber(item.total)}</td>
+                          {currentShowKeteranganColumn && <td style={{ border: "1px solid #000", padding: "4px" }}>{item.keterangan || ""}</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={showDateColumn ? 9 : 8} style={{ border: "1px solid #000", padding: "6px", textAlign: "right", fontWeight: "bold" }}>TOTAL</td>
+                        <td style={{ border: "1px solid #000", padding: "6px", textAlign: "right", fontWeight: "bold" }}>
+                          {formatNumber(data.reduce((sum, item) => sum + item.total, 0))}
+                        </td>
+                        {currentShowKeteranganColumn && <td style={{ border: "1px solid #000", padding: "6px" }}></td>}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
