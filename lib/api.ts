@@ -216,4 +216,14 @@ export const signatureApi = {
   },
 }
 
+export async function downloadInvoicePdf(payload: unknown): Promise<Blob> {
+  const response = await api.post('/pdf/invoice', payload, { responseType: 'blob' })
+  return response.data
+}
+
+export async function downloadTransactionsPdf(payload: unknown): Promise<Blob> {
+  const response = await api.post('/pdf/transactions', payload, { responseType: 'blob' })
+  return response.data
+}
+
 export default api
