@@ -16,6 +16,7 @@ import {
   normalizeInvoiceDateMode,
   type InvoiceDateMode,
 } from "@/lib/invoice-date-mode"
+import { downloadInvoicePdf } from "@/lib/api"
 import type { Transaksi, Signature } from "@/lib/types"
 
 const escapeHtml = (value: string | number | null | undefined) => {
@@ -44,6 +45,17 @@ const PDF_MARGIN_MM = 10
 const PDF_CONTINUATION_TOP_PADDING = 12
 const PDF_MIN_MIDDLE_PAGE_ROWS = 8
 
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPaginationOptions) => {
   if (rows.length === 0) {
     return [rows]
@@ -56,8 +68,6 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
     const beforeTableHeight = isFirstPage
       ? options.firstPageBeforeTableHeight
       : PDF_CONTINUATION_TOP_PADDING
-    // Subtract a safety reserve so a chunk's content never reaches html2pdf's
-    // fixed auto-slice boundary (prevents the "few rows then blank" drift).
     const tableCapacity =
       options.pageContentHeight -
       beforeTableHeight -
@@ -364,192 +374,6 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       `
     }).join("")
   }
-
-  const waitForImagesToLoad = async (container: HTMLElement) => {
-    const images = Array.from(container.querySelectorAll("img"))
-    await Promise.all(images.map((image) => {
-      if (image.complete) {
-        return Promise.resolve()
-      }
-
-      return new Promise<void>((resolve) => {
-        image.onload = () => resolve()
-        image.onerror = () => resolve()
-      })
-    }))
-  }
-
-  const measureInvoicePdfChunks = async (pdfContent: string) => {
-    const measurementContainer = document.createElement("div")
-    measurementContainer.style.position = "absolute"
-    measurementContainer.style.left = "-10000px"
-    measurementContainer.style.top = "0"
-    measurementContainer.style.width = "21cm"
-    measurementContainer.style.visibility = "hidden"
-    measurementContainer.style.pointerEvents = "none"
-    measurementContainer.style.zIndex = "-1"
-    measurementContainer.style.background = "#fff"
-    measurementContainer.innerHTML = pdfContent
-    document.body.appendChild(measurementContainer)
-
-    try {
-      await waitForImagesToLoad(measurementContainer)
-
-      const root = measurementContainer.firstElementChild as HTMLElement | null
-      const table = measurementContainer.querySelector('[data-pdf-table="true"]') as HTMLTableElement | null
-      const tableHeader = table?.querySelector("thead") as HTMLElement | null
-      const tableFooter = table?.querySelector("tfoot") as HTMLElement | null
-      const tableRows = Array.from(table?.querySelectorAll("tbody tr") || []) as HTMLTableRowElement[]
-      const afterTable = measurementContainer.querySelector('[data-pdf-after-table="true"]') as HTMLElement | null
-
-      if (!root || !table || !tableHeader || tableRows.length !== data.length) {
-        return {
-          rowChunks: [data],
-          pageContentHeight: 0,
-          firstPageBeforeTableHeight: 0,
-          tableHeaderHeight: 0,
-          rowHeights: [],
-        }
-      }
-
-      const rootRect = root.getBoundingClientRect()
-      const tableRect = table.getBoundingClientRect()
-      const tableStyle = window.getComputedStyle(table)
-      const rootStyle = window.getComputedStyle(root)
-      const pageInnerWidthMm = A4_PORTRAIT_WIDTH_MM - PDF_MARGIN_MM * 2
-      const pageInnerHeightMm = A4_PORTRAIT_HEIGHT_MM - PDF_MARGIN_MM * 2
-      const pageContentHeight = rootRect.width * (pageInnerHeightMm / pageInnerWidthMm)
-      const tableBottomMargin = parseFloat(tableStyle.marginBottom) || 0
-      const rootPaddingBottom = parseFloat(rootStyle.paddingBottom) || 0
-      const finalPageReserveHeight =
-        (tableFooter?.getBoundingClientRect().height || 0) +
-        tableBottomMargin +
-        (afterTable?.getBoundingClientRect().height || 0) +
-        rootPaddingBottom
-
-      const rowHeights = tableRows.map((row) => row.getBoundingClientRect().height)
-      // Keep each chunk strictly below html2pdf's fixed auto-slice boundary so a
-      // single tall row crossing it cannot trigger the "few rows then blank" drift.
-      const safetyReserveHeight = Math.max(...rowHeights, 24)
-      // The first invoice page has dense letterhead/intro content before the table.
-      // html2pdf's canvas slice can still clip the last measured-fit rows there, so
-      // reserve extra first-page room to prevent orphan rows before the next header.
-      const firstPageSafetyReserveHeight = safetyReserveHeight * 3
-      const firstPageBeforeTableHeight = tableRect.top - rootRect.top
-      const tableHeaderHeight = tableHeader.getBoundingClientRect().height
-
-      const computedChunks = paginateInvoicePdfRows(data, {
-        pageContentHeight,
-        firstPageBeforeTableHeight,
-        tableHeaderHeight,
-        rowHeights,
-        finalPageReserveHeight,
-        safetyReserveHeight,
-        firstPageSafetyReserveHeight,
-      })
-
-      return {
-        rowChunks: computedChunks,
-        pageContentHeight,
-        firstPageBeforeTableHeight,
-        tableHeaderHeight,
-        rowHeights,
-      }
-    } finally {
-      document.body.removeChild(measurementContainer)
-    }
-  }
-
-  const renderPdfDocumentHtml = (invoiceTablesHtml: string, logoBase64: string) => `
-    <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #000; max-width: 21cm; margin: 0 auto; padding: 20px; word-spacing: normal; white-space: normal; letter-spacing: normal; box-sizing: border-box; background: #fff;">
-      <!-- Header -->
-      <div class="pdf-keep-together" style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #000; break-inside: avoid; page-break-inside: avoid;">
-        ${logoBase64 ? `<img src="${logoBase64}" alt="Logo KLK" style="width: 140px; height: auto; margin-right: 15px;" />` : ''}
-        <div style="text-align: center; flex: 1; padding-right: 100px;">
-          <p style="font-weight: bold; font-size: 13px; margin-bottom: 3px;">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
-          <p style="font-size: 10px; font-weight: bold;">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
-          <p style="font-size: 10px; font-weight: bold;">Email : klk.express.mdc@gmail.com</p>
-        </div>
-      </div>
-      
-      <!-- Letter Info -->
-      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-        <p style="margin-bottom: 3px;">${escapeHtml(formData.tanggalSurat)}</p>
-        <p style="margin-bottom: 3px;">No. ${escapeHtml(formData.nomorInvoice)}</p>
-      </div>
-
-      <!-- Recipient -->
-      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-        <p style="margin-bottom: 2px;">Kepada Yth :</p>
-        <p style="margin-bottom: 2px; font-weight: bold;">${escapeHtml(formData.namaPenerima)}</p>
-        <p style="margin-bottom: 2px;">Di. ${escapeHtml(formData.lokasiPenerima)}</p>
-      </div>
-
-      <!-- Intro -->
-      <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-        <p style="margin-bottom: 5px;">Dengan Hormat,</p>
-        <p style="margin-bottom: 5px;">Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
-      </div>
-
-      <!-- Table -->
-      ${invoiceTablesHtml}
-      
-      <div data-pdf-after-table="true" style="display: flow-root;">
-        <!-- Calculations -->
-        <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-          <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
-            <span style="flex: 1;">1. Biaya handling</span>
-            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(biayaHandling)}</span>
-          </div>
-          <div style="display: flex; max-width: 350px; margin-bottom: 3px;">
-            <span style="flex: 1;">2. Biaya Kirim Doc</span>
-            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(formData.biayaKirimDoc)}</span>
-          </div>
-          <div style="display: flex; max-width: 350px; font-weight: bold; border-top: 1px solid #000; padding-top: 3px; margin-top: 5px;">
-            <span style="flex: 1;">TOTAL TAGIHAN</span>
-            <span style="text-align: right; min-width: 120px;">Rp ${formatRupiah(totalTagihan)}</span>
-          </div>
-        </div>
-
-        <!-- Payment Info -->
-        <div class="pdf-keep-together" style="margin-bottom: 15px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
-          <p>Jumlah tagihan bisa ditransfer melalui :</p>
-          <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
-        </div>
-
-        <!-- Closing -->
-        <div class="pdf-keep-together" style="margin-bottom: 15px; break-inside: avoid; page-break-inside: avoid;">
-          <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
-          <p>Hormat Kami,</p>
-        </div>
-
-        <!-- Signatures -->
-        <div class="pdf-keep-together" style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 60px; break-inside: avoid; page-break-inside: avoid;">
-          <div style="width: 45%; text-align: center;">
-            ${selectedSignatureKiri 
-              ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-              : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
-            }
-            <p>PT. KLK Mdc</p>
-            <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKiri)}</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            ${selectedSignatureKanan 
-              ? `<div style="height: 70px; display: flex; align-items: flex-end; justify-content: center;"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-              : `<div style="border-bottom: 1px solid #000; width: 60%; margin: 0 auto 5px; margin-top: 70px;"></div>`
-            }
-            <p>Diketahui,</p>
-            <p style="font-weight: bold;">${escapeHtml(formData.penandatanganKanan)}</p>
-          </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="pdf-keep-together" style="margin-top: 80px; font-size: 10px; break-inside: avoid; page-break-inside: avoid;">
-          <p>Cc. Klk mdc</p>
-        </div>
-      </div>
-    </div>
-  `
 
   const handleBiayaKirimDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
@@ -890,11 +714,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     }, 500)
   }
 
-  // Handle PDF download - uses same template as print
   const handleDownloadPdf = async () => {
     setIsDownloadingPdf(true)
 
-    // Fetch logo and convert to base64
     let logoBase64 = ''
     try {
       const response = await fetch('/klkexpress.png')
@@ -909,44 +731,23 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     }
 
     try {
-      const html2pdf = (await import('html2pdf.js')).default
-      const measurementPdfContent = renderPdfDocumentHtml(renderInvoiceTablesHtml("pdf", [data]), logoBase64)
-      const measurement = await measureInvoicePdfChunks(measurementPdfContent)
-      const pdfContent = renderPdfDocumentHtml(
-        renderInvoiceTablesHtml("pdf", measurement.rowChunks, measurement),
-        logoBase64
-      )
-
-      const element = document.createElement('div')
-      element.innerHTML = pdfContent
-      document.body.appendChild(element)
-
-      // Sanitize invoiceTitle for valid filename (remove special chars)
       const sanitizedTitle = (invoiceTitle || 'Invoice_KLK')
         .replace(/[/\\?%*:|"<>]/g, '-')
         .replace(/\s+/g, '_')
         .trim()
-      
-      const opt = {
-        margin: 10,
-        filename: `${sanitizedTitle}.pdf`,
-        image: { type: 'png' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false },
-        pagebreak: {
-          mode: ['css'] as const,
-          avoid: ['.pdf-keep-together']
-        },
-        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
-      }
 
-      try {
-        await html2pdf().set(opt).from(element).save()
-      } finally {
-        if (element.parentNode) {
-          element.parentNode.removeChild(element)
-        }
-      }
+      const pdf = await downloadInvoicePdf({
+        invoiceTitle,
+        dateMode: currentDateMode,
+        showKeteranganColumn: currentShowKeteranganColumn,
+        formData,
+        selectedSignatureKiri,
+        selectedSignatureKanan,
+        logoBase64,
+        transactions: data,
+      })
 
+      saveBlob(pdf, `${sanitizedTitle}.pdf`)
       setIsDownloadingPdf(false)
       onClose()
     } catch (error) {
