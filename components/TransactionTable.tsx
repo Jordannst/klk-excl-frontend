@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, X, Loader2 } from "lucide-react"
+import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Trash2, X, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
@@ -21,7 +21,7 @@ import { EditTransactionDialog } from "@/components/EditTransactionDialog"
 import { InvoiceDateModeField } from "@/components/InvoiceDateModeField"
 import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
 import { downloadTransactionsPdf } from "@/lib/api"
-import { useUpdateInvoice, useUpdateTransaksi } from "@/lib/hooks"
+import { useDeleteTransaksi, useUpdateInvoice, useUpdateTransaksi } from "@/lib/hooks"
 import {
   isDateColumnVisible,
   isDateInputEnabled,
@@ -60,6 +60,7 @@ export function TransactionTable({
 }: TransactionTableProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<Transaksi | null>(null)
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
   const [currentDateMode, setCurrentDateMode] = React.useState<InvoiceDateMode>(() =>
@@ -71,6 +72,7 @@ export function TransactionTable({
 
   const updateTransaksiMutation = useUpdateTransaksi()
   const updateInvoiceMutation = useUpdateInvoice()
+  const deleteTransaksiMutation = useDeleteTransaksi()
 
   React.useEffect(() => {
     setCurrentDateMode(normalizeInvoiceDateMode(dateMode))
@@ -278,6 +280,30 @@ export function TransactionTable({
     }
   }
 
+  const cancelDelete = () => {
+    if (!deleteTransaksiMutation.isPending) {
+      setDeleteTarget(null)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+
+    try {
+      await deleteTransaksiMutation.mutateAsync(deleteTarget.id)
+      toast.success("Transaksi berhasil dihapus")
+      setDeleteTarget(null)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Gagal menghapus transaksi"
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const axiosError = error as { response?: { data?: { error?: string } } }
+        toast.error(axiosError.response?.data?.error || errorMessage)
+      } else {
+        toast.error(errorMessage)
+      }
+    }
+  }
+
   return (
     <Card className="w-full shadow-elevation border-0 overflow-hidden bg-gradient-to-br from-white to-slate-50/50">
       {/* Gradient Header */}
@@ -412,7 +438,7 @@ export function TransactionTable({
                 <TableHeader>
                   <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50 border-b-2 border-slate-200">
                     <TableHead className="font-bold text-slate-700 text-center">No</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-center">Edit</TableHead>
+                    <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
                     {showDateColumn && <TableHead className="font-bold text-slate-700">Tgl</TableHead>}
                     <TableHead className="font-bold text-slate-700">No STT</TableHead>
                     <TableHead className="font-bold text-slate-700">Pengirim</TableHead>
@@ -438,15 +464,29 @@ export function TransactionTable({
                           {index + 1}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-blue-600 hover:bg-blue-50"
-                            onClick={() => startEdit(item)}
-                            aria-label={`Edit transaksi STT ${item.noResi}`}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                              onClick={() => startEdit(item)}
+                              aria-label={`Edit transaksi STT ${item.noResi}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-red-600 hover:bg-red-50"
+                              onClick={() => setDeleteTarget(item)}
+                              disabled={deleteTransaksiMutation.isPending}
+                              aria-label={`Hapus transaksi STT ${item.noResi}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                         {showDateColumn && (
                           <TableCell className="text-slate-600">
@@ -605,6 +645,67 @@ export function TransactionTable({
                     </tfoot>
                   </table>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-transaction-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={cancelDelete}
+            aria-label="Tutup konfirmasi hapus"
+          />
+          <div className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
+            <div className="text-center">
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                  <Trash2 className="h-7 w-7 text-red-600" />
+                </div>
+              </div>
+              <h3 id="delete-transaction-title" className="mb-2 text-lg font-bold text-slate-800">
+                Hapus Transaksi?
+              </h3>
+              <p className="mb-1 text-sm text-slate-500">Transaksi ini akan dihapus permanen:</p>
+              <p className="mb-4 font-semibold text-slate-700">STT {deleteTarget.noResi}</p>
+              {data.length === 1 && (
+                <p className="mb-6 rounded-lg bg-amber-50 p-3 text-xs font-medium text-amber-700">
+                  Ini transaksi terakhir. Menghapusnya juga akan menghapus invoice ini secara permanen.
+                </p>
+              )}
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={cancelDelete}
+                  className="flex-1"
+                  disabled={deleteTransaksiMutation.isPending}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={deleteTransaksiMutation.isPending}
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                >
+                  {deleteTransaksiMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Menghapus...
+                    </>
+                  ) : (
+                    "Hapus"
+                  )}
+                </Button>
               </div>
             </div>
           </div>
