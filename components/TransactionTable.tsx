@@ -48,6 +48,7 @@ interface TransactionTableProps {
   invoiceId?: number | null
   dateMode?: InvoiceDateMode
   showKeteranganColumn?: boolean
+  highlightNoResi?: string
 }
 
 export function TransactionTable({
@@ -57,7 +58,22 @@ export function TransactionTable({
   invoiceId,
   dateMode,
   showKeteranganColumn,
+  highlightNoResi,
 }: TransactionTableProps) {
+  const highlightRowRef = React.useRef<HTMLTableRowElement | null>(null)
+  const [isFlashing, setIsFlashing] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!highlightNoResi) return
+    setIsFlashing(true)
+    highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    const timer = setTimeout(() => setIsFlashing(false), 2000)
+    return () => clearTimeout(timer)
+  }, [highlightNoResi, data])
+
+  const highlightIndex = highlightNoResi
+    ? data.findIndex((item) => item.noResi === highlightNoResi)
+    : -1
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<Transaksi | null>(null)
@@ -458,7 +474,10 @@ export function TransactionTable({
                     return (
                       <TableRow
                         key={item.id || index}
-                        className="group hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-200 border-b border-slate-100"
+                        ref={index === highlightIndex ? highlightRowRef : undefined}
+                        className={`group hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-200 border-b border-slate-100 ${
+                          index === highlightIndex && isFlashing ? "bg-amber-100" : ""
+                        }`}
                       >
                         <TableCell className="text-center text-slate-600 font-medium">
                           {index + 1}

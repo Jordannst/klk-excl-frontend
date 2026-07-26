@@ -5,6 +5,7 @@ import { FileText, Plus, Loader2 } from "lucide-react"
 import { ExpeditionForm } from "@/components/ExpeditionForm"
 import { TransactionTable } from "@/components/TransactionTable"
 import { InvoiceHistory } from "@/components/InvoiceHistory"
+import { TransaksiSearch } from "@/components/TransaksiSearch"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import type { Invoice } from "@/lib/types"
 function DashboardContent() {
   // Selected invoice ID from history
   const [selectedInvoiceId, setSelectedInvoiceId] = React.useState<number | null>(null)
+  const [highlightNoResi, setHighlightNoResi] = React.useState<string | undefined>(undefined)
   const [showForm, setShowForm] = React.useState(true)
   const [formKey, setFormKey] = React.useState(0)
   const [isContinuingInvoice, setIsContinuingInvoice] = React.useState(false)
@@ -60,6 +62,11 @@ function DashboardContent() {
     setShowForm(false)
   }
 
+  const handleSearchSelect = (invoiceId: number, noResi: string) => {
+    setHighlightNoResi(noResi)
+    handleSelectInvoice(invoiceId)
+  }
+
   const handleContinueInvoice = () => {
     if (!selectedInvoice) return
 
@@ -103,6 +110,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar - Invoice History */}
           <div className="lg:col-span-1">
+            <TransaksiSearch onSelect={handleSearchSelect} />
             <InvoiceHistory
               selectedId={selectedInvoiceId}
               onSelectInvoice={handleSelectInvoice}
@@ -153,6 +161,7 @@ function DashboardContent() {
                   invoiceId={selectedInvoice.id}
                   dateMode={selectedInvoice.dateMode}
                   showKeteranganColumn={selectedInvoice.showKeteranganColumn}
+                  highlightNoResi={highlightNoResi}
                 />
               </div>
             )}
