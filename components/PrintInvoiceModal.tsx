@@ -12,22 +12,12 @@ import { SegmentedInvoiceInput } from "@/components/ui/segmented-invoice-input"
 import { useSignatures } from "@/lib/hooks/useSignature"
 import {
   isDateColumnVisible,
-  isDateInputEnabled,
   normalizeInvoiceDateMode,
   type InvoiceDateMode,
 } from "@/lib/invoice-date-mode"
 import { downloadInvoicePdf } from "@/lib/api"
 import type { Transaksi, Signature } from "@/lib/types"
-
-const escapeHtml = (value: string | number | null | undefined) => {
-  const stringValue = String(value ?? "")
-  return stringValue
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
+import { InvoiceDocument } from "./InvoiceDocument"
 
 interface InvoicePdfPaginationOptions {
   pageContentHeight: number
@@ -41,7 +31,9 @@ interface InvoicePdfPaginationOptions {
 
 const A4_PORTRAIT_WIDTH_MM = 210
 const A4_PORTRAIT_HEIGHT_MM = 297
-const PDF_MARGIN_MM = 10
+// Must match the @page margin (1.5cm) in the print window so measured page
+// capacity equals what the browser actually fits when printing.
+const PDF_MARGIN_MM = 15
 const PDF_CONTINUATION_TOP_PADDING = 12
 const PDF_MIN_MIDDLE_PAGE_ROWS = 8
 
@@ -139,14 +131,6 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
   return chunks
 }
 
-interface InvoicePdfMeasurement {
-  rowChunks: Transaksi[][]
-  pageContentHeight: number
-  firstPageBeforeTableHeight: number
-  tableHeaderHeight: number
-  rowHeights: number[]
-}
-
 interface PrintInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
@@ -190,8 +174,41 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
 
   const currentDateMode = normalizeInvoiceDateMode(dateMode)
   const showDateColumn = isDateColumnVisible(currentDateMode)
-  const isDateEnabled = isDateInputEnabled(currentDateMode)
   const currentShowKeteranganColumn = showKeteranganColumn !== false
+
+  // Off-screen document rendering states
+  const [logoBase64, setLogoBase64] = React.useState("")
+  const [measuredChunks, setMeasuredChunks] = React.useState<Transaksi[][]>([])
+  const [isPrintingActive, setIsPrintingActive] = React.useState(false)
+
+  const measurementRef = React.useRef<HTMLDivElement>(null)
+  const printRef = React.useRef<HTMLDivElement>(null)
+
+  // Load logo as base64 on open
+  React.useEffect(() => {
+    if (!isOpen) return
+    let isMounted = true
+    const loadLogo = async () => {
+      try {
+        const response = await fetch('/klkexpress.png')
+        const blob = await response.blob()
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+        if (isMounted) {
+          setLogoBase64(base64)
+        }
+      } catch (error) {
+        console.error('Failed to load logo:', error)
+      }
+    }
+    loadLogo()
+    return () => {
+      isMounted = false
+    }
+  }, [isOpen])
 
   React.useEffect(() => {
     setFormData({
@@ -206,39 +223,13 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     setBiayaKirimDocDisplay("")
     setSelectedSignatureKiri(null)
     setSelectedSignatureKanan(null)
+    setMeasuredChunks([])
+    setIsPrintingActive(false)
   }, [invoiceKey])
 
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
   const totalTagihan = biayaHandling + formData.biayaKirimDoc
-
-  const formatTransactionDate = (tanggal: string | null | undefined) => {
-    if (!showDateColumn || !isDateEnabled) {
-      return ""
-    }
-
-    return tanggal ? format(new Date(tanggal), "dd MMM yyyy", { locale: id }) : "-"
-  }
-
-  const getTableTotalColSpan = () => (showDateColumn ? 9 : 8)
-
-  const trailingFooterCells = currentShowKeteranganColumn ? 1 : 0
-
-  const renderFooterCellsHtml = (count: number, html: string) => {
-    return Array.from({ length: count }, () => html).join("")
-  }
-
-  const printFooterCellsHtml = renderFooterCellsHtml(
-    trailingFooterCells,
-    '<td style="border: 1px solid #000; padding: 6px;"></td>'
-  )
-
-  const pdfFooterCellsHtml = renderFooterCellsHtml(
-    trailingFooterCells,
-    '<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;"></td>'
-  )
-
-  const getKeteranganText = (value: string | null | undefined) => value || ""
 
   const handleChange = (field: keyof PrintFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -248,136 +239,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     return num.toLocaleString("id-ID")
   }
 
-  const renderInvoiceTablesHtml = (
-    mode: "print" | "pdf",
-    rowChunks: Transaksi[][] = [data],
-    measurement?: InvoicePdfMeasurement
-  ) => {
-    const isPdf = mode === "pdf"
-    const tableHeaderHtml = isPdf ? `
-      <thead style="display: table-header-group;">
-        <tr>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No</th>
-          ${showDateColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Hari/Tgl</th>' : ''}
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">No Stt</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Pengirim</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Penerima</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Coly</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Kg</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Min</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Tarif</th>
-          <th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Jumlah</th>
-          ${currentShowKeteranganColumn ? '<th style="border: 1px solid #000; padding: 8px 6px; background-color: #f0f0f0; font-weight: bold; text-align: center; line-height: 20px;">Ket</th>' : ''}
-        </tr>
-      </thead>
-    ` : `
-      <thead>
-        <tr>
-          <th>No</th>
-          ${showDateColumn ? '<th>Hari/Tgl</th>' : ''}
-          <th>No Stt</th>
-          <th>Pengirim</th>
-          <th>Penerima</th>
-          <th>Coly</th>
-          <th>Kg</th>
-          <th>Min</th>
-          <th>Tarif</th>
-          <th>Jumlah</th>
-          ${currentShowKeteranganColumn ? '<th>Ket</th>' : ''}
-        </tr>
-      </thead>
-    `
-    const invoiceRowChunks = rowChunks.length > 0 ? rowChunks : [[]]
-
-    return invoiceRowChunks.map((chunk, chunkIndex) => {
-      const firstRowNumber = invoiceRowChunks
-        .slice(0, chunkIndex)
-        .reduce((sum, pageRows) => sum + pageRows.length, 0)
-      const isLastChunk = chunkIndex === invoiceRowChunks.length - 1
-      const wrapperStyle = chunkIndex > 0 && isPdf && !isLastChunk
-        ? 'padding-top: 12px;'
-        : ''
-      const usedRowsHeight = measurement
-        ? measurement.rowHeights
-          .slice(firstRowNumber, firstRowNumber + chunk.length)
-          .reduce((sum, height) => sum + height, 0)
-        : 0
-      const beforeTableHeight = chunkIndex === 0
-        ? measurement?.firstPageBeforeTableHeight ?? 0
-        : PDF_CONTINUATION_TOP_PADDING
-      const spacerHeight = isPdf && measurement && !isLastChunk
-        ? Math.max(0, measurement.pageContentHeight - beforeTableHeight - measurement.tableHeaderHeight - usedRowsHeight)
-        : 0
-      const tableAttributes = isPdf
-        ? ` data-pdf-table="true" style="width: 100%; border-collapse: collapse; margin-bottom: ${isLastChunk ? '15px' : '0'}; font-size: 10px;"`
-        : ''
-
-      return `
-        <div data-pdf-chunk-index="${chunkIndex}" style="${wrapperStyle}">
-          <table${tableAttributes}>
-            ${tableHeaderHtml}
-            <tbody>
-              ${chunk.map((item, index) => {
-                const rowNumber = firstRowNumber + index + 1
-
-                return isPdf ? `
-                  <tr style="break-inside: avoid; page-break-inside: avoid;">
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${rowNumber}</td>
-                    ${showDateColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
-                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.noResi)}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.pengirim)}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(item.penerima)}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.coly}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.berat}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: center; line-height: 20px;">${item.min}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
-                    <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; line-height: 20px;">${escapeHtml(formatRupiah(item.total))}</td>
-                    ${currentShowKeteranganColumn ? `<td style="border: 1px solid #000; padding: 8px 6px; line-height: 20px;">${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
-                  </tr>
-                ` : `
-                  <tr style="break-inside: avoid; page-break-inside: avoid;">
-                    <td class="center">${rowNumber}</td>
-                    ${showDateColumn ? `<td>${escapeHtml(formatTransactionDate(item.tanggal))}</td>` : ''}
-                    <td>${escapeHtml(item.noResi)}</td>
-                    <td>${escapeHtml(item.pengirim)}</td>
-                    <td>${escapeHtml(item.penerima)}</td>
-                    <td class="center">${item.coly}</td>
-                    <td class="center">${item.berat}</td>
-                    <td class="center">${item.min}</td>
-                    <td class="number">${escapeHtml(formatRupiah(item.tarif || 0))}</td>
-                    <td class="number">${escapeHtml(formatRupiah(item.total))}</td>
-                    ${currentShowKeteranganColumn ? `<td>${escapeHtml(getKeteranganText(item.keterangan))}</td>` : ''}
-                  </tr>
-                `
-              }).join("")}
-            </tbody>
-            ${isLastChunk ? isPdf ? `
-              <tfoot style="display: table-row-group;">
-                <tr style="break-inside: avoid; page-break-inside: avoid;">
-                  <td colspan="${getTableTotalColSpan()}" style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">TOTAL</td>
-                  <td style="border: 1px solid #000; padding: 8px 6px; text-align: right; font-weight: bold; line-height: 20px;">Rp ${formatRupiah(biayaHandling)}</td>
-                  ${pdfFooterCellsHtml}
-                </tr>
-              </tfoot>
-            ` : `
-              <tfoot>
-                <tr style="break-inside: avoid; page-break-inside: avoid;">
-                  <td colspan="${getTableTotalColSpan()}" style="text-align: right; font-weight: bold; border: 1px solid #000;">TOTAL</td>
-                  <td class="number" style="font-weight: bold; border: 1px solid #000;">Rp ${formatRupiah(biayaHandling)}</td>
-                  ${printFooterCellsHtml}
-                </tr>
-              </tfoot>
-            ` : ''}
-          </table>
-        </div>
-        ${spacerHeight > 0 ? `<div data-pdf-spacer-after="${chunkIndex}" style="height: ${spacerHeight}px;"></div>` : ''}
-      `
-    }).join("")
-  }
-
   const handleBiayaKirimDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
-    // Remove all non-digit characters
     const cleanedValue = inputValue.replace(/\D/g, '')
     
     if (cleanedValue === '' || cleanedValue === '0') {
@@ -391,344 +254,174 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     handleChange("biayaKirimDoc", numericValue)
   }
 
-  const handlePrint = async () => {
-    setIsPrinting(true)
+  const waitForImagesToLoad = async (container: HTMLElement) => {
+    const images = Array.from(container.querySelectorAll("img"))
+    await Promise.all(images.map((image) => {
+      if (image.complete) {
+        return Promise.resolve()
+      }
 
-    // Fetch logo and convert to base64
-    let logoBase64 = ''
-    try {
-      const response = await fetch('/klkexpress.png')
-      const blob = await response.blob()
-      logoBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
+      return new Promise<void>((resolve) => {
+        image.onload = () => resolve()
+        image.onerror = () => resolve()
       })
-    } catch (error) {
-      console.error('Failed to load logo:', error)
+    }))
+  }
+
+  const measureInvoicePdfChunks = async () => {
+    const container = measurementRef.current
+    if (!container) {
+      return {
+        rowChunks: [data],
+        pageContentHeight: 0,
+        firstPageBeforeTableHeight: 0,
+        tableHeaderHeight: 0,
+        rowHeights: [],
+      }
     }
 
-    const printWindow = window.open("", "_blank")
-    if (!printWindow) {
-      setIsPrinting(false)
+    await waitForImagesToLoad(container)
+
+    const root = container.firstElementChild as HTMLElement | null
+    const table = container.querySelector('[data-pdf-table="true"]') as HTMLTableElement | null
+    const tableHeader = table?.querySelector("thead") as HTMLElement | null
+    const tableFooter = table?.querySelector("tfoot") as HTMLElement | null
+    const tableRows = Array.from(table?.querySelectorAll("tbody tr") || []) as HTMLTableRowElement[]
+    const afterTable = container.querySelector('[data-pdf-after-table="true"]') as HTMLElement | null
+
+    if (!root || !table || !tableHeader || tableRows.length !== data.length) {
+      return {
+        rowChunks: [data],
+        pageContentHeight: 0,
+        firstPageBeforeTableHeight: 0,
+        tableHeaderHeight: 0,
+        rowHeights: [],
+      }
+    }
+
+    const rootRect = root.getBoundingClientRect()
+    const tableRect = table.getBoundingClientRect()
+    const tableStyle = window.getComputedStyle(table)
+    const rootStyle = window.getComputedStyle(root)
+    const pageInnerWidthMm = A4_PORTRAIT_WIDTH_MM - PDF_MARGIN_MM * 2
+    const pageInnerHeightMm = A4_PORTRAIT_HEIGHT_MM - PDF_MARGIN_MM * 2
+    const pageContentHeight = rootRect.width * (pageInnerHeightMm / pageInnerWidthMm)
+    const tableBottomMargin = parseFloat(tableStyle.marginBottom) || 0
+    const rootPaddingBottom = parseFloat(rootStyle.paddingBottom) || 0
+    const finalPageReserveHeight =
+      (tableFooter?.getBoundingClientRect().height || 0) +
+      tableBottomMargin +
+      (afterTable?.getBoundingClientRect().height || 0) +
+      rootPaddingBottom
+
+    const rowHeights = tableRows.map((row) => row.getBoundingClientRect().height)
+    const safetyReserveHeight = Math.max(...rowHeights, 24)
+    const firstPageSafetyReserveHeight = safetyReserveHeight * 3
+    const firstPageBeforeTableHeight = tableRect.top - rootRect.top
+    const tableHeaderHeight = tableHeader.getBoundingClientRect().height
+
+    const computedChunks = paginateInvoicePdfRows(data, {
+      pageContentHeight,
+      firstPageBeforeTableHeight,
+      tableHeaderHeight,
+      rowHeights,
+      finalPageReserveHeight,
+      safetyReserveHeight,
+      firstPageSafetyReserveHeight,
+    })
+
+    return {
+      rowChunks: computedChunks,
+      pageContentHeight,
+      firstPageBeforeTableHeight,
+      tableHeaderHeight,
+      rowHeights,
+    }
+  }
+
+  const handlePrint = async () => {
+    setIsPrinting(true)
+    const measurement = await measureInvoicePdfChunks()
+    setMeasuredChunks(measurement.rowChunks)
+    setIsPrintingActive(true)
+  }
+
+  // Handle printing asynchronously once paginated chunks are rendered
+  React.useEffect(() => {
+    const currentPrintEl = printRef.current
+    if (!isPrintingActive || measuredChunks.length === 0 || !currentPrintEl) {
       return
     }
 
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Invoice - ${escapeHtml(invoiceTitle || 'KLK Express')}</title>
-          <style>
-            @media print {
-              @page {
-                margin: 1.5cm;
-                size: A4 portrait;
+    const doPrint = () => {
+      const printWindow = window.open("", "_blank")
+      if (!printWindow) {
+        setIsPrinting(false)
+        setIsPrintingActive(false)
+        setMeasuredChunks([])
+        return
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Invoice</title>
+            <style>
+              @media print {
+                @page {
+                  margin: 1.5cm;
+                  size: A4 portrait;
+                }
               }
-            }
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              font-size: 11px;
-              line-height: 1.4;
-              color: #000;
-              word-spacing: normal;
-              white-space: normal;
-              letter-spacing: normal;
-            }
-            .container {
-              max-width: 21cm;
-              margin: 0 auto;
-              padding: 10px;
-            }
-            
-            /* Header */
-            .header {
-              display: flex;
-              align-items: center;
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 2px solid #000;
-            }
-            .header-info {
-              text-align: center;
-              flex: 1;
-              padding-right: 100px; /* Offset for logo width to truly center */
-            }
-            .header-info .branch {
-              font-weight: bold;
-              font-size: 13px;
-              margin-bottom: 3px;
-            }
-            .header-info .contact {
-              font-size: 10px;
-              font-weight: bold;
-            }
-            .logo {
-              width: 140px;
-              height: auto;
-              margin-right: 15px;
-            }
-            
-            /* Letter Info */
-            .letter-info {
-              margin-bottom: 15px;
-            }
-            .letter-info p {
-              margin-bottom: 3px;
-            }
-            
-            /* Recipient */
-            .recipient {
-              margin-bottom: 15px;
-            }
-            .recipient p {
-              margin-bottom: 2px;
-            }
-            
-            /* Intro */
-            .intro {
-              margin-bottom: 15px;
-            }
-            .intro p {
-              margin-bottom: 5px;
-            }
-            
-            /* Table */
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 15px;
-              font-size: 10px;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 4px 6px;
-              vertical-align: middle;
-            }
-            th {
-              background-color: #f0f0f0;
-              font-weight: bold;
-              text-align: center;
-            }
-            thead {
-              display: table-header-group;
-            }
-            tfoot {
-              display: table-row-group;
-            }
-            tr {
-              break-inside: avoid;
-              page-break-inside: avoid;
-            }
-            td {
-              text-align: left;
-            }
-            td.number {
-              text-align: right;
-            }
-            td.center {
-              text-align: center;
-            }
-            
-            /* Calculations */
-            .calculations {
-              margin-bottom: 15px;
-            }
-            .calc-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 3px;
-              max-width: 350px;
-            }
-            .calc-row .label {
-              flex: 1;
-            }
-            .calc-row .value {
-              text-align: right;
-              min-width: 120px;
-            }
-            .calc-row.total {
-              font-weight: bold;
-              border-top: 1px solid #000;
-              padding-top: 3px;
-              margin-top: 5px;
-            }
-            
-            /* Payment Info */
-            .payment-info {
-              margin-bottom: 15px;
-              font-size: 10px;
-            }
-            
-            /* Closing */
-            .closing {
-              margin-bottom: 25px;
-            }
-            .closing p {
-              margin-bottom: 5px;
-            }
-            
-            /* Signatures */
-            .signatures {
-              display: flex;
-              justify-content: space-between;
-              margin-top: 40px;
-              margin-bottom: 20px;
-            }
-            .signature-box {
-              text-align: center;
-              width: 200px;
-            }
-            .signature-line {
-              border-bottom: 1px solid #000;
-              height: 80px;
-              margin-bottom: 5px;
-            }
-            .signature-name {
-              font-weight: bold;
-            }
-            
-            /* Footer */
-            .footer {
-              position: absolute;
-              bottom: 2cm;
-              left: 10px;
-              font-size: 10px;
-            }
-            
-            /* Container needs relative positioning for footer */
-            .container {
-              max-width: 21cm;
-              min-height: 26cm;
-              margin: 0 auto;
-              padding: 10px;
-              position: relative;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <!-- Header -->
-            <div class="header">
-              <img src="${logoBase64}" alt="Logo KLK" class="logo" />
-              <div class="header-info">
-                <p class="branch">Branch Manado: Permata Klabat Blok E1 No 17 Manado</p>
-                <p class="contact">No. Tlp. : (0431) 7242432 HP : 085395549100</p>
-                <p class="contact">Email : klk.express.mdc@gmail.com</p>
-              </div>
-            </div>
-            
-            <!-- Letter Info -->
-            <div class="letter-info">
-              <p>${escapeHtml(formData.tanggalSurat)}</p>
-              <p>No. ${escapeHtml(formData.nomorInvoice)}</p>
-            </div>
-            
-            <!-- Recipient -->
-            <div class="recipient">
-              <p>Kepada Yth :</p>
-              <p><strong>${escapeHtml(formData.namaPenerima)}</strong></p>
-              <p>Di. ${escapeHtml(formData.lokasiPenerima)}</p>
-            </div>
-            
-            <!-- Intro -->
-            <div class="intro">
-              <p>Dengan Hormat,</p>
-              <p>Terlampir Jasa Handling dari PT. Kemilau Lintas Khatulistiwa Manado Dikirim sesuai perhitungan Jasa handling di bawah ini :</p>
-            </div>
-            
-            <!-- Table -->
-            ${renderInvoiceTablesHtml("print")}
-            
-            <!-- Calculations -->
-            <div class="calculations">
-              <div class="calc-row">
-                <span class="label">1. Biaya handling</span>
-                <span class="value">Rp ${formatRupiah(biayaHandling)}</span>
-              </div>
-              <div class="calc-row">
-                <span class="label">2. Biaya Kirim Doc</span>
-                <span class="value">Rp ${formatRupiah(formData.biayaKirimDoc)}</span>
-              </div>
-              <div class="calc-row total">
-                <span class="label">3. Total tagihan</span>
-                <span class="value">Rp ${formatRupiah(totalTagihan)}</span>
-              </div>
-            </div>
-            
-            <!-- Payment Info -->
-            <div class="payment-info">
-              <p>Jumlah tagihan bisa ditransfer melalui :</p>
-              <p><strong>Rek mandiri, 1500010112710 a/n. Janti Feine Rundengan</strong></p>
-            </div>
-            
-            <!-- Closing -->
-            <div class="closing">
-              <p>Demikian di sampaikan, Atas perhatian dan kerjasama yang baik, Kami ucapkan Terima Kasih</p>
-              <p>Hormat Kami,</p>
-            </div>
-            
-            <!-- Signatures -->
-            <div class="signatures">
-              <div class="signature-box">
-                ${selectedSignatureKiri 
-                  ? `<div class="signature-image"><img src="${selectedSignatureKiri.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-                  : `<div class="signature-line"></div>`
-                }
-                <p>PT. KLK Mdc</p>
-                <p class="signature-name">${escapeHtml(formData.penandatanganKiri)}</p>
-              </div>
-              <div class="signature-box">
-                ${selectedSignatureKanan 
-                  ? `<div class="signature-image"><img src="${selectedSignatureKanan.imageData}" alt="Signature" style="max-height: 60px; max-width: 150px;" /></div>`
-                  : `<div class="signature-line"></div>`
-                }
-                <p>Diketahui,</p>
-                <p class="signature-name">${escapeHtml(formData.penandatanganKanan)}</p>
-              </div>
-            </div>
-            
-            <!-- Footer -->
-            <div class="footer">
-              <p>Cc. Klk mdc</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              body {
+                font-family: Arial, sans-serif;
+                font-size: 11px;
+                line-height: 1.4;
+                color: #000;
+                background: #fff;
+              }
+              .pdf-keep-together {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+            </style>
+          </head>
+          <body>
+            <div id="print-root"></div>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.document.title = `Invoice - ${invoiceTitle || 'KLK Express'}`
 
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-    printWindow.focus()
+      const printRoot = printWindow.document.getElementById("print-root")
+      if (printRoot) {
+        const cloned = currentPrintEl.cloneNode(true)
+        printRoot.appendChild(printWindow.document.importNode(cloned, true))
+      }
 
-    setTimeout(() => {
-      printWindow.print()
-      printWindow.close()
-      setIsPrinting(false)
-      onClose()
-    }, 500)
-  }
+      printWindow.focus()
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+        setIsPrinting(false)
+        setIsPrintingActive(false)
+        setMeasuredChunks([])
+        onClose()
+      }, 500)
+    }
+
+    doPrint()
+  }, [isPrintingActive, measuredChunks, invoiceTitle, onClose])
 
   const handleDownloadPdf = async () => {
     setIsDownloadingPdf(true)
-
-    let logoBase64 = ''
-    try {
-      const response = await fetch('/klkexpress.png')
-      const blob = await response.blob()
-      logoBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
-      })
-    } catch (error) {
-      console.error('Failed to load logo:', error)
-    }
 
     try {
       const sanitizedTitle = (invoiceTitle || 'Invoice_KLK')
@@ -748,10 +441,10 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       })
 
       saveBlob(pdf, `${sanitizedTitle}.pdf`)
-      setIsDownloadingPdf(false)
       onClose()
     } catch (error) {
       console.error("Error downloading PDF:", error)
+    } finally {
       setIsDownloadingPdf(false)
     }
   }
@@ -760,6 +453,39 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Off-screen elements for measurement & printing */}
+      {/* 180mm = printable width of A4 portrait with 1.5cm @page margins, so the
+          off-screen layout wraps and measures exactly like the printed page. */}
+      <div style={{ position: "absolute", left: "-10000px", top: "0px", width: "180mm", pointerEvents: "none", zIndex: -1, visibility: "hidden", background: "#fff" }}>
+        <div ref={measurementRef}>
+          <InvoiceDocument
+            data={data}
+            formData={formData}
+            selectedSignatureKiri={selectedSignatureKiri}
+            selectedSignatureKanan={selectedSignatureKanan}
+            logoBase64={logoBase64}
+            showDateColumn={showDateColumn}
+            currentShowKeteranganColumn={currentShowKeteranganColumn}
+            paginated={false}
+          />
+        </div>
+        <div ref={printRef}>
+          {measuredChunks.length > 0 ? (
+            <InvoiceDocument
+              data={data}
+              formData={formData}
+              selectedSignatureKiri={selectedSignatureKiri}
+              selectedSignatureKanan={selectedSignatureKanan}
+              logoBase64={logoBase64}
+              showDateColumn={showDateColumn}
+              currentShowKeteranganColumn={currentShowKeteranganColumn}
+              paginated={true}
+              rowChunks={measuredChunks}
+            />
+          ) : null}
+        </div>
+      </div>
+
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
