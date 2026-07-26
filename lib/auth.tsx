@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { backendOrigin } from "./api-base"
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -14,13 +15,7 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined)
 
-// Get base URL without /api suffix
-const getBaseUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
-  // Remove trailing /api if present
-  return url.replace(/\/api\/?$/, "")
-}
-const API_BASE = getBaseUrl()
+const API_BASE = backendOrigin
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false)
@@ -87,18 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
 
-      const data = await response.json()
-
       if (response.ok) {
-        setUser(data.user)
-        setIsAuthenticated(true)
+        await checkAuth()
         return { success: true }
-      } else {
-        return { 
-          success: false, 
-          error: data.error || "Login failed",
-          attemptsRemaining: data.attemptsRemaining,
-        }
+      }
+
+      const data = await response.json()
+      return {
+        success: false,
+        error: data.error || "Login failed",
+        attemptsRemaining: data.attemptsRemaining,
       }
     } catch {
       return { success: false, error: "Network error. Please check your connection." }

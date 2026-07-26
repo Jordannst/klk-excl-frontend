@@ -10,6 +10,7 @@ import type {
   UpdateTransaksiPayload,
   DeleteResponse,
 } from './types'
+import { apiBaseUrl } from './api-base'
 
 // Pagination response type
 export interface PaginatedResponse<T> {
@@ -21,15 +22,6 @@ export interface PaginatedResponse<T> {
     totalPages: number
   }
 }
-
-// Get API base URL with /api suffix
-const getApiBaseUrl = () => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-  // Add /api suffix if not present
-  return url.endsWith('/api') ? url : `${url}/api`
-}
-
-const apiBaseUrl = getApiBaseUrl()
 
 // Create axios instance with base URL
 const api = axios.create({

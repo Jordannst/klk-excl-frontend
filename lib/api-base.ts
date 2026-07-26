@@ -1,5 +1,7 @@
-const DEFAULT_BACKEND_ORIGIN = "http://localhost:4000"
+// The browser always talks to the frontend's own origin; Next.js rewrites
+// (see next.config.ts) proxy /api/* to the real backend server-side. This
+// keeps auth cookies first-party, so browsers that block third-party cookies
+// (incognito, Safari) can stay logged in.
+export const backendOrigin = ""
 
-export const backendOrigin = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_BACKEND_ORIGIN).replace(/\/api\/?$/, "")
-
-export const apiBaseUrl = backendOrigin.endsWith("/api") ? backendOrigin : `${backendOrigin}/api`
+export const apiBaseUrl = "/api"

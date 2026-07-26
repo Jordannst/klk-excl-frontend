@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Proxy /api/* to the backend server-side so the browser only ever talks
+  // to this origin — auth cookies stay first-party (incognito/Safari safe).
+  async rewrites() {
+    const backend = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000").replace(/\/$/, "");
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backend}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
