@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google"
 import {
   Lock,
   User,
@@ -24,18 +23,6 @@ import { apiBaseUrl } from "@/lib/api-base"
 import styles from "./login.module.css"
 
 const API_BASE = apiBaseUrl
-
-const instrumentSans = Instrument_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--klk-font-sans",
-})
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--klk-font-mono",
-})
 
 const MAX_ATTEMPTS = 3
 const LOCKOUT_MS = 15 * 60 * 1000
@@ -233,11 +220,9 @@ export default function LoginPage() {
     setCapsLock(e.getModifierState?.("CapsLock") ?? false)
   }
 
-  const fontVars = `${instrumentSans.variable} ${plexMono.variable}`
-
   if (authLoading) {
     return (
-      <div className={`${styles.gate} ${fontVars}`}>
+      <div className={styles.gate}>
         <Loader2 className={styles.spin} style={{ width: 40, height: 40 }} />
       </div>
     )
@@ -247,7 +232,7 @@ export default function LoginPage() {
     status === "loading" ? "Memeriksa…" : status === "success" ? "Mengalihkan…" : status === "error" ? "Coba lagi" : "Masuk"
 
   return (
-    <div className={`${styles.root} ${fontVars}`}>
+    <div className={styles.root}>
       {/* Left brand panel (desktop) */}
       <aside className={styles.panel}>
         <div className={styles.pattern} />

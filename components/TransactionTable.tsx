@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Trash2, X, Loader2 } from "lucide-react"
+import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EditTransactionDialog } from "@/components/EditTransactionDialog"
 import { InvoiceDateModeField } from "@/components/InvoiceDateModeField"
 import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
@@ -63,14 +62,6 @@ export function TransactionTable({
   const highlightRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const [isFlashing, setIsFlashing] = React.useState(false)
 
-  React.useEffect(() => {
-    if (!highlightNoResi) return
-    setIsFlashing(true)
-    highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-    const timer = setTimeout(() => setIsFlashing(false), 2000)
-    return () => clearTimeout(timer)
-  }, [highlightNoResi, data])
-
   const highlightIndex = highlightNoResi
     ? data.findIndex((item) => item.noResi === highlightNoResi)
     : -1
@@ -101,7 +92,53 @@ export function TransactionTable({
   const isSelectedInvoiceDetail = invoiceId !== null && invoiceId !== undefined
   const showDateColumn = isDateColumnVisible(currentDateMode)
   const canEditRowDate = isDateInputEnabled(currentDateMode)
-  const summaryLabelColSpan = showDateColumn ? 10 : 9
+
+  // Client-side pagination (design_handoff_dashboard)
+  const PAGE_SIZE = 10
+  const [page, setPage] = React.useState(1)
+  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE))
+
+  React.useEffect(() => {
+    setPage(1)
+  }, [invoiceId])
+
+  React.useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  // Jump to the page containing the highlighted resi (global search)
+  React.useEffect(() => {
+    if (!highlightNoResi) return
+    const idx = data.findIndex((item) => item.noResi === highlightNoResi)
+    if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1)
+  }, [highlightNoResi, data])
+
+  const pageStart = (page - 1) * PAGE_SIZE
+  const pageRows = data.slice(pageStart, pageStart + PAGE_SIZE)
+  const totalColy = data.reduce((sum, item) => sum + (item.coly || 0), 0)
+  const totalKg = data.reduce((sum, item) => sum + (item.berat || 0), 0)
+  const grandTotal = data.reduce((sum, item) => sum + item.total, 0)
+
+  const pageItems = React.useMemo<(number | "…")[]>(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    const items: (number | "…")[] = [1]
+    const lo = Math.max(2, page - 1)
+    const hi = Math.min(totalPages - 1, page + 1)
+    if (lo > 2) items.push("…")
+    for (let p = lo; p <= hi; p += 1) items.push(p)
+    if (hi < totalPages - 1) items.push("…")
+    items.push(totalPages)
+    return items
+  }, [page, totalPages])
+
+  // Flash + scroll to the highlighted row once its page is rendered
+  React.useEffect(() => {
+    if (!highlightNoResi) return
+    setIsFlashing(true)
+    highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    const timer = setTimeout(() => setIsFlashing(false), 2000)
+    return () => clearTimeout(timer)
+  }, [highlightNoResi, data, page])
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("id-ID")
@@ -321,20 +358,17 @@ export function TransactionTable({
   }
 
   return (
-    <Card className="w-full shadow-elevation border-0 overflow-hidden bg-gradient-to-br from-white to-slate-50/50">
-      {/* Gradient Header */}
-      <div className="h-2 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500"></div>
-      
-      <CardHeader className="pb-4">
+    <div className="w-full overflow-hidden rounded-xl border border-klk-line bg-white shadow-[0_1px_2px_rgba(16,24,40,.05)]">
+      <div className="border-b border-klk-line px-4 py-3.5 sm:px-[18px]">
         <div className="space-y-4">
           <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-            <div className="space-y-1.5 w-full xl:w-auto">
-              <CardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 shadow-lg shadow-emerald-500/30 flex-shrink-0">
-                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
-                <span className="truncate">{title || 'Laporan Transaksi'}</span>
-              </CardTitle>
+            <div className="min-w-0 w-full xl:w-auto">
+              <h2 className="truncate text-[15.5px] font-semibold tracking-[-.01em] text-klk-ink">
+                {title || 'Laporan Transaksi'}
+              </h2>
+              <p className="mt-0.5 font-klk-mono text-[10px] uppercase tracking-[.12em] text-klk-ink-3">
+                {data.length} transaksi
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
               {onRefresh && (
@@ -342,9 +376,9 @@ export function TransactionTable({
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
-                  className="flex-1 sm:flex-none gap-2 border-2 hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
+                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
                 >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                  <RefreshCw className={`h-[15px] w-[15px] ${isRefreshing ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">Refresh</span>
                 </Button>
               )}
@@ -353,9 +387,9 @@ export function TransactionTable({
                 size="sm"
                 onClick={exportToExcel}
                 disabled={data.length === 0}
-                className="flex-1 sm:flex-none gap-2 border-2 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Excel</span>
                 <span className="sm:hidden">Excel</span>
               </Button>
@@ -364,9 +398,9 @@ export function TransactionTable({
                 size="sm"
                 onClick={openPdfPreview}
                 disabled={data.length === 0}
-                className="flex-1 sm:flex-none gap-2 border-2 hover:border-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
               >
-                <FileText className="h-4 w-4" />
+                <FileText className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Preview PDF</span>
                 <span className="sm:hidden">Preview</span>
               </Button>
@@ -375,9 +409,9 @@ export function TransactionTable({
                 size="sm"
                 onClick={() => setIsPrintModalOpen(true)}
                 disabled={data.length === 0}
-                className="flex-1 sm:flex-none gap-2 border-2 hover:border-purple-500 hover:text-purple-600 hover:bg-purple-50 transition-all duration-300"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-green bg-klk-green text-[12.5px] font-semibold text-white shadow-none hover:bg-klk-green-hover hover:border-klk-green-hover transition-colors"
               >
-                <Printer className="h-4 w-4" />
+                <Printer className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Print / PDF</span>
                 <span className="sm:hidden">Print/PDF</span>
               </Button>
@@ -434,9 +468,30 @@ export function TransactionTable({
             </div>
           )}
         </div>
-      </CardHeader>
-      
-      <CardContent>
+      </div>
+
+      {/* KPI strip */}
+      {data.length > 0 && (
+        <div className="grid grid-cols-2 border-b border-klk-line sm:grid-cols-4">
+          {[
+            { label: "Transaksi", value: data.length.toLocaleString("id-ID"), accent: false },
+            { label: "Total Coly", value: totalColy.toLocaleString("id-ID"), accent: false },
+            { label: "Total Kg", value: totalKg.toLocaleString("id-ID"), accent: false },
+            { label: "Nilai Invoice", value: `Rp ${grandTotal.toLocaleString("id-ID")}`, accent: true },
+          ].map((kpi, i) => (
+            <div key={kpi.label} className={`px-[18px] py-[13px] ${i > 0 ? "sm:border-l sm:border-klk-line" : ""}`}>
+              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-green" : "text-klk-ink"}`}>
+                {kpi.value}
+              </div>
+              <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
+                {kpi.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div>
         {data.length === 0 ? (
           <div className="py-16 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200">
@@ -448,122 +503,156 @@ export function TransactionTable({
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <div>
             <div className="transaction-table-scroll overflow-x-auto">
               <Table className="min-w-[980px]">
                 <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 hover:from-slate-100 hover:to-slate-50 border-b-2 border-slate-200">
-                    <TableHead className="font-bold text-slate-700 text-center">No</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-center">Aksi</TableHead>
-                    {showDateColumn && <TableHead className="font-bold text-slate-700">Tgl</TableHead>}
-                    <TableHead className="font-bold text-slate-700">No STT</TableHead>
-                    <TableHead className="font-bold text-slate-700">Pengirim</TableHead>
-                    <TableHead className="font-bold text-slate-700">Penerima</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Coly</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Kg</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Min</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Tarif</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Total</TableHead>
-                    {currentShowKeteranganColumn && <TableHead className="font-bold text-slate-700">Ket</TableHead>}
+                  <TableRow className="border-b border-klk-line bg-klk-canvas hover:bg-klk-canvas">
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">No</TableHead>
+                    {showDateColumn && <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tgl</TableHead>}
+                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">No STT</TableHead>
+                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Pengirim</TableHead>
+                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Penerima</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Coly</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Kg</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Min</TableHead>
+                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tarif</TableHead>
+                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Jumlah</TableHead>
+                    {currentShowKeteranganColumn && <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Ket</TableHead>}
+                    <TableHead className="h-9 px-3"><span className="sr-only">Aksi</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((item, index) => {
-                    const rowTotal = item.total
+                  {pageRows.map((item, i) => {
+                    const index = pageStart + i
 
                     return (
                       <TableRow
                         key={item.id || index}
                         ref={index === highlightIndex ? highlightRowRef : undefined}
-                        className={`group hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent transition-all duration-200 border-b border-slate-100 ${
+                        className={`group border-b border-klk-line transition-colors hover:bg-klk-canvas ${
                           index === highlightIndex && isFlashing ? "bg-amber-100" : ""
                         }`}
                       >
-                        <TableCell className="text-center text-slate-600 font-medium">
+                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-3">
                           {index + 1}
                         </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Button
+                        {showDateColumn && (
+                          <TableCell className="px-3 py-2.5 text-[12.5px] tabular-nums text-klk-ink-2">
+                            {formatTableDate(item.tanggal)}
+                          </TableCell>
+                        )}
+                        <TableCell className="px-3 py-2.5 font-klk-mono text-[11.5px] text-klk-blue">
+                          {item.noResi}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                          {item.pengirim}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                          {item.penerima}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                          {item.coly}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                          {item.berat}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                          {item.min}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-right text-[12.5px] tabular-nums text-klk-ink-2">
+                          {(item.tarif || 0).toLocaleString("id-ID")}
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-right text-[12.5px] font-semibold tabular-nums text-klk-ink">
+                          {item.total.toLocaleString("id-ID")}
+                        </TableCell>
+                        {currentShowKeteranganColumn && (
+                          <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                            {item.keterangan || "-"}
+                          </TableCell>
+                        )}
+                        <TableCell className="px-3 py-2.5">
+                          <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-[.12s] focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-green-tint hover:text-klk-green"
                               onClick={() => startEdit(item)}
                               aria-label={`Edit transaksi STT ${item.noResi}`}
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-red-600 hover:bg-red-50"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red disabled:opacity-40"
                               onClick={() => setDeleteTarget(item)}
                               disabled={deleteTransaksiMutation.isPending}
                               aria-label={`Hapus transaksi STT ${item.noResi}`}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </TableCell>
-                        {showDateColumn && (
-                          <TableCell className="text-slate-600">
-                            <span>{formatTableDate(item.tanggal)}</span>
-                          </TableCell>
-                        )}
-                        <TableCell className="font-mono font-bold text-blue-600 group-hover:text-blue-700">
-                          {item.noResi}
-                        </TableCell>
-                        <TableCell className="font-medium text-slate-700">
-                          {item.pengirim}
-                        </TableCell>
-                        <TableCell className="font-medium text-slate-700">
-                          {item.penerima}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-amber-600">
-                          {item.coly}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-slate-700">
-                          {item.berat}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-orange-600">
-                          {item.min}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-slate-600">
-                          Rp {(item.tarif || 0).toLocaleString("id-ID")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-bold text-lg text-emerald-600">
-                            Rp {rowTotal.toLocaleString("id-ID")}
-                          </span>
-                        </TableCell>
-                        {currentShowKeteranganColumn && (
-                          <TableCell className="text-slate-600">
-                            {item.keterangan || "-"}
-                          </TableCell>
-                        )}
                       </TableRow>
                     )
                   })}
-
-                  <TableRow className="bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-t-2 border-emerald-200 font-bold hover:from-emerald-100 hover:to-emerald-50">
-                    <TableCell colSpan={summaryLabelColSpan} className="text-right text-emerald-800 text-base">
-                      Grand Total:
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-bold text-xl text-emerald-700">
-                        Rp {data.reduce((sum, item) => sum + item.total, 0).toLocaleString("id-ID")}
-                      </span>
-                    </TableCell>
-                    {currentShowKeteranganColumn && <TableCell></TableCell>}
-                  </TableRow>
                 </TableBody>
               </Table>
             </div>
+
+            {/* Footer: range, pagination, total */}
+            <div className="flex flex-col gap-2 border-t border-klk-line px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <span className="font-klk-mono text-[10px] uppercase tracking-[.1em] text-klk-ink-3">
+                Menampilkan {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, data.length)} dari {data.length}
+              </span>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page === 1}
+                    className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                    aria-label="Halaman sebelumnya"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {pageItems.map((item, i) =>
+                    item === "…" ? (
+                      <span key={`e${i}`} className="px-1 text-[12px] text-klk-ink-3">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setPage(item)}
+                        className={`h-7 min-w-7 rounded-[7px] px-1.5 text-[12px] font-semibold tabular-nums transition-colors ${
+                          page === item
+                            ? "bg-klk-green text-white"
+                            : "border border-klk-line text-klk-ink-2 hover:bg-klk-canvas"
+                        }`}
+                        aria-label={`Halaman ${item}`}
+                        aria-current={page === item ? "page" : undefined}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page === totalPages}
+                    className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                    aria-label="Halaman berikutnya"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <span className="text-[13px] font-semibold text-klk-green-deep">
+                TOTAL&ensp;Rp {grandTotal.toLocaleString("id-ID")}
+              </span>
+            </div>
           </div>
         )}
-      </CardContent>
+      </div>
 
       <PrintInvoiceModal
         isOpen={isPrintModalOpen}
@@ -730,6 +819,6 @@ export function TransactionTable({
           </div>
         </div>
       )}
-    </Card>
+    </div>
   )
 }

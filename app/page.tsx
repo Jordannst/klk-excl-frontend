@@ -17,6 +17,7 @@ function DashboardContent() {
   // Selected invoice ID from history
   const [selectedInvoiceId, setSelectedInvoiceId] = React.useState<number | null>(null)
   const [highlightNoResi, setHighlightNoResi] = React.useState<string | undefined>(undefined)
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = React.useState("")
   const [showForm, setShowForm] = React.useState(true)
   const [formKey, setFormKey] = React.useState(0)
   const [isContinuingInvoice, setIsContinuingInvoice] = React.useState(false)
@@ -85,40 +86,25 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-klk-canvas">
       {/* Shared Navbar */}
-      <Navbar />
+      <Navbar onNewInvoice={handleCreateNew} />
 
       {/* Content Area */}
-      <main className="max-w-7xl mx-auto pt-20 sm:pt-24 px-4 sm:px-6 pb-8">
-        {/* Page Header with Action */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Daftar Invoice</h2>
-            <p className="text-sm text-slate-500">Kelola invoice dan transaksi pengiriman</p>
-          </div>
-          <Button
-            onClick={handleCreateNew}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Buat Invoice Baru</span>
-            <span className="sm:hidden">Baru</span>
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <main className="max-w-7xl mx-auto pt-20 px-4 sm:px-6 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[248px_1fr] gap-[18px]">
           {/* Left Sidebar - Invoice History */}
-          <div className="lg:col-span-1">
-            <TransaksiSearch onSelect={handleSearchSelect} />
+          <div>
+            <TransaksiSearch onSelect={handleSearchSelect} onQueryChange={setInvoiceSearchQuery} />
             <InvoiceHistory
               selectedId={selectedInvoiceId}
               onSelectInvoice={handleSelectInvoice}
+              searchOverride={invoiceSearchQuery}
             />
           </div>
 
           {/* Right Side - Form and Table */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="min-w-0 space-y-[18px]">
             {showForm && (
               <div ref={formRef}>
                 <ExpeditionForm

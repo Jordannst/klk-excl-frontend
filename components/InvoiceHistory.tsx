@@ -1,27 +1,27 @@
 "use client"
 
 import * as React from "react"
-import { FileText, Calendar, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Search, X, Trash2 } from "lucide-react"
+import { FileText, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Search, X, Trash2 } from "lucide-react"
 import { format, startOfDay, startOfWeek, startOfMonth } from "date-fns"
 import { id } from "date-fns/locale"
 import { toast } from "sonner"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useInvoices, useDeleteInvoice } from "@/lib/hooks"
 import type { InvoiceListItem } from "@/lib/types"
 
 interface InvoiceHistoryProps {
   selectedId?: number | null
   onSelectInvoice?: (id: number) => void
+  /** When provided, the internal search input is hidden and this query is used instead. */
+  searchOverride?: string
 }
 
 const ITEMS_PER_PAGE = 5
 
 type DateFilter = 'all' | 'today' | 'week' | 'month'
 
-export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryProps) {
+export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: InvoiceHistoryProps) {
   const [currentPage, setCurrentPage] = React.useState(1)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [debouncedSearch, setDebouncedSearch] = React.useState("")
@@ -29,6 +29,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<number | null>(null)
 
   const deleteInvoiceMutation = useDeleteInvoice()
+  const usesExternalSearch = searchOverride !== undefined
 
   // Debounce search
   React.useEffect(() => {
@@ -38,6 +39,13 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery])
+
+  // External (merged) search resets pagination too
+  React.useEffect(() => {
+    if (usesExternalSearch) setCurrentPage(1)
+  }, [searchOverride, usesExternalSearch])
+
+  const effectiveSearch = usesExternalSearch ? searchOverride : debouncedSearch
 
   // Calculate date range based on filter
   const getDateRange = () => {
@@ -67,13 +75,28 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
   const { data, isLoading, error, refetch } = useInvoices(
     currentPage,
     ITEMS_PER_PAGE,
-    debouncedSearch,
+    effectiveSearch,
     startDate,
     endDate
   )
 
   const invoices = data?.data || []
   const pagination = data?.pagination
+
+  // Group the current page's invoices by month (design_handoff_dashboard)
+  const monthGroups = React.useMemo(() => {
+    const groups: { label: string; items: InvoiceListItem[] }[] = []
+    for (const invoice of invoices) {
+      const label = format(new Date(invoice.createdAt), "MMMM yyyy", { locale: id }).toUpperCase()
+      const last = groups[groups.length - 1]
+      if (last && last.label === label) {
+        last.items.push(invoice)
+      } else {
+        groups.push({ label, items: [invoice] })
+      }
+    }
+    return groups
+  }, [invoices])
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -98,9 +121,9 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
     setCurrentPage(1)
   }
 
-  const hasActiveFilters = searchQuery || dateFilter !== 'all'
+  const hasActiveFilters = (!usesExternalSearch && searchQuery !== "") || dateFilter !== 'all'
 
-  const handleDeleteClick = (invoiceId: number, invoiceTitle: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (invoiceId: number, e: React.MouseEvent) => {
     e.stopPropagation()
     setDeleteConfirmId(invoiceId)
   }
@@ -126,214 +149,194 @@ export function InvoiceHistory({ selectedId, onSelectInvoice }: InvoiceHistoryPr
 
   return (
     <>
-    <Card className="w-full shadow-md border-t-4 border-t-blue-600 flex flex-col h-auto lg:h-[620px] max-h-[80vh] lg:max-h-none">
-      <CardHeader className="pb-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold">Riwayat Invoice</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className="h-8 px-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
+    <div className="flex w-full flex-col">
+      {/* Header row */}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-klk-mono text-[9.5px] uppercase tracking-[.12em] text-klk-ink-3">
+          Riwayat Invoice
+        </span>
+        <button
+          onClick={() => refetch()}
+          disabled={isLoading}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-green-tint hover:text-klk-green"
+          aria-label="Muat ulang riwayat"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
 
-        {/* Search Input */}
-        <div className="relative mt-2">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input
+      {/* Search Input (hidden when the page provides a merged search) */}
+      {!usesExternalSearch && (
+        <div className="relative mb-2">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-klk-ink-3" />
+          <input
             placeholder="Cari invoice..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-sm"
+            className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-green focus:ring-[3px] focus:ring-klk-green/15"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-klk-ink-3 hover:text-klk-ink-2"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
+      )}
 
-        {/* Date Filter Buttons */}
-        <div className="flex flex-wrap gap-1 mt-2">
-          {[
-            { key: 'all', label: 'Semua' },
-            { key: 'today', label: 'Hari ini' },
-            { key: 'week', label: 'Minggu' },
-            { key: 'month', label: 'Bulan' },
-          ].map((filter) => (
-            <Button
-              key={filter.key}
-              variant={dateFilter === filter.key ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleDateFilterChange(filter.key as DateFilter)}
-              className={`h-7 px-2 text-xs min-w-0 ${
-                dateFilter === filter.key 
-                  ? "bg-blue-600 hover:bg-blue-700" 
-                  : "hover:bg-blue-50"
-              }`}
-            >
-              {filter.label}
-            </Button>
-          ))}
+      {/* Date Filter Chips */}
+      <div className="mb-3 flex flex-wrap gap-1">
+        {[
+          { key: 'all', label: 'Semua' },
+          { key: 'today', label: 'Hari ini' },
+          { key: 'week', label: 'Minggu' },
+          { key: 'month', label: 'Bulan' },
+        ].map((filter) => (
+          <button
+            key={filter.key}
+            onClick={() => handleDateFilterChange(filter.key as DateFilter)}
+            className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+              dateFilter === filter.key
+                ? "bg-klk-green text-white"
+                : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-green/40 hover:text-klk-green"
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Active filters indicator */}
+      {hasActiveFilters && (
+        <div className="mb-2 flex items-center justify-between text-[11px] text-klk-ink-3">
+          <span>{pagination?.total || 0} hasil ditemukan</span>
+          <button onClick={clearFilters} className="font-semibold text-klk-green hover:underline">
+            Reset filter
+          </button>
         </div>
+      )}
 
-        {/* Active filters indicator */}
-        {hasActiveFilters && (
-          <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
-            <span>
-              {pagination?.total || 0} hasil ditemukan
-            </span>
-            <button
-              onClick={clearFilters}
-              className="text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Reset filter
-            </button>
-          </div>
-        )}
-      </CardHeader>
-      
-      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
-        {/* Loading State */}
-        {isLoading && (
-          <div className="py-8 text-center px-4 flex-1 flex flex-col items-center justify-center">
-            <Loader2 className="h-6 w-6 mx-auto mb-2 text-blue-500 animate-spin" />
-            <p className="text-sm text-slate-500">Memuat...</p>
-          </div>
-        )}
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Loader2 className="mb-2 h-5 w-5 animate-spin text-klk-green" />
+          <p className="text-xs text-klk-ink-3">Memuat...</p>
+        </div>
+      )}
 
-        {/* Error State */}
-        {error && !isLoading && (
-          <div className="py-8 text-center px-4 flex-1 flex flex-col items-center justify-center">
-            <AlertCircle className="h-10 w-10 mx-auto mb-2 text-red-400" />
-            <p className="text-sm text-red-500 mb-2">Gagal memuat</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              Coba Lagi
-            </Button>
-          </div>
-        )}
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <AlertCircle className="mb-2 h-8 w-8 text-klk-red" />
+          <p className="mb-2 text-xs text-klk-red">Gagal memuat</p>
+          <button
+            onClick={() => refetch()}
+            className="rounded-lg border border-klk-line px-3 py-1.5 text-xs font-semibold text-klk-ink-2 hover:bg-klk-red-tint hover:text-klk-red"
+          >
+            Coba Lagi
+          </button>
+        </div>
+      )}
 
-        {/* Empty State */}
-        {!isLoading && !error && invoices.length === 0 && (
-          <div className="py-8 text-center px-4 flex-1 flex flex-col items-center justify-center">
-            <FileText className="h-10 w-10 mx-auto mb-2 text-slate-400" />
-            <p className="text-sm text-slate-500">
-              {hasActiveFilters ? "Tidak ada hasil" : "Belum ada invoice"}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="text-xs text-blue-600 hover:underline mt-1"
-              >
-                Reset filter
-              </button>
-            )}
-          </div>
-        )}
+      {/* Empty State */}
+      {!isLoading && !error && invoices.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <FileText className="mb-2 h-8 w-8 text-klk-ink-3" />
+          <p className="text-xs text-klk-ink-3">
+            {hasActiveFilters || (usesExternalSearch && searchOverride) ? "Tidak ada hasil" : "Belum ada invoice"}
+          </p>
+        </div>
+      )}
 
-        {/* Invoice List */}
-        {!isLoading && !error && invoices.length > 0 && (
-          <>
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-              {invoices.map((invoice: InvoiceListItem) => (
-                <div
-                  key={invoice.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onSelectInvoice?.(invoice.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && onSelectInvoice?.(invoice.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                    selectedId === invoice.id
-                      ? "border-blue-500 bg-blue-50 shadow-sm"
-                      : "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                        <span className="font-bold text-sm text-blue-600 truncate">
-                          {invoice.title || "Invoice"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Calendar className="h-3 w-3 flex-shrink-0" />
-                        <span>
-                          {format(new Date(invoice.createdAt), "dd MMM yyyy", { locale: id })}
-                        </span>
-                        <span className="text-slate-300">•</span>
-                        <span>{invoice.count} transaksi</span>
-                      </div>
-                    </div>
-                    {/* Delete Button */}
-                    <button
-                      onClick={(e) => handleDeleteClick(invoice.id, invoice.title, e)}
-                      disabled={deleteInvoiceMutation.isPending}
-                      className="p-1.5 rounded-md transition-all flex-shrink-0 bg-red-100 text-red-600 hover:bg-red-500 hover:text-white"
-                      title="Hapus invoice"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-                    <div className="text-xs text-slate-500">Total</div>
-                    <span className="font-bold text-sm text-emerald-600">
-                      Rp {invoice.total.toLocaleString("id-ID")}
-                    </span>
-                  </div>
+      {/* Invoice List, grouped per month */}
+      {!isLoading && !error && invoices.length > 0 && (
+        <>
+          <div className="space-y-3">
+            {monthGroups.map((group) => (
+              <div key={group.label}>
+                <div className="mb-1.5 font-klk-mono text-[9.5px] uppercase tracking-[.12em] text-klk-ink-3">
+                  {group.label}
                 </div>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex-shrink-0 px-4 py-2 border-t border-slate-200 bg-slate-50">
-                <div className="flex items-center justify-between">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevPage}
-                    disabled={currentPage === 1}
-                    className="h-7 px-2"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-xs text-slate-600">
-                    {currentPage} / {pagination.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPage}
-                    disabled={currentPage === pagination.totalPages}
-                    className="h-7 px-2"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  {group.items.map((invoice) => {
+                    const isActive = selectedId === invoice.id
+                    return (
+                      <div
+                        key={invoice.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelectInvoice?.(invoice.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && onSelectInvoice?.(invoice.id)}
+                        className={`group relative w-full cursor-pointer rounded-[9px] border px-3 py-2.5 text-left transition-colors ${
+                          isActive
+                            ? "border-klk-green/45 bg-klk-green-tint"
+                            : "border-klk-line bg-white hover:border-klk-green/30"
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="absolute bottom-[9px] left-0 top-[9px] w-[3px] rounded-r bg-klk-green" />
+                        )}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[12.5px] font-semibold text-klk-ink">
+                              {invoice.title || "Invoice"}
+                            </div>
+                            <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.04em] text-klk-ink-3">
+                              {invoice.count} trx · Rp {invoice.total.toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteClick(invoice.id, e)}
+                            disabled={deleteInvoiceMutation.isPending}
+                            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-klk-ink-3 opacity-0 transition-all hover:bg-klk-red-tint hover:text-klk-red focus:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                            title="Hapus invoice"
+                            aria-label={`Hapus invoice ${invoice.title || ""}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-between border-t border-klk-line pt-2.5">
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+                className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                aria-label="Halaman sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="font-klk-mono text-[10px] uppercase tracking-[.08em] text-klk-ink-3">
+                {currentPage} / {pagination.totalPages}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === pagination.totalPages}
+                className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                aria-label="Halaman berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
 
     {/* Delete Confirmation Modal */}
     {deleteConfirmId && (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div 
+        <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={() => setDeleteConfirmId(null)}
         />

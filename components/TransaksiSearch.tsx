@@ -9,9 +9,11 @@ import { useSearchTransaksi, type TransaksiSearchResult } from "@/lib/hooks/useT
 
 interface TransaksiSearchProps {
   onSelect: (invoiceId: number, noResi: string) => void
+  /** Fired with the debounced query so the page can also filter the invoice list. */
+  onQueryChange?: (query: string) => void
 }
 
-export function TransaksiSearch({ onSelect }: TransaksiSearchProps) {
+export function TransaksiSearch({ onSelect, onQueryChange }: TransaksiSearchProps) {
   const router = useRouter()
   const [input, setInput] = React.useState("")
   const [query, setQuery] = React.useState("")
@@ -23,6 +25,12 @@ export function TransaksiSearch({ onSelect }: TransaksiSearchProps) {
     const timer = setTimeout(() => setQuery(input), 300)
     return () => clearTimeout(timer)
   }, [input])
+
+  // Share the debounced query with the invoice list (merged search)
+  React.useEffect(() => {
+    onQueryChange?.(query)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
 
   const { data: results, isFetching, isError } = useSearchTransaksi(query)
   const showDropdown = isOpen && query.trim().length >= 3
@@ -68,9 +76,9 @@ export function TransaksiSearch({ onSelect }: TransaksiSearchProps) {
             setIsOpen(true)
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Cari No STT..."
-          aria-label="Cari transaksi berdasarkan No STT"
-          className="w-full h-10 pl-9 pr-3 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          placeholder="Cari No STT atau invoice…"
+          aria-label="Cari No STT atau invoice"
+          className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-green focus:ring-[3px] focus:ring-klk-green/15"
         />
         {isFetching && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />

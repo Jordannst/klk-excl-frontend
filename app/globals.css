@@ -2,6 +2,25 @@
 
 @plugin "tailwindcss-animate";
 
+/* KLK Express design tokens (design_handoff_login / design_handoff_dashboard) */
+@theme inline {
+  --color-klk-ink: #26292f;
+  --color-klk-ink-2: #5b6068;
+  --color-klk-ink-3: #8b9098;
+  --color-klk-line: #e6e7ea;
+  --color-klk-line-strong: #d1d3d8;
+  --color-klk-canvas: #f7f7f9;
+  --color-klk-green: #12775c;
+  --color-klk-green-hover: #0d6650;
+  --color-klk-green-deep: #103c31;
+  --color-klk-green-tint: #eaf7f1;
+  --color-klk-red: #c1392c;
+  --color-klk-red-tint: #fdefec;
+  --color-klk-blue: #2b5fc4;
+  --font-klk-sans: var(--klk-font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-klk-mono: var(--klk-font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
