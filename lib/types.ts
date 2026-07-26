@@ -28,7 +28,21 @@ export interface Invoice {
   count: number
   dateMode: InvoiceDateMode
   showKeteranganColumn: boolean
+  printSettings?: InvoicePrintSettings | null
   transactions: Transaksi[]
+}
+
+// Last-used Print/PDF form data, persisted per invoice
+export interface InvoicePrintSettings {
+  tanggalSurat?: string
+  nomorInvoice?: string
+  namaPenerima?: string
+  lokasiPenerima?: string
+  biayaKirimDoc?: number
+  penandatanganKiri?: string
+  penandatanganKanan?: string
+  signatureKiriId?: string | null
+  signatureKananId?: string | null
 }
 
 // List item (without transactions)
@@ -90,6 +104,7 @@ export interface UpdateInvoicePayload {
   title?: string
   dateMode?: InvoiceDateMode
   showKeteranganColumn?: boolean
+  printSettings?: InvoicePrintSettings | null
 }
 
 // API Response types

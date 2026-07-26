@@ -147,6 +147,7 @@ function DashboardContent() {
                   invoiceId={selectedInvoice.id}
                   dateMode={selectedInvoice.dateMode}
                   showKeteranganColumn={selectedInvoice.showKeteranganColumn}
+                  printSettings={selectedInvoice.printSettings}
                   highlightNoResi={highlightNoResi}
                 />
               </div>

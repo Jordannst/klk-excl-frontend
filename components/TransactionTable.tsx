@@ -26,7 +26,7 @@ import {
   normalizeInvoiceDateMode,
   type InvoiceDateMode,
 } from "@/lib/invoice-date-mode"
-import type { Transaksi, UpdateTransaksiPayload } from "@/lib/types"
+import type { InvoicePrintSettings, Transaksi, UpdateTransaksiPayload } from "@/lib/types"
 
 
 interface TransactionTableProps {
@@ -36,6 +36,7 @@ interface TransactionTableProps {
   invoiceId?: number | null
   dateMode?: InvoiceDateMode
   showKeteranganColumn?: boolean
+  printSettings?: InvoicePrintSettings | null
   highlightNoResi?: string
 }
 
@@ -46,6 +47,7 @@ export function TransactionTable({
   invoiceId,
   dateMode,
   showKeteranganColumn,
+  printSettings,
   highlightNoResi,
 }: TransactionTableProps) {
   const highlightRowRef = React.useRef<HTMLTableRowElement | null>(null)
@@ -669,6 +671,8 @@ export function TransactionTable({
         invoiceTitle={title}
         dateMode={currentDateMode}
         showKeteranganColumn={currentShowKeteranganColumn}
+        invoiceId={invoiceId ?? null}
+        printSettings={printSettings}
         invoiceKey={invoiceId ? String(invoiceId) : title || "new-invoice"}
       />
 

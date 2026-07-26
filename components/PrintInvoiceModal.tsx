@@ -16,7 +16,8 @@ import {
   type InvoiceDateMode,
 } from "@/lib/invoice-date-mode"
 import { downloadInvoicePdf } from "@/lib/api"
-import type { Transaksi, Signature } from "@/lib/types"
+import { useUpdateInvoice } from "@/lib/hooks"
+import type { InvoicePrintSettings, Transaksi, Signature } from "@/lib/types"
 import { InvoiceDocument } from "./InvoiceDocument"
 
 interface InvoicePdfPaginationOptions {
@@ -138,6 +139,8 @@ interface PrintInvoiceModalProps {
   invoiceTitle?: string
   dateMode?: InvoiceDateMode
   showKeteranganColumn?: boolean
+  invoiceId?: number | null
+  printSettings?: InvoicePrintSettings | null
   invoiceKey?: string
 }
 
@@ -151,7 +154,7 @@ interface PrintFormData {
   penandatanganKanan: string
 }
 
-export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMode, showKeteranganColumn, invoiceKey }: PrintInvoiceModalProps) {
+export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMode, showKeteranganColumn, invoiceId, printSettings, invoiceKey }: PrintInvoiceModalProps) {
   const [isPrinting, setIsPrinting] = React.useState(false)
   const [formData, setFormData] = React.useState<PrintFormData>({
     tanggalSurat: `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
@@ -221,22 +224,36 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     }
   }, [isOpen])
 
+  // Seed the form from the invoice's saved print settings every time the
+  // modal opens, so previously entered data comes back automatically.
+  const printSettingsRef = React.useRef(printSettings)
+  printSettingsRef.current = printSettings
+  const skipNextAutosaveRef = React.useRef(true)
+
   React.useEffect(() => {
+    if (!isOpen) return
+    const saved = printSettingsRef.current
+    skipNextAutosaveRef.current = true
     setFormData({
-      tanggalSurat: `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
-      nomorInvoice: "",
-      namaPenerima: "",
-      lokasiPenerima: "Jakarta",
-      biayaKirimDoc: 0,
-      penandatanganKiri: "",
-      penandatanganKanan: "",
+      tanggalSurat: saved?.tanggalSurat || `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
+      nomorInvoice: saved?.nomorInvoice || "",
+      namaPenerima: saved?.namaPenerima || "",
+      lokasiPenerima: saved?.lokasiPenerima || "Jakarta",
+      biayaKirimDoc: saved?.biayaKirimDoc || 0,
+      penandatanganKiri: saved?.penandatanganKiri || "",
+      penandatanganKanan: saved?.penandatanganKanan || "",
     })
-    setBiayaKirimDocDisplay("")
-    setSelectedSignatureKiri(null)
-    setSelectedSignatureKanan(null)
+    setBiayaKirimDocDisplay(saved?.biayaKirimDoc ? saved.biayaKirimDoc.toLocaleString("id-ID") : "")
+    setSelectedSignatureKiri(
+      saved?.signatureKiriId ? signatures?.find((s) => s.id === saved.signatureKiriId) || null : null
+    )
+    setSelectedSignatureKanan(
+      saved?.signatureKananId ? signatures?.find((s) => s.id === saved.signatureKananId) || null : null
+    )
     setMeasuredChunks([])
     setIsPrintingActive(false)
-  }, [invoiceKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, invoiceKey, signatures])
 
   // Calculate totals
   const biayaHandling = data.reduce((sum, item) => sum + item.total, 0)
@@ -351,6 +368,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   }
 
   const handlePrint = async () => {
+    persistSettings()
     setIsPrinting(true)
     const measurement = await measureInvoicePdfChunks()
     setMeasuredChunks(measurement.rowChunks)
@@ -431,6 +449,45 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     doPrint()
   }, [isPrintingActive, measuredChunks, invoiceTitle, onClose])
 
+  const updateInvoiceMutation = useUpdateInvoice()
+
+  const buildPrintSettings = React.useCallback((): InvoicePrintSettings => ({
+    tanggalSurat: formData.tanggalSurat,
+    nomorInvoice: formData.nomorInvoice,
+    namaPenerima: formData.namaPenerima,
+    lokasiPenerima: formData.lokasiPenerima,
+    biayaKirimDoc: formData.biayaKirimDoc,
+    penandatanganKiri: formData.penandatanganKiri,
+    penandatanganKanan: formData.penandatanganKanan,
+    signatureKiriId: selectedSignatureKiri?.id ?? null,
+    signatureKananId: selectedSignatureKanan?.id ?? null,
+  }), [formData, selectedSignatureKiri, selectedSignatureKanan])
+
+  const persistSettings = React.useCallback(() => {
+    if (!invoiceId) return
+    updateInvoiceMutation.mutate({ id: invoiceId, payload: { printSettings: buildPrintSettings() } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId, buildPrintSettings])
+
+  // Autosave (debounced) whenever the user edits the print form
+  React.useEffect(() => {
+    if (!isOpen || !invoiceId) return
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false
+      return
+    }
+    const timer = setTimeout(persistSettings, 1200)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, selectedSignatureKiri, selectedSignatureKanan])
+
+  const handleClose = () => {
+    if (isOpen && invoiceId && !skipNextAutosaveRef.current) {
+      persistSettings()
+    }
+    onClose()
+  }
+
   const buildPdfPayload = () => ({
     invoiceTitle,
     dateMode: currentDateMode,
@@ -443,6 +500,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   })
 
   const handleDownloadPdf = async () => {
+    persistSettings()
     setIsDownloadingPdf(true)
 
     try {
@@ -463,6 +521,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   }
 
   const handlePreviewPdf = async () => {
+    persistSettings()
     setIsPreviewLoading(true)
 
     try {
@@ -526,7 +585,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       {/* Modal */}
@@ -535,7 +594,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white z-10">
           <h2 className="text-lg font-bold text-slate-800">Data Invoice untuk Print</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
           >
             <X className="h-5 w-5" />
@@ -703,7 +762,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             className="w-full sm:w-auto px-6"
           >
             Batal
