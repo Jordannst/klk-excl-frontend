@@ -51,8 +51,17 @@ export function TransactionTable({
   const highlightRowRef = React.useRef<HTMLTableRowElement | null>(null)
   const [isFlashing, setIsFlashing] = React.useState(false)
 
+  // Rows hidden optimistically while their delete can still be undone
+  const [pendingDeleteIds, setPendingDeleteIds] = React.useState<Set<number>>(new Set())
+  const pendingTimersRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+
+  const rows = React.useMemo(
+    () => (pendingDeleteIds.size === 0 ? data : data.filter((item) => !pendingDeleteIds.has(item.id))),
+    [data, pendingDeleteIds]
+  )
+
   const highlightIndex = highlightNoResi
-    ? data.findIndex((item) => item.noResi === highlightNoResi)
+    ? rows.findIndex((item) => item.noResi === highlightNoResi)
     : -1
   const [isRefreshing, setIsRefreshing] = React.useState(false)
   const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
@@ -84,7 +93,7 @@ export function TransactionTable({
   // Client-side pagination (design_handoff_dashboard)
   const PAGE_SIZE = 10
   const [page, setPage] = React.useState(1)
-  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
 
   React.useEffect(() => {
     setPage(1)
@@ -97,15 +106,15 @@ export function TransactionTable({
   // Jump to the page containing the highlighted resi (global search)
   React.useEffect(() => {
     if (!highlightNoResi) return
-    const idx = data.findIndex((item) => item.noResi === highlightNoResi)
+    const idx = rows.findIndex((item) => item.noResi === highlightNoResi)
     if (idx >= 0) setPage(Math.floor(idx / PAGE_SIZE) + 1)
-  }, [highlightNoResi, data])
+  }, [highlightNoResi, rows])
 
   const pageStart = (page - 1) * PAGE_SIZE
-  const pageRows = data.slice(pageStart, pageStart + PAGE_SIZE)
-  const totalColy = data.reduce((sum, item) => sum + (item.coly || 0), 0)
-  const totalKg = data.reduce((sum, item) => sum + (item.berat || 0), 0)
-  const grandTotal = data.reduce((sum, item) => sum + item.total, 0)
+  const pageRows = rows.slice(pageStart, pageStart + PAGE_SIZE)
+  const totalColy = rows.reduce((sum, item) => sum + (item.coly || 0), 0)
+  const totalKg = rows.reduce((sum, item) => sum + (item.berat || 0), 0)
+  const grandTotal = rows.reduce((sum, item) => sum + item.total, 0)
 
   const pageItems = React.useMemo<(number | "…")[]>(() => {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -126,7 +135,7 @@ export function TransactionTable({
     highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
     const timer = setTimeout(() => setIsFlashing(false), 2000)
     return () => clearTimeout(timer)
-  }, [highlightNoResi, data, page])
+  }, [highlightNoResi, rows, page])
 
   const formatNumber = (num: number): string => {
     return num.toLocaleString("id-ID")
@@ -249,12 +258,12 @@ export function TransactionTable({
   }
 
   const exportToExcel = () => {
-    if (data.length === 0) {
+    if (rows.length === 0) {
       toast.error("Tidak ada data untuk diekspor")
       return
     }
 
-    const excelData: Record<string, string | number>[] = data.map((item) => ({
+    const excelData: Record<string, string | number>[] = rows.map((item) => ({
       ...(showDateColumn ? { "Hari/Tgl": formatOutputDate(item.tanggal) } : {}),
       "No Stt": item.noResi,
       Pengirim: item.pengirim,
@@ -267,7 +276,7 @@ export function TransactionTable({
       ...(currentShowKeteranganColumn ? { Ket: item.keterangan || "" } : {}),
     }))
 
-    const totalRevenue = data.reduce((sum, item) => sum + item.total, 0)
+    const totalRevenue = rows.reduce((sum, item) => sum + item.total, 0)
     excelData.push({
       ...(showDateColumn ? { "Hari/Tgl": "" } : {}),
       "No Stt": "",
@@ -295,23 +304,77 @@ export function TransactionTable({
     }
   }
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return
-
-    try {
-      await deleteTransaksiMutation.mutateAsync(deleteTarget.id)
-      toast.success("Transaksi berhasil dihapus")
-      setDeleteTarget(null)
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Gagal menghapus transaksi"
-      if (typeof error === "object" && error !== null && "response" in error) {
-        const axiosError = error as { response?: { data?: { error?: string } } }
-        toast.error(axiosError.response?.data?.error || errorMessage)
-      } else {
-        toast.error(errorMessage)
-      }
-    }
+  const unhideRow = (id: number) => {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }
+
+  const commitDelete = (id: number, noResi: string) => {
+    pendingTimersRef.current.delete(id)
+    deleteTransaksiMutation.mutate(id, {
+      onSuccess: () => {
+        unhideRow(id) // server data no longer contains the row after invalidation
+      },
+      onError: (error: unknown) => {
+        unhideRow(id)
+        const errorMessage = error instanceof Error ? error.message : "Gagal menghapus transaksi"
+        if (typeof error === "object" && error !== null && "response" in error) {
+          const axiosError = error as { response?: { data?: { error?: string } } }
+          toast.error(`STT ${noResi}: ${axiosError.response?.data?.error || errorMessage}`)
+        } else {
+          toast.error(`STT ${noResi}: ${errorMessage}`)
+        }
+      },
+    })
+  }
+
+  const undoDelete = (id: number, noResi: string) => {
+    const timer = pendingTimersRef.current.get(id)
+    if (!timer) return // already committed
+    clearTimeout(timer)
+    pendingTimersRef.current.delete(id)
+    unhideRow(id)
+    toast.success(`Penghapusan STT ${noResi} dibatalkan`)
+  }
+
+  // Delayed-commit delete: hide the row immediately, send the DELETE only
+  // after the undo window closes.
+  const confirmDelete = () => {
+    if (!deleteTarget) return
+    const { id: targetId, noResi } = deleteTarget
+    setDeleteTarget(null)
+
+    setPendingDeleteIds((prev) => new Set(prev).add(targetId))
+    const timer = setTimeout(() => commitDelete(targetId, noResi), 5000)
+    pendingTimersRef.current.set(targetId, timer)
+
+    toast("Transaksi dihapus", {
+      description: `STT ${noResi}`,
+      duration: 5000,
+      action: {
+        label: "Urungkan",
+        onClick: () => undoDelete(targetId, noResi),
+      },
+    })
+  }
+
+  // If the table unmounts mid-window, commit the pending deletes right away
+  // so a confirmed delete is never silently lost.
+  const commitDeleteRef = React.useRef(commitDelete)
+  commitDeleteRef.current = commitDelete
+  React.useEffect(() => {
+    const timers = pendingTimersRef.current
+    return () => {
+      for (const [id, timer] of timers) {
+        clearTimeout(timer)
+        commitDeleteRef.current(id, "")
+      }
+      timers.clear()
+    }
+  }, [])
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-klk-line bg-white shadow-[0_1px_2px_rgba(16,24,40,.05)]">
@@ -323,7 +386,7 @@ export function TransactionTable({
                 {title || 'Laporan Transaksi'}
               </h2>
               <p className="mt-0.5 font-klk-mono text-[10px] uppercase tracking-[.12em] text-klk-ink-3">
-                {data.length} transaksi
+                {rows.length} transaksi
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
@@ -342,7 +405,7 @@ export function TransactionTable({
                 variant="outline"
                 size="sm"
                 onClick={exportToExcel}
-                disabled={data.length === 0}
+                disabled={rows.length === 0}
                 className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
               >
                 <Download className="h-[15px] w-[15px]" />
@@ -353,7 +416,7 @@ export function TransactionTable({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsPrintModalOpen(true)}
-                disabled={data.length === 0}
+                disabled={rows.length === 0}
                 className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-green bg-klk-green text-[12.5px] font-semibold text-white shadow-none hover:bg-klk-green-hover hover:border-klk-green-hover transition-colors"
               >
                 <Printer className="h-[15px] w-[15px]" />
@@ -416,10 +479,10 @@ export function TransactionTable({
       </div>
 
       {/* KPI strip */}
-      {data.length > 0 && (
+      {rows.length > 0 && (
         <div className="grid grid-cols-2 border-b border-klk-line sm:grid-cols-4">
           {[
-            { label: "Transaksi", value: data.length.toLocaleString("id-ID"), accent: false },
+            { label: "Transaksi", value: rows.length.toLocaleString("id-ID"), accent: false },
             { label: "Total Coly", value: totalColy.toLocaleString("id-ID"), accent: false },
             { label: "Total Kg", value: totalKg.toLocaleString("id-ID"), accent: false },
             { label: "Nilai Invoice", value: `Rp ${grandTotal.toLocaleString("id-ID")}`, accent: true },
@@ -437,7 +500,7 @@ export function TransactionTable({
       )}
 
       <div>
-        {data.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="py-16 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200">
               <PackageIcon className="h-10 w-10 text-slate-400" />
@@ -547,7 +610,7 @@ export function TransactionTable({
             {/* Footer: range, pagination, total */}
             <div className="flex flex-col gap-2 border-t border-klk-line px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <span className="font-klk-mono text-[10px] uppercase tracking-[.1em] text-klk-ink-3">
-                Menampilkan {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, data.length)} dari {data.length}
+                Menampilkan {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} dari {rows.length}
               </span>
               {totalPages > 1 && (
                 <div className="flex items-center gap-1">
@@ -602,7 +665,7 @@ export function TransactionTable({
       <PrintInvoiceModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
-        data={data}
+        data={rows}
         invoiceTitle={title}
         dateMode={currentDateMode}
         showKeteranganColumn={currentShowKeteranganColumn}
@@ -647,7 +710,7 @@ export function TransactionTable({
               </h3>
               <p className="mb-1 text-sm text-slate-500">Transaksi ini akan dihapus permanen:</p>
               <p className="mb-4 font-semibold text-slate-700">STT {deleteTarget.noResi}</p>
-              {data.length === 1 && (
+              {rows.length === 1 && (
                 <p className="mb-6 rounded-lg bg-amber-50 p-3 text-xs font-medium text-amber-700">
                   Ini transaksi terakhir. Menghapusnya juga akan menghapus invoice ini secara permanen.
                 </p>
