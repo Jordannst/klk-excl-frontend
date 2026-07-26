@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { transaksiApi } from '../api'
+import api, { transaksiApi } from '../api'
 import { invoiceKeys } from './useInvoice'
 import type { CreateTransaksiPayload, UpdateTransaksiPayload } from '../types'
 
@@ -66,6 +66,35 @@ export function useUpdateTransaksi() {
         queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() })
       }
     },
+  })
+}
+
+export interface TransaksiSearchResult {
+  id: number
+  noResi: string
+  tanggal: string | null
+  pengirim: string
+  penerima: string
+  invoice: {
+    id: number
+    title: string
+    deletedAt: string | null
+  }
+}
+
+// Search transactions by No STT fragment (min 3 chars)
+export function useSearchTransaksi(q: string) {
+  const query = q.trim()
+  return useQuery({
+    queryKey: [...transaksiKeys.all, 'search', query] as const,
+    queryFn: async () => {
+      const response = await api.get<{ results: TransaksiSearchResult[] }>(
+        '/transaksi/search',
+        { params: { q: query } }
+      )
+      return response.data.results
+    },
+    enabled: query.length >= 3,
   })
 }
 
