@@ -77,7 +77,7 @@ export function DateInputWithShortcuts({
             variant="ghost"
             size="sm"
             onClick={decrementDate}
-            className="h-12 w-10 rounded-r-none border border-r-0 border-slate-200 hover:bg-slate-100 hover:text-blue-600 flex-shrink-0"
+            className="h-12 w-10 rounded-r-none border border-r-0 border-slate-200 hover:bg-slate-100 hover:text-klk-green flex-shrink-0"
             tabIndex={-1}
             title="Tanggal sebelumnya"
           >
@@ -86,7 +86,7 @@ export function DateInputWithShortcuts({
 
           {/* Date Input */}
           <div className="relative flex-1">
-            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-500 z-10" />
+            <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-klk-green z-10" />
             <Input
               id={id}
               ref={inputRef}
@@ -97,7 +97,7 @@ export function DateInputWithShortcuts({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               className={cn(
-                "pl-11 pr-3 h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-white rounded-none",
+                "pl-11 pr-3 h-12 text-base border-slate-200 focus:border-klk-green focus:ring-klk-green bg-white rounded-none",
                 className
               )}
             />
@@ -109,7 +109,7 @@ export function DateInputWithShortcuts({
             variant="ghost"
             size="sm"
             onClick={incrementDate}
-            className="h-12 w-10 rounded-l-none border border-l-0 border-slate-200 hover:bg-slate-100 hover:text-blue-600 flex-shrink-0"
+            className="h-12 w-10 rounded-l-none border border-l-0 border-slate-200 hover:bg-slate-100 hover:text-klk-green flex-shrink-0"
             tabIndex={-1}
             title="Tanggal berikutnya"
           >
@@ -122,7 +122,7 @@ export function DateInputWithShortcuts({
           {getDisplayText() && (
             <span className={cn(
               "inline-flex items-center gap-1",
-              isToday(currentDate) && "text-blue-600 font-semibold"
+              isToday(currentDate) && "text-klk-green font-semibold"
             )}>
               {getDisplayText()}
               {isFocused && (

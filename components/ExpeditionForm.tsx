@@ -758,7 +758,7 @@ export function ExpeditionForm({
   const grandTotal = temporaryItems.reduce((sum, item) => sum + item.total, 0)
 
   return (
-    <Card className="w-full shadow-md border-t-4 border-t-blue-600">
+    <Card className="w-full rounded-xl border-klk-line shadow-[0_1px_2px_rgba(16,24,40,.05)]">
       <CardHeader>
         <CardTitle>{isAppendMode ? "Lanjutkan Invoice" : "Input Transaksi / STT"}</CardTitle>
         <CardDescription>
@@ -778,7 +778,7 @@ export function ExpeditionForm({
               id="title"
               ref={titleInputRef}
               placeholder="Judul File"
-              className="h-12 text-base font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+              className="h-12 text-base font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
               value={titleValue || ""}
               onChange={(e) => setValue("title", e.target.value, { shouldValidate: true })}
             />
@@ -845,7 +845,7 @@ export function ExpeditionForm({
               <Input
                 id="stt"
                 placeholder="Masukkan No. STT"
-                className="h-12 text-base font-bold text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base font-bold text-lg border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 {...register("stt")}
               />
               {errors.stt && <p className="text-xs text-red-500">{errors.stt.message}</p>}
@@ -885,7 +885,7 @@ export function ExpeditionForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sender" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-500" />
+                  <User className="h-4 w-4 text-klk-green" />
                   Pengirim
                 </Label>
                 <AutocompleteInput
@@ -895,7 +895,7 @@ export function ExpeditionForm({
                   storageKey="invoice_pengirim"
                   placeholder="Nama Pengirim"
                   disabled={isDraftPartyLocked}
-                  className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="h-12 text-base border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 />
                 {errors.sender && <p className="text-xs text-red-500">{errors.sender.message}</p>}
               </div>
@@ -926,7 +926,7 @@ export function ExpeditionForm({
                 id="coly"
                 type="number"
                 min={1}
-                className="h-12 text-base text-center font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 {...register("coly")}
               />
             </div>
@@ -939,7 +939,7 @@ export function ExpeditionForm({
                 type="number"
                 step="0.1"
                 min={0}
-                className="h-12 text-base text-center font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 {...register("kg")}
               />
             </div>
@@ -952,7 +952,7 @@ export function ExpeditionForm({
                 type="number"
                 step="1"
                 min={0}
-                className="h-12 text-base text-center font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 {...register("min")}
               />
             </div>
@@ -981,7 +981,7 @@ export function ExpeditionForm({
                       setTarifDisplay(formatRupiah(numValue))
                     }
                   }}
-                  className="pl-10 h-12 text-base text-center font-semibold border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10 h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
                 />
               </div>
             </div>
@@ -995,7 +995,7 @@ export function ExpeditionForm({
                 onChange={(val) => setValue("keterangan", val, { shouldValidate: true })}
                 storageKey="invoice_keterangan"
                 placeholder="Keterangan..."
-                className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                className="h-12 text-base border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
               />
             </div>
           </div>
@@ -1003,7 +1003,7 @@ export function ExpeditionForm({
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             <div className="space-y-1 w-full sm:w-auto text-center sm:text-left">
               <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Total Tagihan</Label>
-              <div className="text-4xl font-black text-blue-700 tabular-nums">
+              <div className="text-4xl font-black text-klk-green tabular-nums">
                 Rp {(Number(watch("total")) || 0).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-slate-500 mt-1">
@@ -1027,7 +1027,7 @@ export function ExpeditionForm({
               <Button
                 type="submit"
                 variant="outline"
-                className="h-12 px-8 text-base font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-md active:scale-95"
+                className="h-12 px-8 text-base font-bold border-2 border-klk-green text-klk-green hover:bg-klk-green hover:text-white transition-all shadow-md active:scale-95"
               >
                 {editingStt ? (
                   <>
@@ -1074,7 +1074,7 @@ export function ExpeditionForm({
                     {temporaryItems.map((item, index) => (
                       <TableRow key={`${item.stt}-${index}`} className="hover:bg-slate-50">
                         <TableCell className="text-center text-slate-600 font-medium">{index + 1}</TableCell>
-                        <TableCell className="font-mono font-bold text-blue-600">{item.stt}</TableCell>
+                        <TableCell className="font-klk-mono font-bold text-klk-blue">{item.stt}</TableCell>
                         {showDraftDateColumn && (
                           <TableCell className="text-slate-700">
                             {getDraftDateText(item.date, currentDateMode)}
@@ -1097,7 +1097,7 @@ export function ExpeditionForm({
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditItem(item.stt)}
-                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-8 w-8 p-0 text-klk-green hover:text-klk-green-hover hover:bg-klk-green-tint"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -1137,7 +1137,7 @@ export function ExpeditionForm({
               type="button"
               onClick={handleSaveReport}
               disabled={isSubmitting}
-              className="w-full h-14 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg disabled:opacity-50"
+              className="w-full h-14 text-lg font-bold bg-klk-green hover:bg-klk-green-hover text-white shadow-lg disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

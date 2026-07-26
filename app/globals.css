@@ -34,8 +34,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
  
-  /* Vibrant primary blue */
-  --primary: 217 91% 60%;
+  /* KLK primary green (#12775c) */
+  --primary: 164 74% 27%;
   --primary-foreground: 0 0% 100%;
  
   --secondary: 214 32% 91%;
@@ -52,7 +52,7 @@
 
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 217 91% 60%;
+  --ring: 164 74% 27%;
  
   --radius: 0.75rem;
   
@@ -77,8 +77,8 @@
   --popover: 222 47% 11%;
   --popover-foreground: 210 40% 98%;
  
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
+  --primary: 164 74% 27%;
+  --primary-foreground: 0 0% 100%;
  
   --secondary: 217 33% 17%;
   --secondary-foreground: 210 40% 98%;
@@ -94,7 +94,7 @@
  
   --border: 217 33% 17%;
   --input: 217 33% 17%;
-  --ring: 217 91% 60%;
+  --ring: 164 74% 27%;
   
   --success: 142 71% 45%;
   --success-foreground: 0 0% 100%;

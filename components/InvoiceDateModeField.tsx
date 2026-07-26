@@ -60,14 +60,14 @@ export function InvoiceDateModeField({
               className={cn(
                 "h-auto min-h-20 flex-col items-start justify-start gap-1 px-4 py-3 text-left whitespace-normal",
                 isActive
-                  ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 disabled:border-blue-600 disabled:bg-blue-600 disabled:text-white"
-                  : "border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50 disabled:border-slate-200 disabled:bg-white disabled:text-slate-400",
+                  ? "border-klk-green bg-klk-green text-white hover:bg-klk-green-hover disabled:border-klk-green disabled:bg-klk-green disabled:text-white"
+                  : "border-klk-line text-klk-ink-2 hover:border-klk-green/40 hover:bg-klk-green-tint disabled:border-klk-line disabled:bg-white disabled:text-klk-ink-3",
                 disabled && "cursor-not-allowed opacity-70"
               )}
               aria-pressed={isActive}
             >
               <span className="text-sm font-bold">{label}</span>
-              <span className={cn("text-xs leading-relaxed", isActive ? "text-blue-100" : "text-slate-500")}>
+              <span className={cn("text-xs leading-relaxed", isActive ? "text-white/75" : "text-klk-ink-3")}>
                 {description}
               </span>
             </Button>
