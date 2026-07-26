@@ -2,25 +2,68 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Lock, User, Loader2, AlertCircle, Eye, EyeOff, KeyRound, X, CheckCircle, Check, XCircle } from "lucide-react"
+import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google"
+import {
+  Lock,
+  User,
+  Loader2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  KeyRound,
+  X,
+  CheckCircle,
+  Check,
+  XCircle,
+} from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { apiBaseUrl } from "@/lib/api-base"
+import styles from "./login.module.css"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+const API_BASE = apiBaseUrl
+
+const instrumentSans = Instrument_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--klk-font-sans",
+})
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--klk-font-mono",
+})
+
+const MAX_ATTEMPTS = 3
+const LOCKOUT_MS = 15 * 60 * 1000
+
+type LoginStatus = "idle" | "loading" | "error" | "locked" | "success"
+
+interface LoginAlert {
+  tone: "error" | "success"
+  title: string
+  detail?: string
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, isAuthenticated, isLoading: authLoading } = useAuth()
-  
+
   const [username, setUsername] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
-  const [isLoading, setIsLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  
+  const [status, setStatus] = React.useState<LoginStatus>("idle")
+  const [attempts, setAttempts] = React.useState(0)
+  const [capsLock, setCapsLock] = React.useState(false)
+  const [fieldErrors, setFieldErrors] = React.useState<{ username?: string; password?: string }>({})
+  const [alert, setAlert] = React.useState<LoginAlert | null>(null)
+
+  const usernameRef = React.useRef<HTMLInputElement>(null)
+  const passwordRef = React.useRef<HTMLInputElement>(null)
+
   // Forgot password state
   const [showForgotModal, setShowForgotModal] = React.useState(false)
   const [resetStep, setResetStep] = React.useState<"key" | "password">("key")
@@ -37,6 +80,9 @@ export default function LoginPage() {
   const doPasswordsMatch = newPassword === confirmPassword && confirmPassword.length > 0
   const isFormValid = isPasswordLongEnough && doPasswordsMatch
 
+  const isLocked = status === "locked"
+  const isBusy = status === "loading" || status === "success"
+
   // Redirect if already authenticated
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -44,20 +90,70 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, authLoading, router])
 
+  // Client-side lockout timer (advisory only — real enforcement belongs on the server)
+  React.useEffect(() => {
+    if (status !== "locked") return
+    const timer = setTimeout(() => {
+      setStatus("idle")
+      setAttempts(0)
+      setAlert(null)
+    }, LOCKOUT_MS)
+    return () => clearTimeout(timer)
+  }, [status])
+
+  const clearFieldState = (field: "username" | "password") => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev))
+    if (status === "error") {
+      setStatus("idle")
+      setAlert(null)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    if (isLocked || isBusy) return
+
+    if (!username.trim()) {
+      setFieldErrors({ username: "Username wajib diisi" })
+      usernameRef.current?.focus()
+      return
+    }
+    if (!password) {
+      setFieldErrors({ password: "Password wajib diisi" })
+      passwordRef.current?.focus()
+      return
+    }
+
+    setFieldErrors({})
+    setAlert(null)
+    setStatus("loading")
 
     const result = await login(username, password)
-    
+
     if (result.success) {
-      router.push("/")
-    } else {
-      setError(result.error || "Login gagal")
+      setStatus("success")
+      setAlert({ tone: "success", title: "Berhasil masuk.", detail: "Mengalihkan ke dashboard invoice…" })
+      setTimeout(() => router.push("/"), 900)
+      return
     }
-    
-    setIsLoading(false)
+
+    const failCount = attempts + 1
+    setAttempts(failCount)
+
+    if (failCount >= MAX_ATTEMPTS) {
+      setStatus("locked")
+      setAlert({ tone: "error", title: "Akun dikunci 15 menit.", detail: "Hubungi admin IT." })
+      return
+    }
+
+    setStatus("error")
+    setFieldErrors({ password: "Password tidak cocok" })
+    setAlert({
+      tone: "error",
+      title: result.error || "Username atau password salah.",
+      detail: `Sisa ${MAX_ATTEMPTS - failCount} percobaan sebelum akun dikunci 15 menit.`,
+    })
+    passwordRef.current?.select()
   }
 
   const handleVerifyKey = async (e: React.FormEvent) => {
@@ -96,7 +192,7 @@ export default function LoginPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isFormValid) return
-    
+
     setResetError(null)
     setIsResetting(true)
 
@@ -133,134 +229,184 @@ export default function LoginPage() {
     setResetSuccess(false)
   }
 
+  const handlePasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setCapsLock(e.getModifierState?.("CapsLock") ?? false)
+  }
+
+  const fontVars = `${instrumentSans.variable} ${plexMono.variable}`
+
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-        <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+      <div className={`${styles.gate} ${fontVars}`}>
+        <Loader2 className={styles.spin} style={{ width: 40, height: 40 }} />
       </div>
     )
   }
 
-  if (isAuthenticated) {
-    return null
-  }
+  const buttonLabel =
+    status === "loading" ? "Memeriksa…" : status === "success" ? "Mengalihkan…" : status === "error" ? "Coba lagi" : "Masuk"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
-      {/* Background blobs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-200 rounded-full opacity-30 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-emerald-200 rounded-full opacity-30 blur-3xl" />
+    <div className={`${styles.root} ${fontVars}`}>
+      {/* Left brand panel (desktop) */}
+      <aside className={styles.panel}>
+        <div className={styles.pattern} />
+        <div className={styles.scrim} />
+        <div className={styles.pc}>
+          <div className={styles.logoChip}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/klkexpress.png" alt="KLK Express" />
+          </div>
+          <div>
+            <h2 className={styles.headline}>Satu tempat untuk semua invoice ekspedisi.</h2>
+            <div className={styles.rule} />
+            <p className={styles.meta}>
+              PT. Kemilau Lintas Khatulistiwa
+              <br />
+              Branch Manado · Permata Klabat Blok E1 No 17
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Hero (mobile) */}
+      <div className={styles.hero}>
+        <div className={styles.pattern} />
+        <div className={styles.scrim} />
+        <div className={styles.heroContent}>
+          <div className={styles.logoChip}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/klkexpress.png" alt="KLK Express" />
+          </div>
+          <p className={styles.meta}>Branch Manado</p>
+        </div>
       </div>
 
-      <Card className="w-full max-w-md shadow-xl border-0 relative z-10">
-        {/* Gradient top border */}
-        <div className="h-2 bg-gradient-to-r from-blue-600 to-emerald-500 rounded-t-lg" />
-        
-        <CardHeader className="text-center pt-8 pb-4">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg shadow-blue-500/30">
-              <Lock className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-slate-800">KLK Invoice</CardTitle>
-          <CardDescription className="text-slate-500">
-            Masukkan kredensial untuk login
-          </CardDescription>
-        </CardHeader>
+      {/* Form column */}
+      <main className={styles.form}>
+        <div className={styles.formInner}>
+          <p className={styles.eyebrow}>Sistem Invoice · KLK Express</p>
+          <h1 className={styles.h1}>Masuk</h1>
+          <p className={styles.sub}>Akun internal karyawan KLK Express.</p>
 
-        <CardContent className="pb-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
-                <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">{error}</p>
+          {alert && (
+            <div className={`${styles.alert} ${alert.tone === "success" ? styles.alertSuccess : ""}`} role="alert">
+              {alert.tone === "success" ? <CheckCircle /> : <AlertCircle />}
+              <div>
+                <div className={styles.alertTitle}>{alert.title}</div>
+                {alert.detail && <div className={styles.alertDetail}>{alert.detail}</div>}
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-semibold text-slate-700">
+          <form onSubmit={handleSubmit} noValidate>
+            <div className={styles.field}>
+              <label htmlFor="username" className={styles.label}>
                 Username
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                <Input
+              </label>
+              <div className={`${styles.inputBox} ${fieldErrors.username ? styles.inputError : ""}`}>
+                <User />
+                <input
+                  ref={usernameRef}
                   id="username"
                   type="text"
-                  placeholder="Masukkan username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-11 h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                  required
                   autoComplete="username"
+                  placeholder="Username Anda"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                    clearFieldState("username")
+                  }}
+                  className={styles.input}
+                  disabled={isBusy}
                   autoFocus
                 />
               </div>
+              {fieldErrors.username && (
+                <div className={styles.hint}>
+                  <AlertCircle />
+                  {fieldErrors.username}
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
+            <div className={styles.field}>
+              <label htmlFor="password" className={styles.label}>
                 Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-                <Input
+              </label>
+              <div className={`${styles.inputBox} ${fieldErrors.password ? styles.inputError : ""}`}>
+                <Lock />
+                <input
+                  ref={passwordRef}
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="Masukkan password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 pr-11 h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                  required
-                  autoComplete="current-password"
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    clearFieldState("password")
+                  }}
+                  onKeyDown={handlePasswordKey}
+                  onKeyUp={handlePasswordKey}
+                  onBlur={() => setCapsLock(false)}
+                  className={styles.input}
+                  disabled={isBusy}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  className={styles.eyeBtn}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <div className={styles.hint}>
+                  <AlertCircle />
+                  {fieldErrors.password}
+                </div>
+              )}
+              {capsLock && (
+                <div className={styles.caps}>
+                  <i />
+                  Caps Lock aktif
+                </div>
+              )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading || !username || !password}
-              className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Memproses...
-                </>
-              ) : (
-                "Login"
-              )}
-            </Button>
-
-            {/* Forgot Password Link */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Lupa Password?
+            <div className={styles.row}>
+              <button type="button" className={styles.link} onClick={() => setShowForgotModal(true)}>
+                Lupa password?
               </button>
             </div>
+
+            <button
+              type="submit"
+              className={`${styles.btn} ${status === "loading" ? styles.btnLoading : ""} ${isLocked ? styles.btnLocked : ""}`}
+              disabled={isBusy || isLocked}
+            >
+              {status === "loading" && <Loader2 className={styles.spin} style={{ width: 16, height: 16 }} />}
+              {buttonLabel}
+            </button>
           </form>
-        </CardContent>
-      </Card>
+
+          <div className={styles.footer}>
+            <span>© 2026 PT. KLK</span>
+            <span>Bantuan IT</span>
+          </div>
+        </div>
+      </main>
 
       {/* Forgot Password Modal */}
       {showForgotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeForgotModal}
           />
-          
+
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm m-4">
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <h2 className="text-lg font-bold text-slate-800">Reset Password</h2>
@@ -286,7 +432,7 @@ export default function LoginPage() {
                   </div>
                   <Button
                     onClick={closeForgotModal}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-emerald-700 hover:bg-emerald-800"
                   >
                     Kembali ke Login
                   </Button>
