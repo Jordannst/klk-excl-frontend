@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { RefreshCw, FileText, Package as PackageIcon, Download, Printer, Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { RefreshCw, Package as PackageIcon, Download, Printer, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button"
 import { EditTransactionDialog } from "@/components/EditTransactionDialog"
 import { InvoiceDateModeField } from "@/components/InvoiceDateModeField"
 import { PrintInvoiceModal } from "@/components/PrintInvoiceModal"
-import { downloadTransactionsPdf } from "@/lib/api"
 import { useDeleteTransaksi, useUpdateInvoice, useUpdateTransaksi } from "@/lib/hooks"
 import {
   isDateColumnVisible,
@@ -29,16 +28,6 @@ import {
 } from "@/lib/invoice-date-mode"
 import type { Transaksi, UpdateTransaksiPayload } from "@/lib/types"
 
-function saveBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-}
 
 interface TransactionTableProps {
   data: Transaksi[]
@@ -69,7 +58,6 @@ export function TransactionTable({
   const [editingItem, setEditingItem] = React.useState<Transaksi | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<Transaksi | null>(null)
   const [isPrintModalOpen, setIsPrintModalOpen] = React.useState(false)
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = React.useState(false)
   const [currentDateMode, setCurrentDateMode] = React.useState<InvoiceDateMode>(() =>
     normalizeInvoiceDateMode(dateMode)
   )
@@ -301,38 +289,6 @@ export function TransactionTable({
     XLSX.writeFile(wb, filename)
   }
 
-  const openPdfPreview = () => {
-    if (data.length === 0) {
-      toast.error("Tidak ada data untuk diekspor")
-      return
-    }
-    setIsPdfPreviewOpen(true)
-  }
-
-  const downloadPdf = async () => {
-    toast.loading("Membuat file PDF...", { id: "pdf-export" })
-
-    try {
-      const sanitizedTitle = (title || "Perhitungan_Pengiriman_Barang")
-        .replace(/[/\\?%*:|"<>]/g, "-")
-        .replace(/\s+/g, "_")
-        .trim()
-
-      const pdf = await downloadTransactionsPdf({
-        title: title || "Perhitungan Pengiriman Barang",
-        dateMode: currentDateMode,
-        showKeteranganColumn: currentShowKeteranganColumn,
-        transactions: data,
-      })
-
-      saveBlob(pdf, `${sanitizedTitle}_${format(new Date(), "yyyy-MM-dd")}.pdf`)
-      toast.success("PDF berhasil diunduh!", { id: "pdf-export" })
-    } catch (error) {
-      console.error("Error downloading PDF:", error)
-      toast.error("Gagal mengexport PDF", { id: "pdf-export" })
-    }
-  }
-
   const cancelDelete = () => {
     if (!deleteTransaksiMutation.isPending) {
       setDeleteTarget(null)
@@ -392,17 +348,6 @@ export function TransactionTable({
                 <Download className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Excel</span>
                 <span className="sm:hidden">Excel</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openPdfPreview}
-                disabled={data.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
-              >
-                <FileText className="h-[15px] w-[15px]" />
-                <span className="hidden sm:inline">Preview PDF</span>
-                <span className="sm:hidden">Preview</span>
               </Button>
               <Button
                 variant="outline"
@@ -676,88 +621,6 @@ export function TransactionTable({
       />
 
       {/* PDF Preview Modal */}
-      {isPdfPreviewOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-bold text-slate-800">Preview PDF</h2>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={downloadPdf}
-                  className="gap-2 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Download className="h-4 w-4" />
-                  Download PDF
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsPdfPreviewOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto p-6 bg-slate-100">
-              <div
-                className="bg-white shadow-lg mx-auto p-6"
-                style={{ maxWidth: '1100px' }}
-              >
-                <div style={{ fontFamily: "Arial, sans-serif", fontSize: "11px", padding: "20px", boxSizing: "border-box", background: "#fff" }}>
-                  <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-                    {title || "Perhitungan Pengiriman Barang"}
-                  </h2>
-                  <p style={{ marginBottom: "10px" }}>
-                    Tanggal: {format(new Date(), "dd MMMM yyyy", { locale: id })}
-                  </p>
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
-                    <thead>
-                      <tr style={{ backgroundColor: "#f0f0f0" }}>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>No</th>
-                        {showDateColumn && <th style={{ border: "1px solid #000", padding: "6px" }}>Hari/Tgl</th>}
-                        <th style={{ border: "1px solid #000", padding: "6px" }}>No Stt</th>
-                        <th style={{ border: "1px solid #000", padding: "6px" }}>Pengirim</th>
-                        <th style={{ border: "1px solid #000", padding: "6px" }}>Penerima</th>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>C</th>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>Kg</th>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>Min</th>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "right" }}>Tarif</th>
-                        <th style={{ border: "1px solid #000", padding: "6px", textAlign: "right" }}>Jumlah</th>
-                        {currentShowKeteranganColumn && <th style={{ border: "1px solid #000", padding: "6px" }}>Ket</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.map((item, index) => (
-                        <tr key={item.id || item.noResi}>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{index + 1}</td>
-                          {showDateColumn && <td style={{ border: "1px solid #000", padding: "4px" }}>{formatVisibleDate(item.tanggal, "")}</td>}
-                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.noResi}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.pengirim}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px" }}>{item.penerima}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.coly}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.berat}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "center" }}>{item.min || ""}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "right" }}>{formatNumber(item.tarif || 0)}</td>
-                          <td style={{ border: "1px solid #000", padding: "4px", textAlign: "right" }}>{formatNumber(item.total)}</td>
-                          {currentShowKeteranganColumn && <td style={{ border: "1px solid #000", padding: "4px" }}>{item.keterangan || ""}</td>}
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td colSpan={showDateColumn ? 9 : 8} style={{ border: "1px solid #000", padding: "6px", textAlign: "right", fontWeight: "bold" }}>TOTAL</td>
-                        <td style={{ border: "1px solid #000", padding: "6px", textAlign: "right", fontWeight: "bold" }}>
-                          {formatNumber(data.reduce((sum, item) => sum + item.total, 0))}
-                        </td>
-                        {currentShowKeteranganColumn && <td style={{ border: "1px solid #000", padding: "6px" }}></td>}
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {deleteTarget && (
         <div

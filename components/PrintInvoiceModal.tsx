@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Printer, Loader2, Download, ChevronDown } from "lucide-react"
+import { X, Printer, Loader2, Download, ChevronDown, Eye, ExternalLink } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -163,7 +163,18 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     penandatanganKanan: "",
   })
   const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
+  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false)
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
   const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
+
+  // Drop the preview (and its object URL) whenever the modal closes
+  React.useEffect(() => {
+    if (isOpen) return
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+  }, [isOpen])
   
   // Signature selection state
   const [selectedSignatureKiri, setSelectedSignatureKiri] = React.useState<Signature | null>(null)
@@ -420,6 +431,17 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     doPrint()
   }, [isPrintingActive, measuredChunks, invoiceTitle, onClose])
 
+  const buildPdfPayload = () => ({
+    invoiceTitle,
+    dateMode: currentDateMode,
+    showKeteranganColumn: currentShowKeteranganColumn,
+    formData,
+    selectedSignatureKiri,
+    selectedSignatureKanan,
+    logoBase64,
+    transactions: data,
+  })
+
   const handleDownloadPdf = async () => {
     setIsDownloadingPdf(true)
 
@@ -429,16 +451,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         .replace(/\s+/g, '_')
         .trim()
 
-      const pdf = await downloadInvoicePdf({
-        invoiceTitle,
-        dateMode: currentDateMode,
-        showKeteranganColumn: currentShowKeteranganColumn,
-        formData,
-        selectedSignatureKiri,
-        selectedSignatureKanan,
-        logoBase64,
-        transactions: data,
-      })
+      const pdf = await downloadInvoicePdf(buildPdfPayload())
 
       saveBlob(pdf, `${sanitizedTitle}.pdf`)
       onClose()
@@ -447,6 +460,30 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     } finally {
       setIsDownloadingPdf(false)
     }
+  }
+
+  const handlePreviewPdf = async () => {
+    setIsPreviewLoading(true)
+
+    try {
+      const pdf = await downloadInvoicePdf(buildPdfPayload())
+      const url = URL.createObjectURL(pdf)
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev)
+        return url
+      })
+    } catch (error) {
+      console.error("Error previewing PDF:", error)
+    } finally {
+      setIsPreviewLoading(false)
+    }
+  }
+
+  const closePreview = () => {
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
   }
 
   if (!isOpen) return null
@@ -672,9 +709,27 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             Batal
           </Button>
           <Button
+            variant="outline"
+            onClick={handlePreviewPdf}
+            disabled={isPreviewLoading || !formData.nomorInvoice || !formData.namaPenerima}
+            className="w-full sm:w-auto px-6 border-klk-green/40 text-klk-green hover:bg-klk-green-tint hover:text-klk-green-hover"
+          >
+            {isPreviewLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Membuat preview...
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-4 w-4" />
+                Preview PDF
+              </>
+            )}
+          </Button>
+          <Button
             onClick={handleDownloadPdf}
             disabled={isDownloadingPdf || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-red-600 hover:bg-red-700 text-white"
+            className="w-full sm:w-auto px-6 bg-klk-green hover:bg-klk-green-hover text-white"
           >
             {isDownloadingPdf ? (
               <>
@@ -691,7 +746,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <Button
             onClick={handlePrint}
             disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-blue-600 hover:bg-blue-700"
+            className="w-full sm:w-auto px-6 bg-klk-green-deep hover:bg-klk-green text-white"
           >
             {isPrinting ? (
               <>
@@ -707,6 +762,58 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           </Button>
         </div>
       </div>
+
+      {/* PDF Preview Overlay */}
+      {previewUrl && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-6">
+          <div className="absolute inset-0 bg-black/60" onClick={closePreview} />
+          <div className="relative flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-2 border-b border-klk-line px-4 py-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-[15px] font-semibold text-klk-ink">Preview PDF Final</h3>
+                <p className="font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
+                  {formData.nomorInvoice || invoiceTitle || "Invoice"}
+                </p>
+              </div>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden h-9 items-center gap-1.5 rounded-lg border border-klk-line-strong px-3 text-[12.5px] font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas sm:inline-flex"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Buka di tab baru
+                </a>
+                <Button
+                  onClick={handleDownloadPdf}
+                  disabled={isDownloadingPdf}
+                  className="h-9 bg-klk-green px-4 text-[12.5px] hover:bg-klk-green-hover"
+                >
+                  {isDownloadingPdf ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Download
+                </Button>
+                <button
+                  onClick={closePreview}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-klk-ink-3 hover:bg-klk-canvas hover:text-klk-ink"
+                  aria-label="Tutup preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <iframe
+              src={previewUrl}
+              title="Preview PDF invoice"
+              className="w-full flex-1 border-0 bg-klk-canvas"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

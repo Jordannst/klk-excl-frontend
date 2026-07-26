@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               "img-src 'self' data: blob:",
+              // blob: frames are needed for the in-modal invoice PDF preview
+              "frame-src 'self' blob:",
               "connect-src 'self' " + (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"),
               "frame-ancestors 'none'",
             ].join("; "),
