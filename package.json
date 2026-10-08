@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:landing": "node scripts/landing.check.cjs",
+    "test:product": "node scripts/product-regression.check.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -40,6 +42,7 @@
     "@types/xlsx": "^0.0.35",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
+    "playwright": "1.58.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

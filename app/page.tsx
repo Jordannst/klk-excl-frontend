@@ -1,201 +1,77 @@
-"use client"
+import type { Metadata } from "next"
+import Link from "next/link"
+import { ArrowRight, ArrowUpRight, Check, FileText, ListFilter, PenTool, Search, Download, History, Play, Sparkles, ChevronRight, Layers } from "lucide-react"
+import { ProductBrand } from "@/components/ProductBrand"
+import { ProductPreview } from "@/components/marketing/ProductPreview"
+import styles from "@/components/marketing/marketing.module.css"
 
-import * as React from "react"
-import { FileText, Plus, Loader2 } from "lucide-react"
-import { ExpeditionForm } from "@/components/ExpeditionForm"
-import { TransactionTable } from "@/components/TransactionTable"
-import { InvoiceHistory } from "@/components/InvoiceHistory"
-import { TransaksiSearch } from "@/components/TransaksiSearch"
-import { ProtectedRoute } from "@/components/ProtectedRoute"
-import { Navbar } from "@/components/Navbar"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { useInvoice } from "@/lib/hooks"
-import type { Invoice } from "@/lib/types"
+export const metadata: Metadata = { alternates: { canonical: "/" } }
 
-function DashboardContent() {
-  // Selected invoice ID from history
-  const [selectedInvoiceId, setSelectedInvoiceId] = React.useState<number | null>(null)
-  const [highlightNoResi, setHighlightNoResi] = React.useState<string | undefined>(undefined)
-  const [invoiceSearchQuery, setInvoiceSearchQuery] = React.useState("")
-  const [showForm, setShowForm] = React.useState(true)
-  const [formKey, setFormKey] = React.useState(0)
-  const [isContinuingInvoice, setIsContinuingInvoice] = React.useState(false)
-  const formRef = React.useRef<HTMLDivElement>(null)
+const features = [
+  { icon: FileText, title: "Satu invoice, semua transaksi.", text: "Susun transaksi dalam satu invoice. Simpan, buka kembali, lalu lanjutkan saat pekerjaan bertambah." },
+  { icon: ListFilter, title: "Detail yang tetap terkendali.", text: "Catat pengirim, penerima, berat, dan tarif. Periksa rincian transaksi sebelum dokumen dibagikan." },
+  { icon: Search, title: "Cari tanpa membuka satu per satu.", text: "Temukan nomor STT, cari invoice, atau saring riwayat berdasarkan tanggal yang Anda perlukan." },
+  { icon: Download, title: "Dari data menjadi dokumen.", text: "Pratinjau invoice dan ekspor ke PDF. Siapkan dokumen yang rapi untuk kebutuhan administrasi." },
+  { icon: PenTool, title: "Tanda tangan siap digunakan.", text: "Simpan gambar tanda tangan dan gunakan saat menyiapkan invoice. Tidak perlu mengunggah ulang." },
+  { icon: History, title: "Riwayat kerja tetap tertata.", text: "Akses kembali invoice tersimpan dan pulihkan invoice dari sampah bila masih dibutuhkan." },
+]
+const steps = [
+  ["Catat transaksi", "Masukkan rincian pengiriman, berat, dan tarif."],
+  ["Susun invoice", "Kumpulkan transaksi dan simpan dalam satu invoice."],
+  ["Periksa & ekspor", "Tinjau dokumen, tambahkan tanda tangan, lalu ekspor PDF."],
+  ["Temukan kembali", "Buka riwayat kapan pun administrasi membutuhkannya."],
+]
 
-  // Fetch selected invoice details
-  const { data: selectedInvoice, isLoading: isLoadingInvoice } = useInvoice(selectedInvoiceId)
-
-  /**
-   * Handle successful invoice creation from ExpeditionForm
-   * The form already saves to API, we just need to update UI state
-   */
-  const handleInvoiceCreated = (invoice: Invoice) => {
-    // Select the newly created invoice
-    setSelectedInvoiceId(invoice.id)
-    // Hide form and show the table with the new invoice
-    setShowForm(false)
-  }
-
-  const handleInvoiceContinued = (invoice: Invoice) => {
-    setSelectedInvoiceId(invoice.id)
-    setIsContinuingInvoice(false)
-    setShowForm(false)
-  }
-
-  const handleCreateNew = () => {
-    setIsContinuingInvoice(false)
-    setShowForm(true)
-    // Reset form dengan mengubah key
-    setFormKey((prev) => prev + 1)
-    // Scroll ke form
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
-
-    // Clear selection (mulai invoice baru)
-    setSelectedInvoiceId(null)
-  }
-
-  const handleSelectInvoice = (id: number) => {
-    setSelectedInvoiceId(id)
-    setIsContinuingInvoice(false)
-    setShowForm(false)
-  }
-
-  const handleSearchSelect = (invoiceId: number, noResi: string) => {
-    setHighlightNoResi(noResi)
-    handleSelectInvoice(invoiceId)
-  }
-
-  const handleContinueInvoice = () => {
-    if (!selectedInvoice) return
-
-    setIsContinuingInvoice(true)
-    setShowForm(true)
-    setFormKey((prev) => prev + 1)
-
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 100)
-  }
-
-  const handleRefresh = () => {
-    // Refetch is handled by React Query automatically on mutations
-    // This is just for manual refresh if needed
-  }
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-klk-canvas">
-      {/* Shared Navbar */}
-      <Navbar onNewInvoice={handleCreateNew} />
-
-      {/* Content Area */}
-      <main className="max-w-7xl mx-auto pt-20 px-4 sm:px-6 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[248px_1fr] gap-[18px]">
-          {/* Left Sidebar - Invoice History */}
-          <div>
-            <TransaksiSearch onSelect={handleSearchSelect} onQueryChange={setInvoiceSearchQuery} />
-            <InvoiceHistory
-              selectedId={selectedInvoiceId}
-              onSelectInvoice={handleSelectInvoice}
-              searchOverride={invoiceSearchQuery}
-            />
-          </div>
-
-          {/* Right Side - Form and Table */}
-          <div className="min-w-0 space-y-[18px]">
-            {showForm && (
-              <div ref={formRef}>
-                <ExpeditionForm
-                  key={formKey}
-                  mode={isContinuingInvoice ? "append" : "create"}
-                  invoice={isContinuingInvoice ? selectedInvoice ?? undefined : undefined}
-                  onSubmitSuccess={isContinuingInvoice ? handleInvoiceContinued : handleInvoiceCreated}
-                />
-                <div className="flex items-center mt-6">
-                  <Separator />
-                </div>
-              </div>
-            )}
-
-            {/* Loading state when fetching invoice */}
-            {!showForm && isLoadingInvoice && (
-              <div className="py-16 text-center">
-                <Loader2 className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-spin" />
-                <p className="text-slate-500">Memuat data invoice...</p>
-              </div>
-            )}
-
-            {/* Show selected invoice transactions */}
-            {!showForm && !isLoadingInvoice && selectedInvoice && (
-              <div className="space-y-4">
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleContinueInvoice}
-                    variant="outline"
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Lanjutkan Invoice
-                  </Button>
-                </div>
-                <TransactionTable
-                  data={selectedInvoice.transactions}
-                  onRefresh={handleRefresh}
-                  title={selectedInvoice.title}
-                  invoiceId={selectedInvoice.id}
-                  dateMode={selectedInvoice.dateMode}
-                  showKeteranganColumn={selectedInvoice.showKeteranganColumn}
-                  printSettings={selectedInvoice.printSettings}
-                  highlightNoResi={highlightNoResi}
-                />
-              </div>
-            )}
-
-            {/* Empty state when no invoice selected and form hidden */}
-            {!showForm && !isLoadingInvoice && !selectedInvoice && (
-              <div className="py-16 text-center">
-                <FileText className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-                <h3 className="text-lg font-semibold text-slate-600 mb-2">Pilih Invoice</h3>
-                <p className="text-slate-400 mb-4">
-                  Pilih invoice dari riwayat di sebelah kiri atau buat invoice baru
-                </p>
-                <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Buat Invoice Baru
-                </Button>
-              </div>
-            )}
-
-            {/* Show empty table when form is visible but no data yet */}
-            {showForm && (
-              <TransactionTable 
-                data={[]} 
-                onRefresh={handleRefresh}
-              />
-            )}
-          </div>
+    <div className={styles.root}>
+      <a className={styles.skipLink} href="#konten">Langsung ke konten</a>
+      <header className={styles.header}>
+        <div className={styles.navInner}>
+          <Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
+          <nav className={styles.desktopNav} aria-label="Navigasi utama"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#roadmap">Roadmap AI</a><a href="#tentang">Tentang</a></nav>
+          <div className={styles.navActions}><Link href="/login" prefetch={false} className={styles.navLogin}>Masuk <ArrowUpRight size={15} /></Link><details className={styles.mobileMenu}><summary aria-label="Buka navigasi"><span /><span /></summary><nav aria-label="Navigasi seluler"><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#roadmap">Roadmap AI</a><a href="#tentang">Tentang</a></nav></details></div>
         </div>
+      </header>
+
+      <main id="konten">
+        <section className={styles.hero} aria-labelledby="hero-title">
+          <div className={styles.heroCopy}>
+            <h1 id="hero-title">Invoice yang mengikuti<br className={styles.desktopBreak} /> <span>cara kerja bisnis Anda.</span></h1>
+            <p className={styles.heroDescription}>Kelola transaksi, susun invoice profesional, dan sederhanakan administrasi bisnis. Semua dalam satu alur kerja yang tertata.</p>
+            <div className={styles.heroActions}><Link href="/login" prefetch={false} className={styles.primary}>Masuk ke Aplikasi <ArrowRight size={17} /></Link><a href="#fitur" className={styles.secondary}>Jelajahi fitur <ChevronRight size={16} /></a></div>
+            <div className={styles.heroNotes}><span><Check /> Transaksi terorganisir</span><span><Check /> Invoice siap dibagikan</span></div>
+          </div>
+          <div className={styles.heroStage}><ProductPreview /></div>
+        </section>
+
+        <section id="fitur" className={`${styles.section} ${styles.features}`} aria-labelledby="features-title">
+          <div className={styles.sectionIntro}><div><p className={styles.eyebrow}>DIBUAT UNTUK PEKERJAAN NYATA</p><h2 id="features-title">Administrasi lebih sederhana.<br /><span>Pekerjaan terus berjalan.</span></h2></div><p>Dari transaksi pertama hingga dokumen terakhir, setiap langkah punya tempatnya.</p></div>
+          <div className={styles.featureGrid}>{features.map(({ icon: Icon, title, text }) => <article className={styles.feature} key={title}><Icon strokeWidth={1.6} /><h3>{title}</h3><p>{text}</p></article>)}</div>
+        </section>
+
+        <section id="demo" className={styles.demoSection} aria-labelledby="demo-title">
+          <div className={styles.section}>
+            <div className={styles.demoHeading}><div><p className={styles.eyebrow}><Play size={12} fill="currentColor" /> LIHAT KLK INVOICE BEKERJA</p><h2 id="demo-title">Dari transaksi ke invoice.<br /><span>Tanpa alur yang berbelit.</span></h2></div><p>Ikuti proses pencatatan, penyimpanan, dan pratinjau invoice dalam demo singkat ini.</p></div>
+            <figure className={styles.videoFrame}>
+              <video controls playsInline preload="none" poster="/media/klk-demo-poster.jpg" width="1280" height="720" aria-label="Demo KLK Invoice: input transaksi, simpan invoice, dan ekspor PDF" aria-describedby="demo-caption"><source src="/media/klk-demo.mp4" type="video/mp4" /><a href="/media/klk-demo.mp4">Unduh video demo KLK Invoice</a></video>
+              <figcaption id="demo-caption"><span><span className={styles.statusDot} /> Demo produk · 20 detik · Tanpa audio</span><span>Data contoh. Rekaman menggunakan identitas visual sebelumnya.</span></figcaption>
+            </figure>
+            <div id="cara-kerja" className={styles.workflow}><div className={styles.workflowTitle}><h3>Empat langkah. Satu alur yang jelas.</h3><a href="/login">Mulai dari ruang kerja Anda <ArrowUpRight size={16} /></a></div><ol className={styles.steps}>{steps.map(([title, text], i) => <li key={title}><span className={styles.stepNumber}>0{i + 1}</span><h4>{title}</h4><p>{text}</p></li>)}</ol></div>
+          </div>
+        </section>
+
+        <section id="roadmap" className={`${styles.section} ${styles.roadmap}`} aria-labelledby="roadmap-title">
+          <div className={styles.roadmapCopy}><p className={styles.eyebrow}><Sparkles size={15} /> ARAH PENGEMBANGAN</p><h2 id="roadmap-title">Anda beri instruksi.<br /><span>AI membantu menyusun.</span></h2><p>Kami merencanakan integrasi Claude API untuk membantu menyusun draf invoice melalui bahasa sehari-hari dan menyiapkan informasi dokumen.</p><p>Penyesuaian template, branding perusahaan, dan dukungan banyak perusahaan juga menjadi bagian dari roadmap KLK Invoice.</p><div className={styles.roadmapNotice}><span /> Dalam perencanaan · Belum tersedia di aplikasi</div></div>
+          <div className={styles.concept}><div className={styles.conceptHeader}><span><Sparkles size={16} /> Asisten KLK</span><small>PRATINJAU KONSEP</small></div><div className={styles.prompt}>Bantu susun draf invoice dari transaksi pengiriman minggu ini.</div><div className={styles.aiResponse}><span className={styles.aiIcon}><Sparkles size={16} /></span><p>Berikut gambaran drafnya. Periksa rincian transaksi sebelum invoice disimpan.</p></div><div className={styles.draft}><div><FileText size={24} /><div><strong>Draf invoice pengiriman</strong><small>Contoh hasil yang direncanakan</small></div></div><span>Menunggu tinjauan <ChevronRight size={14} /></span></div><p className={styles.conceptNote}>Ilustrasi interaksi. Bukan fitur aktif atau hasil AI.</p></div>
+        </section>
+
+        <section id="tentang" className={styles.about} aria-labelledby="about-title"><div className={styles.section}><div className={styles.aboutMark}><Layers strokeWidth={1.1} /></div><p className={styles.eyebrow}>BERAWAL DARI KEBUTUHAN NYATA</p><h2 id="about-title">Dibangun dari operasional.<br /><span>Dirancang untuk berkembang.</span></h2><p>KLK Invoice berawal dari kebutuhan administrasi ekspedisi: mencatat transaksi dengan rapi dan menyiapkan invoice tanpa proses yang berulang. Fondasi itu kami kembangkan menuju platform yang dapat mendukung berbagai perusahaan dan industri.</p><div className={styles.aboutFoot}><span>Fokus hari ini: alur invoice yang tertata.</span><span>Arah berikutnya: kebutuhan bisnis yang lebih luas.</span></div></div></section>
+
+        <section className={`${styles.section} ${styles.closing}`} aria-labelledby="closing-title"><div><p className={styles.eyebrow}>RUANG UNTUK BEKERJA LEBIH RAPI</p><h2 id="closing-title">Invoice beres.<br /><span>Lanjutkan langkah bisnis Anda.</span></h2></div><Link href="/login" prefetch={false} className={styles.primary}>Masuk ke Aplikasi <ArrowRight size={18} /></Link></section>
       </main>
 
-      {/* Footer */}
-      <footer className="mt-8 py-4 px-6 border-t border-slate-200 bg-white/50">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-slate-500">
-            © 2025 KLK Invoice. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <footer className={styles.footer}><div className={styles.footerInner}><Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link><p>Administrasi rapi. Bisnis terus bergerak.</p><nav aria-label="Navigasi footer"><a href="#fitur">Fitur</a><a href="#demo">Demo</a><a href="#roadmap">Roadmap</a><Link href="/login" prefetch={false}>Masuk <ArrowUpRight size={13} /></Link></nav></div><div className={styles.footerBottom}><span>© {new Date().getFullYear()} KLK Invoice.</span><a href="mailto:hello@klkinvoice.my.id">hello@klkinvoice.my.id</a></div></footer>
     </div>
-  )
-}
-
-// Wrap with ProtectedRoute for authentication
-export default function Dashboard() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
   )
 }

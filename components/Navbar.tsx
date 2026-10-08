@@ -6,10 +6,11 @@ import { usePathname } from 'next/navigation'
 import { LayoutGrid, PenTool, Database, Trash2, LogOut, Menu, X, Plus } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { ProductBrand } from '@/components/ProductBrand'
 
 // Navigation items configuration (design_handoff_dashboard)
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/signatures', label: 'Tanda Tangan', icon: PenTool },
   { href: '/storage', label: 'Storage', icon: Database },
   { href: '/trash', label: 'Trash', icon: Trash2 },
@@ -48,13 +49,12 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
     >
       <div className="flex h-full items-center gap-6 px-4 sm:px-6">
         {/* Logo */}
-        <Link href="/" className="flex-shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/klkexpress.png" alt="KLK Express" className="w-[78px]" />
+        <Link href="/dashboard" className="flex-shrink-0">
+          <ProductBrand />
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 xl:flex">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -79,20 +79,20 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-3">
-          <span className="hidden md:block">
+          <span className="hidden xl:block">
             {onNewInvoice ? (
               <button type="button" onClick={onNewInvoice} className="cursor-pointer">
                 {newInvoiceButton}
               </button>
             ) : (
-              <Link href="/">{newInvoiceButton}</Link>
+              <Link href="/dashboard">{newInvoiceButton}</Link>
             )}
           </span>
 
-          <span className="hidden h-6 w-px bg-klk-line md:block" />
+          <span className="hidden h-6 w-px bg-klk-line xl:block" />
 
           {/* User */}
-          <div className="hidden items-center gap-2.5 md:flex">
+          <div className="hidden items-center gap-2.5 xl:flex">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-klk-green-deep text-[13px] font-semibold text-white">
               {initial}
             </span>
@@ -101,14 +101,14 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
                 {user?.username || 'Pengguna'}
               </span>
               <span className="block font-klk-mono text-[9px] uppercase tracking-[.1em] text-klk-ink-3">
-                Branch Manado
+                Ruang kerja
               </span>
             </span>
           </div>
 
           <button
             onClick={logout}
-            className="hidden h-9 w-9 items-center justify-center rounded-lg text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red md:flex"
+            className="hidden h-9 w-9 items-center justify-center rounded-lg text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red xl:flex"
             aria-label="Keluar"
             title="Keluar"
           >
@@ -117,9 +117,10 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
 
           {/* Mobile menu button */}
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-klk-ink-2 hover:bg-klk-canvas md:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-klk-ink-2 hover:bg-klk-canvas xl:hidden"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label="Buka navigasi"
+            aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -128,7 +129,16 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="space-y-1 border-t border-klk-line bg-white px-4 py-3 md:hidden">
+        <div className="space-y-1 border-t border-klk-line bg-white px-4 py-3 xl:hidden">
+          <div className="px-3 py-2">
+            {onNewInvoice ? (
+              <button type="button" onClick={() => { onNewInvoice(); setIsMobileMenuOpen(false) }}>
+                {newInvoiceButton}
+              </button>
+            ) : (
+              <Link href="/dashboard">{newInvoiceButton}</Link>
+            )}
+          </div>
           {navItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon

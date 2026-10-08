@@ -1,0 +1,21 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--klk-font-sans), sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.8px;
+  white-space: nowrap;
+}
+
+.mark {
+  width: 33px;
+  height: 33px;
+  color: #2463eb;
+  flex: none;
+}
+
+.invoice {
+  font-weight: 500;
+}

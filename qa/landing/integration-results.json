@@ -1,0 +1,19 @@
+{
+  "passed": [
+    "Verified isolated PostgreSQL database, role, port and data directory; no admin account",
+    "Real login rejects wrong password then succeeds through frontend proxy with HttpOnly Secure cookies",
+    "Real session survives reload; refresh restores access cookie; authenticated login redirects",
+    "Invoice UI persists three transactions and correct total in real PostgreSQL",
+    "Real authenticated backend generates invoice PDF through frontend proxy",
+    "Real search, undo, delayed delete and unmount delete preserve correct database count and totals",
+    "Signature persists across reload; trash restore and storage use the real backend",
+    "Logout clears cookies and blocks protected APIs; no runtime errors or reset requests"
+  ],
+  "identity": {
+    "db": "klk_release_qa",
+    "role": "klk_qa",
+    "port": 55439,
+    "dir": "C:/projects/klk/.local-qa-20261008/pgdata"
+  },
+  "mode": "Real Next production build, Express production mode and isolated PostgreSQL; no API mocks; reset reserved for user"
+}

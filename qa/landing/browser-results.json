@@ -1,0 +1,148 @@
+{
+  "base": "http://127.0.0.1:3101",
+  "passed": [
+    "Public landing, zero API calls, metadata, native video and all section links",
+    "Landing has no horizontal overflow at 320, 390, 768, 1024, 1440, 1920px",
+    "Mobile navigation and reduced motion",
+    "Keyboard skip link",
+    "Robots, sitemap, social image and brand icons resolve",
+    "All four application routes reject unauthenticated visitors before fetching business data",
+    "Login metadata, password visibility, accessible reset dialog and Escape dismissal",
+    "Reset submits chosen password with private key only on confirmation; validates, handles failure, cancellation and pending submission",
+    "Successful login redirects to migrated invoice dashboard (mocked API)",
+    "Authenticated navigation fits tablet and desktop",
+    "Session recheck on reload and authenticated /login redirect (mocked API)",
+    "Existing app navigation returns to /dashboard",
+    "Logout and return to public landing with no extra auth requests",
+    "No browser runtime errors across checked flows"
+  ],
+  "requests": [
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/refresh",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/refresh",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/refresh",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/refresh",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/reset-password",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/reset-password",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/reset-password",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/login",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/login",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/stats",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice/trash/list",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/logout",
+      "method": "POST",
+      "query": ""
+    }
+  ],
+  "errors": [],
+  "mode": "API mocked; no backend/database touched"
+}

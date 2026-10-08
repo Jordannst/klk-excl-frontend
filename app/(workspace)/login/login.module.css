@@ -6,16 +6,16 @@
 
   --klk-ink: oklch(0.24 0.014 250);
   --klk-ink-2: oklch(0.45 0.016 250);
-  --klk-ink-3: oklch(0.62 0.014 250);
+  --klk-ink-3: #64748b;
   --klk-line: oklch(0.915 0.006 250);
   --klk-line-strong: oklch(0.85 0.008 250);
   --klk-surface: #fff;
   --klk-canvas: oklch(0.972 0.004 250);
 
-  --klk-green: oklch(0.48 0.098 163);
-  --klk-green-hover: oklch(0.43 0.098 163);
-  --klk-green-deep: oklch(0.29 0.055 168);
-  --klk-green-tint: oklch(0.965 0.022 163);
+  --klk-green: #2463eb;
+  --klk-green-hover: #174fd0;
+  --klk-green-deep: #153f91;
+  --klk-green-tint: #eef4ff;
 
   --klk-red: oklch(0.55 0.17 25);
   --klk-red-tint: oklch(0.965 0.025 25);
@@ -452,3 +452,40 @@
     gap: 8px;
   }
 }
+
+/* Public product identity; dashboard tokens remain unchanged. */
+.root :is(a,button):focus-visible { outline: 3px solid #2463eb; outline-offset: 4px; }
+.panel { width: 48%; margin: 16px; border-radius: 18px; min-height: calc(100svh - 32px); }
+.pattern { background: radial-gradient(ellipse at 90% 30%,#c8ddff 0,transparent 60%),linear-gradient(145deg,#f3f7ff,#eaf2ff); }
+.scrim { background: linear-gradient(0deg,#eff5ff,transparent); height: 35%; }
+.pc { padding: clamp(32px,4.5vw,72px); color: #172b50; position: relative; min-height: calc(100svh - 32px); gap: 70px; }
+.brandLink { align-self: flex-start; }
+.panelEyebrow { color: #2463eb; font-size: 9px; letter-spacing: .13em; margin-bottom: 18px; font-weight: 600; }
+.headline { font-size: clamp(31px,3vw,44px); max-width: 17ch; letter-spacing: -.045em; line-height: 1.14; }
+.headline span { color: #477bc7; }
+.rule { background: #b9cff1; margin-top: 38px; }
+.meta { font-family: var(--klk-font); color: #52698a; font-size: 12px; text-transform: none; letter-spacing: 0; line-height: 1.8; }
+.documentArt { transform: rotate(-4deg); padding: 24px; background: white; border: 1px solid #d9e5f7; border-radius: 10px; box-shadow: 0 22px 40px -20px #547ebe55; max-width: 340px; margin: 38px 10px 0; }
+.documentArt>div { display:flex; align-items:center; justify-content:space-between; font-size:10px; color:#667c9b; }
+.documentArt>div:first-child { padding-bottom:18px; border-bottom:1px solid #e8edf5; color:#2463eb; font-weight:600; }
+.documentArt small { font-size:6px; letter-spacing:.06em; font-weight:400; color:#7185a0; }
+.documentArt>strong { display:block; font-size:18px; margin-top:20px; letter-spacing:-.4px; }
+.documentArt>p { font-size:9px; color:#7d8ca4; margin-top:5px; }
+.documentArt .documentLines { display:flex; flex-direction:column; align-items:stretch; gap:10px; margin:23px 0; }
+.documentLines i { height:5px; background:linear-gradient(90deg,#edf2fa 65%,transparent 65%,transparent 80%,#e2ebfa 80%); border-radius:2px; }
+.documentArt b { color:#2463eb; font-size:14px; }
+.form { padding: 64px clamp(30px,5vw,85px); }
+.formInner { max-width: 390px; }
+.h1 { font-size: 31px; line-height:1.2; letter-spacing: -.045em; margin: 13px 0; }
+.sub { font-size: 14px; line-height: 1.8; margin-bottom: 32px; }
+.eyebrow { color: #2463eb; font-family: var(--klk-font); font-size: 9px; }
+.inputBox { height: 49px; border-color:#dce3ee; }
+.btn { height:49px; box-shadow:inset 0 1px 0 #ffffff30,0 3px 10px #2463eb20; }
+.eyeBtn { min-height:38px; min-width:30px; align-items:center; justify-content:center; }
+.footer { font-family:var(--klk-font); font-size:10px; text-transform:none; letter-spacing:0; margin-top:35px; padding-top:20px; }
+.footer a:hover { color:#2463eb; }
+.gate { background:#f8faff; color:#2463eb; }
+.backLink { font-size:10px; color:#627898; }
+@media(max-width:900px) { .root { background:white; } .hero { height:96px; background:#f7faff; } .hero .pattern,.hero .scrim { display:none; } .heroContent { padding:24px; flex-direction:row; align-items:center; color:#172b50; } .form { margin:0; padding:55px 28px; border-radius:0; justify-content:flex-start; } .h1 { font-size:30px; } .footer { justify-content:space-between; } }
+@media(max-width:380px) { .backLink { display:none; } .h1 { font-size:28px; } }
+@media(prefers-reduced-motion:reduce) { .root *, .gate * { animation:none !important; transition:none !important; } }

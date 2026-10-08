@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
-import { Toaster } from "sonner";
-import { Providers } from "./providers";
-import { NavigationProgress } from "@/components/NavigationProgress";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -18,8 +15,19 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KLK Invoice",
-  description: "Dashboard Admin untuk Input Transaksi Ekspedisi",
+  metadataBase: new URL("https://klkinvoice.my.id"),
+  title: { default: "KLK Invoice — Invoice yang mengikuti cara kerja bisnis Anda", template: "%s | KLK Invoice" },
+  description: "Kelola transaksi, susun invoice, dan ekspor dokumen PDF dalam satu alur kerja. Kenali KLK Invoice dan rencana pengembangannya.",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "KLK Invoice",
+    title: "KLK Invoice — Administrasi rapi. Bisnis terus bergerak.",
+    description: "Dari pencatatan transaksi hingga invoice siap dibagikan, kelola pekerjaan Anda dalam satu tempat.",
+    images: [{ url: "/social-preview.png", width: 1200, height: 630, alt: "KLK Invoice — Kelola transaksi. Susun invoice. Ekspor PDF." }],
+  },
+  twitter: { card: "summary_large_image" },
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({
@@ -30,11 +38,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${instrumentSans.className} ${instrumentSans.variable} ${plexMono.variable}`}>
-        <Providers>
-          {children}
-          <Toaster position="top-right" richColors />
-          <NavigationProgress />
-        </Providers>
+        {children}
       </body>
     </html>
   );

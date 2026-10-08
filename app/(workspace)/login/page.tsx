@@ -2,6 +2,8 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { ProductBrand } from "@/components/ProductBrand"
 import {
   Lock,
   User,
@@ -53,7 +55,6 @@ export default function LoginPage() {
 
   // Forgot password state
   const [showForgotModal, setShowForgotModal] = React.useState(false)
-  const [resetStep, setResetStep] = React.useState<"key" | "password">("key")
   const [secretKey, setSecretKey] = React.useState("")
   const [newPassword, setNewPassword] = React.useState("")
   const [confirmPassword, setConfirmPassword] = React.useState("")
@@ -61,11 +62,16 @@ export default function LoginPage() {
   const [isResetting, setIsResetting] = React.useState(false)
   const [resetError, setResetError] = React.useState<string | null>(null)
   const [resetSuccess, setResetSuccess] = React.useState(false)
+  const resetDialogRef = React.useRef<HTMLDialogElement>(null)
+
+  React.useEffect(() => {
+    if (showForgotModal) resetDialogRef.current?.showModal()
+  }, [showForgotModal])
 
   // Validation checks
   const isPasswordLongEnough = newPassword.length >= 6
   const doPasswordsMatch = newPassword === confirmPassword && confirmPassword.length > 0
-  const isFormValid = isPasswordLongEnough && doPasswordsMatch
+  const isFormValid = secretKey.trim().length > 0 && isPasswordLongEnough && doPasswordsMatch
 
   const isLocked = status === "locked"
   const isBusy = status === "loading" || status === "success"
@@ -73,7 +79,7 @@ export default function LoginPage() {
   // Redirect if already authenticated
   React.useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.push("/")
+      router.replace("/dashboard")
     }
   }, [isAuthenticated, authLoading, router])
 
@@ -120,7 +126,7 @@ export default function LoginPage() {
     if (result.success) {
       setStatus("success")
       setAlert({ tone: "success", title: "Berhasil masuk.", detail: "Mengalihkan ke dashboard invoice…" })
-      setTimeout(() => router.push("/"), 900)
+      setTimeout(() => router.replace("/dashboard"), 900)
       return
     }
 
@@ -143,42 +149,9 @@ export default function LoginPage() {
     passwordRef.current?.select()
   }
 
-  const handleVerifyKey = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setResetError(null)
-    setIsResetting(true)
-
-    try {
-      // First verify the key is correct with a dummy password (we'll send real one later)
-      const response = await fetch(`${API_BASE}/auth/reset-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ secretKey, newPassword: "verify-only-123456" }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Key is valid, move to password step
-        // But we need to actually let user set their password, so we go to step 2
-        setResetStep("password")
-      } else if (response.status === 403) {
-        setResetError("Secret key tidak valid")
-      } else {
-        setResetError(data.error || "Terjadi kesalahan")
-      }
-    } catch {
-      setResetError("Network error. Please check your connection.")
-    }
-
-    setIsResetting(false)
-  }
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isFormValid) return
+    if (!isFormValid || isResetting) return
 
     setResetError(null)
     setIsResetting(true)
@@ -197,18 +170,19 @@ export default function LoginPage() {
       if (response.ok) {
         setResetSuccess(true)
       } else {
-        setResetError(data.error || "Reset password gagal")
+        setResetError(response.status === 403 ? "Private key tidak valid." : data.error || "Reset password gagal")
       }
     } catch {
-      setResetError("Network error. Please check your connection.")
+      setResetError("Koneksi bermasalah. Periksa jaringan Anda.")
     }
 
     setIsResetting(false)
   }
 
   const closeForgotModal = () => {
+    if (isResetting) return
     setShowForgotModal(false)
-    setResetStep("key")
+    setShowNewPassword(false)
     setSecretKey("")
     setNewPassword("")
     setConfirmPassword("")
@@ -238,18 +212,13 @@ export default function LoginPage() {
         <div className={styles.pattern} />
         <div className={styles.scrim} />
         <div className={styles.pc}>
-          <div className={styles.logoChip}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/klkexpress.png" alt="KLK Express" />
-          </div>
+          <Link href="/" className={styles.brandLink} aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
           <div>
-            <h2 className={styles.headline}>Satu tempat untuk semua invoice ekspedisi.</h2>
+            <p className={styles.panelEyebrow}>ADMINISTRASI RAPI. BISNIS TERUS BERGERAK.</p>
+            <h2 className={styles.headline}>Lebih sedikit kerumitan.<br /><span>Lebih banyak ruang untuk bisnis.</span></h2>
+            <div className={styles.documentArt} aria-hidden="true"><div><span>KLK Invoice</span><small>CONTOH DOKUMEN</small></div><strong>Invoice pengiriman</strong><p>Oktober 2026 · DEMO-001</p><div className={styles.documentLines}><i /><i /><i /></div><div><span>Total tagihan</span><b>Rp 700.000</b></div></div>
             <div className={styles.rule} />
-            <p className={styles.meta}>
-              PT. Kemilau Lintas Khatulistiwa
-              <br />
-              Branch Manado · Permata Klabat Blok E1 No 17
-            </p>
+            <p className={styles.meta}>Dari pencatatan transaksi hingga invoice siap dibagikan.<br />Kelola semuanya dalam satu alur kerja.</p>
           </div>
         </div>
       </aside>
@@ -259,20 +228,17 @@ export default function LoginPage() {
         <div className={styles.pattern} />
         <div className={styles.scrim} />
         <div className={styles.heroContent}>
-          <div className={styles.logoChip}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/klkexpress.png" alt="KLK Express" />
-          </div>
-          <p className={styles.meta}>Branch Manado</p>
+          <Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
+          <Link href="/" className={styles.backLink}>Kembali ke beranda ↗</Link>
         </div>
       </div>
 
       {/* Form column */}
       <main className={styles.form}>
         <div className={styles.formInner}>
-          <p className={styles.eyebrow}>Sistem Invoice · KLK Express</p>
-          <h1 className={styles.h1}>Masuk</h1>
-          <p className={styles.sub}>Akun internal karyawan KLK Express.</p>
+          <p className={styles.eyebrow}>RUANG KERJA ANDA</p>
+          <h1 className={styles.h1}>Selamat datang kembali</h1>
+          <p className={styles.sub}>Masuk ke akun KLK Invoice untuk mengelola invoice dan transaksi bisnis Anda.</p>
 
           {alert && (
             <div className={`${styles.alert} ${alert.tone === "success" ? styles.alertSuccess : ""}`} role="alert">
@@ -378,25 +344,27 @@ export default function LoginPage() {
           </form>
 
           <div className={styles.footer}>
-            <span>© 2026 PT. KLK</span>
-            <span>Bantuan IT</span>
+            <span>© {new Date().getFullYear()} KLK Invoice</span>
+            <Link href="/">Kembali ke beranda ↗</Link>
           </div>
         </div>
       </main>
 
       {/* Forgot Password Modal */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <dialog ref={resetDialogRef} onCancel={(event) => { event.preventDefault(); closeForgotModal() }} aria-labelledby="reset-title" className="fixed inset-0 z-50 m-0 flex h-dvh max-h-none w-screen max-w-none items-center justify-center bg-transparent p-0">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeForgotModal}
           />
 
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm m-4">
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm m-4 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-800">Reset Password</h2>
+              <h2 id="reset-title" className="text-lg font-bold text-slate-800">Atur ulang password</h2>
               <button
                 onClick={closeForgotModal}
+                disabled={isResetting}
+                aria-label="Tutup dialog"
                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
@@ -417,19 +385,19 @@ export default function LoginPage() {
                   </div>
                   <Button
                     onClick={closeForgotModal}
-                    className="w-full bg-emerald-700 hover:bg-emerald-800"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
                   >
                     Kembali ke Login
                   </Button>
                 </div>
-              ) : resetStep === "key" ? (
-                <form onSubmit={handleVerifyKey} className="space-y-4">
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
                   <p className="text-sm text-slate-600">
-                    Masukkan secret key untuk melanjutkan reset password.
+                    Masukkan private key dan password baru. Password hanya berubah setelah Anda menekan Simpan Password Baru.
                   </p>
 
                   {resetError && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700">
+                    <div role="alert" className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700">
                       <AlertCircle className="h-4 w-4 flex-shrink-0" />
                       <p className="text-sm">{resetError}</p>
                     </div>
@@ -437,50 +405,24 @@ export default function LoginPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="secretKey" className="text-sm font-semibold text-slate-700">
-                      Secret Key
+                      Private Key
                     </Label>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                       <Input
                         id="secretKey"
                         type="password"
-                        placeholder="Masukkan secret key"
+                        placeholder="Masukkan private key"
                         value={secretKey}
                         onChange={(e) => setSecretKey(e.target.value)}
                         className="pl-11 h-12"
+                        disabled={isResetting}
+                        autoComplete="off"
                         required
                         autoFocus
                       />
                     </div>
                   </div>
-
-                  <Button
-                    type="submit"
-                    disabled={isResetting || !secretKey}
-                    className="w-full bg-amber-600 hover:bg-amber-700"
-                  >
-                    {isResetting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Memverifikasi...
-                      </>
-                    ) : (
-                      "Lanjutkan"
-                    )}
-                  </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <p className="text-sm text-slate-600">
-                    Masukkan password baru Anda.
-                  </p>
-
-                  {resetError && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700">
-                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                      <p className="text-sm">{resetError}</p>
-                    </div>
-                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="newPassword" className="text-sm font-semibold text-slate-700">
@@ -495,12 +437,15 @@ export default function LoginPage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         className="pl-11 pr-11 h-12"
+                        disabled={isResetting}
+                        autoComplete="new-password"
+                        minLength={6}
                         required
-                        autoFocus
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
+                        aria-label={showNewPassword ? "Sembunyikan password baru" : "Tampilkan password baru"}
                         className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
                       >
                         {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -525,6 +470,9 @@ export default function LoginPage() {
                         placeholder="Ulangi password baru"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={isResetting}
+                        autoComplete="new-password"
+                        minLength={6}
                         className="pl-11 h-12"
                         required
                       />
@@ -541,7 +489,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={isResetting || !isFormValid}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
                   >
                     {isResetting ? (
                       <>
@@ -556,7 +504,7 @@ export default function LoginPage() {
               )}
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   )

@@ -1,0 +1,167 @@
+{
+  "passed": [
+    "Transaction entry calculates minimum weight/rate and draft total correctly",
+    "Save sends all three transactions and opens invoice detail (mocked persistence)",
+    "Invoice preview receives a real PDF generated in process by unchanged backend service",
+    "History date filter and transaction search select an invoice",
+    "Transaction deletion supports undo, delayed commit and row restoration on failure",
+    "Unmount commits a pending transaction deletion exactly once",
+    "Tablet menu can start a new invoice after selecting an existing one",
+    "Draw and save a signature through existing UI (mocked persistence)",
+    "Restore invoice from trash (mocked persistence)",
+    "Provided video decodes and plays from local media URL"
+  ],
+  "calls": [
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/invoice/129",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/pdf/invoice",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice/129",
+      "method": "PUT",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5"
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5&startDate=2026-10-01&endDate=2026-10-08"
+    },
+    {
+      "path": "/api/transaksi/search",
+      "method": "GET",
+      "query": "?q=10482"
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5&search=10482&startDate=2026-10-01&endDate=2026-10-08"
+    },
+    {
+      "path": "/api/invoice/129",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/transaksi/9000",
+      "method": "DELETE",
+      "query": ""
+    },
+    {
+      "path": "/api/transaksi/9000",
+      "method": "DELETE",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5&startDate=2026-10-01&endDate=2026-10-08"
+    },
+    {
+      "path": "/api/invoice/129",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/transaksi/9001",
+      "method": "DELETE",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice",
+      "method": "GET",
+      "query": "?page=1&limit=5&startDate=2026-10-01&endDate=2026-10-08"
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/signature",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/signature",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/auth/me",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice/trash/list",
+      "method": "GET",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice/129/restore",
+      "method": "POST",
+      "query": ""
+    },
+    {
+      "path": "/api/invoice/trash/list",
+      "method": "GET",
+      "query": ""
+    }
+  ],
+  "mode": "Mocked API; real frontend interactions and real in-process PDF generation; no database"
+}
