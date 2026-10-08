@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test:landing": "node scripts/landing.check.cjs",
+    "test:landing-locales": "node scripts/landing-locale.check.cjs",
+    "test:landing-themes": "node scripts/landing-theme.check.cjs",
+    "test:landing-motion": "node scripts/landing-motion.check.cjs",
     "test:product": "node scripts/product-regression.check.cjs"
   },
   "dependencies": {

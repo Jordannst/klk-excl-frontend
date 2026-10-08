@@ -1,0 +1,87 @@
+html[data-landing] {
+  --scheme: light;
+  --error-ink: #b42332;
+  --error-tint: #fff1f2;
+  --success-ink: #047857;
+  --success-tint: #d1fae5;
+  --canvas: #fff;
+  --surface: #fff;
+  --surface-soft: #f7f9fc;
+  --glass: #ffffffed;
+  --secondary: #ffffffb0;
+  --ink: #142039;
+  --muted: #596779;
+  --subtle: #738197;
+  --blue: #2463eb;
+  --line: #e4eaf2;
+  --control-line: #dce3ef;
+  --tint: #edf4ff;
+  --tint-ink: #365b94;
+  --dot: #d7dfeb;
+  --brand-mark-ink: #142039;
+  --hero-background: radial-gradient(ellipse 62% 43% at 50% 74%, #d9eaff 0, #eef5ff8c 58%, transparent 100%), linear-gradient(#fff 30%, #f9fbff 90%, #fff);
+  --preview-shadow: 0 0 0 7px #ffffff90, 0 0 0 8px #cfdef54d, 0 30px 70px -30px #5274b663, 0 4px 15px #254a8420;
+  --concept-background: linear-gradient(135deg, #fff, #f7faff);
+  --concept-shadow: 0 15px 50px -20px #7da7ef44, 0 0 0 9px #f5f8fe;
+}
+
+html[data-landing-theme="dark"] {
+  --scheme: dark;
+  --error-ink: #ffabb4;
+  --error-tint: #341c29;
+  --success-ink: #6ee7b7;
+  --success-tint: #14392f;
+  --canvas: #080f1c;
+  --surface: #101c2e;
+  --surface-soft: #0c1626;
+  --glass: #080f1ced;
+  --secondary: #142339cc;
+  --ink: #edf3ff;
+  --muted: #adbed5;
+  --subtle: #91a6c2;
+  --blue: #8ab6ff;
+  --line: #253750;
+  --control-line: #354d6c;
+  --tint: #182e4e;
+  --tint-ink: #b8d1ff;
+  --dot: #3a506f;
+  --brand-mark-ink: #d8e6fa;
+  --hero-background: radial-gradient(ellipse 65% 48% at 50% 74%, #1b43825e 0, #112b5340 55%, transparent 100%), linear-gradient(#080f1c 25%, #0d1b30 85%, #080f1c);
+  --preview-shadow: 0 0 0 7px #15274370, 0 0 0 8px #3e639238, 0 40px 90px -28px #000b, 0 0 70px -28px #3c83f64d;
+  --concept-background: linear-gradient(135deg, #13243c, #0d192b);
+  --concept-shadow: 0 20px 60px -24px #0009, 0 0 0 9px #112039;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-landing]:not([data-landing-theme]) {
+    --scheme: dark;
+    --error-ink: #ffabb4;
+    --error-tint: #341c29;
+    --success-ink: #6ee7b7;
+    --success-tint: #14392f;
+    --canvas: #080f1c;
+    --surface: #101c2e;
+    --surface-soft: #0c1626;
+    --glass: #080f1ced;
+    --secondary: #142339cc;
+    --ink: #edf3ff;
+    --muted: #adbed5;
+    --subtle: #91a6c2;
+    --blue: #8ab6ff;
+    --line: #253750;
+    --control-line: #354d6c;
+    --tint: #182e4e;
+    --tint-ink: #b8d1ff;
+    --dot: #3a506f;
+    --brand-mark-ink: #d8e6fa;
+    --hero-background: radial-gradient(ellipse 65% 48% at 50% 74%, #1b43825e 0, #112b5340 55%, transparent 100%), linear-gradient(#080f1c 25%, #0d1b30 85%, #080f1c);
+    --preview-shadow: 0 0 0 7px #15274370, 0 0 0 8px #3e639238, 0 40px 90px -28px #000b, 0 0 70px -28px #3c83f64d;
+    --concept-background: linear-gradient(135deg, #13243c, #0d192b);
+    --concept-shadow: 0 20px 60px -24px #0009, 0 0 0 9px #112039;
+  }
+}
+
+html[data-landing], html[data-landing] body {
+  background: var(--canvas);
+  color-scheme: var(--scheme);
+}

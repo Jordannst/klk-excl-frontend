@@ -1,3 +1,5 @@
+import type { LandingLocale } from "@/lib/landing-locale"
+import { landingTranslator } from "./landing-copy"
 import { ArrowDownToLine, ChevronDown, FileText, LayoutGrid, Plus, Search, PenTool, Database, Trash2, Check } from "lucide-react"
 import { ProductBrand } from "@/components/ProductBrand"
 import styles from "./marketing.module.css"
@@ -8,10 +10,11 @@ const rows = [
   ["DEMO-003", "CV Ruang Niaga", "Toko Langkah", "15", "Rp 300.000"],
 ]
 
-export function ProductPreview() {
+export function ProductPreview({ locale }: { locale: LandingLocale }) {
+  const t = landingTranslator(locale)
   return (
     <figure className={styles.previewFigure}>
-      <div className={styles.preview} role="img" aria-label="Ilustrasi dashboard dengan data contoh: riwayat invoice, tiga transaksi pengiriman, total Rp 700.000, dan ekspor PDF.">
+      <div className={styles.preview} role="img" aria-label={t("Ilustrasi dashboard dengan data contoh: riwayat invoice, tiga transaksi pengiriman, total Rp 700.000, dan ekspor PDF.")}>
         <div className={styles.browserBar} aria-hidden="true"><span><i /><i /><i /></span><span>klkinvoice.my.id/dashboard</span><span className={styles.browserSecure}><Check size={11} /> Ruang kerja</span></div>
         <div className={styles.appNav} aria-hidden="true">
           <ProductBrand />
@@ -37,7 +40,7 @@ export function ProductPreview() {
           </div>
         </div>
       </div>
-      <figcaption>Ilustrasi produk dengan data contoh, berdasarkan fitur KLK Invoice.</figcaption>
+      <figcaption>{t("Ilustrasi produk dengan data contoh, berdasarkan fitur KLK Invoice.")}</figcaption>
     </figure>
   )
 }

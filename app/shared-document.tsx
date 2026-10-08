@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { landingThemeScript } from "@/lib/landing-theme";
 
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
@@ -30,13 +31,18 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg" },
 };
 
-export default function RootLayout({
+export default function Document({
   children,
+  lang = "id",
+  landing = false,
 }: Readonly<{
   children: React.ReactNode;
+  lang?: "id" | "en";
+  landing?: boolean;
 }>) {
   return (
-    <html lang="id">
+    <html lang={lang} data-landing={landing ? "" : undefined} suppressHydrationWarning={landing || undefined}>
+      {landing && <head><script dangerouslySetInnerHTML={{ __html: landingThemeScript }} /></head>}
       <body className={`${instrumentSans.className} ${instrumentSans.variable} ${plexMono.variable}`}>
         {children}
       </body>

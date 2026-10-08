@@ -11,7 +11,7 @@ const check = (name) => { passed.push(name); console.log('PASS', name) }
 
 async function main() {
   const browser = await chromium.launch({ headless: true })
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
+  const context = await browser.newContext({ locale: 'id-ID', viewport: { width: 1440, height: 1000 } })
   let authenticated = false, loginSucceeds = false
   const resetPayloads = []
   let resetMode = 'invalid', releaseReset
@@ -44,9 +44,9 @@ async function main() {
     await page.goto(base, { waitUntil: 'networkidle' })
     assert.equal(requests.length, 0, 'Landing must make zero API requests')
     assert.equal(await page.locator('h1').count(), 1)
-    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), 'https://klkinvoice.my.id')
+    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), 'https://klkinvoice.my.id/id')
     assert.match(await page.title(), /KLK Invoice/)
-    assert.equal(await page.locator('meta[property="og:image"]').getAttribute('content'), 'https://klkinvoice.my.id/social-preview.png')
+    assert.equal(await page.locator('meta[property="og:image"]').getAttribute('content'), 'https://klkinvoice.my.id/id/opengraph-image')
     assert.equal(await page.locator('video').getAttribute('preload'), 'none')
     assert.equal(await page.locator('video').getAttribute('autoplay'), null)
     const links = await page.locator('a[href^="#"]').evaluateAll(items => items.map(a => a.getAttribute('href').slice(1)))
@@ -55,7 +55,7 @@ async function main() {
     for (const width of [320,390,768,1024,1440,1920]) {
       await page.setViewportSize({ width, height: 1000 })
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}`)
-      if ([390,1440].includes(width)) await page.screenshot({ path: path.join(out, width === 390 ? 'mobile.png' : 'desktop.png'), fullPage: true })
+      if ([390,1440].includes(width)) { await page.emulateMedia({ reducedMotion: 'reduce' }); await page.screenshot({ path: path.join(out, width === 390 ? 'mobile.png' : 'desktop.png'), fullPage: true }); await page.emulateMedia({ reducedMotion: 'no-preference' }) }
     }
     check('Landing has no horizontal overflow at 320, 390, 768, 1024, 1440, 1920px')
     await page.setViewportSize({ width: 390, height: 844 })
@@ -179,7 +179,7 @@ async function main() {
     await page.getByRole('heading',{name:'Selamat datang kembali'}).waitFor()
     const before = requests.length
     await page.getByRole('link',{name:'Kembali ke beranda',exact:false}).last().click()
-    await page.waitForURL(base + '/')
+    await page.waitForURL(base + '/id')
     await page.waitForLoadState('networkidle')
     assert.equal(requests.length, before)
     check('Logout and return to public landing with no extra auth requests')

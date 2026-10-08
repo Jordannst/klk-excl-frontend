@@ -1,13 +1,13 @@
 # KLK Invoice — Landing page & product identity
 
 Tanggal: 8 Oktober 2026. Repo frontend: `C:\projects\klk\frontend`.
-Baseline: `ef12067b657894249cacbd28944c5bca36dec645`. Perubahan lokal, belum commit/push/PR/deploy.
+Baseline implementasi awal: `ef12067b657894249cacbd28944c5bca36dec645`. Landing awal sudah dipush pada commit `00ae796`. Pembaruan bilingual dijelaskan di [landing-localization.md](landing-localization.md); tema dan animasi di [landing-theme.md](landing-theme.md).
 
 ## Hasil
 
-Landing publik menggunakan arah Clean Enterprise SaaS: kanvas putih, electric blue, Instrument Sans yang sudah tersedia, grid/ruang kosong yang konsisten, ilustrasi dashboard berdata contoh, dan video demo di bawah fitur. Seluruh copy pemasaran berbahasa Indonesia. Login memakai identitas KLK Invoice yang sama. Logo/favikon dan gambar social sharing baru disertakan.
+Landing publik menggunakan arah Clean Enterprise SaaS: kanvas putih, electric blue, Instrument Sans yang sudah tersedia, grid/ruang kosong yang konsisten, ilustrasi dashboard berdata contoh, dan video demo di bawah fitur. Copy pemasaran tersedia dalam Bahasa Indonesia dan Inggris. Login memakai identitas KLK Invoice yang sama. Logo/favikon dan gambar social sharing baru disertakan.
 
-Konten statis memakai Server Components. Animasi hanya CSS untuk kemunculan hero dan hover; header sticky, reduced motion, skip link, navigasi mobile native, dan video controls tersedia. Video tidak autoplay dan menggunakan `preload="none"` serta poster. Tidak ada dependency produk baru.
+Konten statis memakai Server Components. Animasi memakai CSS untuk hero/hover dan IntersectionObserver untuk kemunculan bagian saat scroll; header sticky, reduced motion, skip link, navigasi mobile native, dan video controls tersedia. Video tidak autoplay dan menggunakan `preload="none"` serta poster. Tidak ada dependency produk baru.
 
 Fitur yang ditampilkan ditelusuri ke ExpeditionForm, InvoiceHistory, TransaksiSearch, TransactionTable, PrintInvoiceModal, signature hooks/API, dan trash hooks/API. Tidak ada metrik pelanggan, testimonial, status pembayaran, signup, trial, kontak, atau dokumen legal fiktif. Claude API, penyesuaian template/branding lanjutan, dan dukungan banyak perusahaan diberi label roadmap, belum tersedia.
 
@@ -15,12 +15,13 @@ Fitur yang ditampilkan ditelusuri ke ExpeditionForm, InvoiceHistory, TransaksiSe
 
 | Route | Perilaku |
 |---|---|
-| `/` | Landing publik statis; nol request API dalam browser check |
+| `/` | Redirect 307 berdasarkan pilihan bahasa, negara, lalu preferensi browser |
+| `/id`, `/en` | Landing publik statis; nol request API dalam browser check |
 | `/login` | Login publik; sesi aktif diarahkan ke `/dashboard` |
 | `/dashboard` | Dashboard lama, tetap dibungkus ProtectedRoute |
 | `/signatures`, `/storage`, `/trash` | URL dan proteksi sebelumnya dipertahankan |
 
-`app/(workspace)/layout.tsx` menampung Providers, Toaster, dan NavigationProgress. Root layout tidak lagi memuat AuthProvider. Route group tidak mengubah URL. Root hanya memiliki canonical homepage; halaman aplikasi diberi noindex/nofollow. Sitemap hanya memuat homepage. Robots tidak menghalangi crawler membaca noindex halaman aplikasi; `/api/` dilarang di-crawl. Robots bukan kontrol akses.
+`app/(workspace)/layout.tsx` menampung Providers, Toaster, dan NavigationProgress. Root landing tidak memuat AuthProvider; root login terpisah mempertahankan Providers, Toaster, dan NavigationProgress. Route group tidak mengubah URL. Landing memiliki canonical dan hreflang per bahasa; halaman aplikasi diberi noindex/nofollow. Sitemap memuat /id dan /en. Robots tidak menghalangi crawler membaca noindex halaman aplikasi; `/api/` dilarang di-crawl. Robots bukan kontrol akses.
 
 Logika dashboard/signatures/storage/trash tetap sama dengan baseline; hanya berpindah lokasi dan menghapus whitespace di akhir dua baris dashboard. Redirect login dan link dashboard/Navbar diperbarui. Navbar menggunakan identitas produk dan menu tablet hingga 1280px; menu mobile juga menyediakan Invoice Baru. Customer-specific branding pada dokumen invoice tetap utuh. Tidak mengubah API proxy, konfigurasi cookies/session, endpoint backend, database, environment, atau deployment.
 
@@ -37,13 +38,13 @@ Disalin dari `C:\projects\aboutme-2026\dev-folio\public\videos\klk-showcase-720p
 
 ## File dibuat/diubah
 
-- `app/page.tsx`: landing publik, section fitur/demo/workflow/roadmap/tentang/CTA/footer.
+- `app/[locale]/page.tsx`, `components/marketing/LandingPage.tsx`: landing publik, section fitur/demo/workflow/roadmap/tentang/CTA/footer.
 - `components/marketing/ProductPreview.tsx`, `marketing.module.css`: ilustrasi produk dan style terisolasi.
 - `components/ProductBrand.tsx`, `ProductBrand.module.css`: identitas produk bersama.
-- `app/layout.tsx`: metadata global, OG/Twitter, font dan root layout publik.
+- `app/shared-document.tsx`: metadata dasar, font dan dokumen bersama; root layout per bahasa di `app/[locale]/layout.tsx`.
 - `app/(workspace)/layout.tsx`: provider khusus aplikasi, noindex.
 - `app/(workspace)/dashboard/page.tsx`: dashboard dipindahkan dari root; `layout.tsx` memberi judul halaman.
-- `app/(workspace)/login/page.tsx`, `login.module.css`: login dipindahkan dan direbrand; `layout.tsx` memberi judul halaman.
+- `app/(auth)/login/page.tsx`, `login.module.css`: login dipindahkan dan direbrand; `layout.tsx` memberi judul halaman.
 - `app/(workspace)/signatures/page.tsx`, `storage/page.tsx`, `trash/page.tsx`: perpindahan tanpa perubahan source.
 - `components/Navbar.tsx`, `ProtectedRoute.tsx`: link/redirect dashboard, branding dan menu responsif.
 - `app/robots.ts`, `app/sitemap.ts`: indexing dan sitemap publik.

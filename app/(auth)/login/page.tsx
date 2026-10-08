@@ -4,6 +4,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ProductBrand } from "@/components/ProductBrand"
+import { ThemeControl } from "@/components/marketing/ThemeControl"
 import {
   Lock,
   User,
@@ -236,6 +237,7 @@ export default function LoginPage() {
       {/* Form column */}
       <main className={styles.form}>
         <div className={styles.formInner}>
+          <div className={styles.themeBar}><ThemeControl locale="id" system /><ThemeControl locale="id" /></div>
           <p className={styles.eyebrow}>RUANG KERJA ANDA</p>
           <h1 className={styles.h1}>Selamat datang kembali</h1>
           <p className={styles.sub}>Masuk ke akun KLK Invoice untuk mengelola invoice dan transaksi bisnis Anda.</p>
@@ -358,14 +360,14 @@ export default function LoginPage() {
             onClick={closeForgotModal}
           />
 
-          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm m-4 max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h2 id="reset-title" className="text-lg font-bold text-slate-800">Atur ulang password</h2>
+          <div className={`${styles.resetCard} relative rounded-xl shadow-2xl w-full max-w-sm m-4 max-h-[90dvh] overflow-y-auto`}>
+            <div className="flex items-center justify-between p-4 border-b border-[var(--klk-line)]">
+              <h2 id="reset-title" className="text-lg font-bold text-[var(--klk-ink)]">Atur ulang password</h2>
               <button
                 onClick={closeForgotModal}
                 disabled={isResetting}
                 aria-label="Tutup dialog"
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                className="p-2 rounded-lg hover:bg-[var(--klk-canvas)] text-[var(--klk-ink-3)] hover:text-[var(--klk-ink-2)]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -375,13 +377,13 @@ export default function LoginPage() {
               {resetSuccess ? (
                 <div className="text-center space-y-4">
                   <div className="flex justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-                      <CheckCircle className="h-8 w-8 text-emerald-600" />
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--success-tint)]">
+                      <CheckCircle className="h-8 w-8 text-[var(--success-ink)]" />
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-800">Password Berhasil Direset!</h3>
-                    <p className="text-sm text-slate-500 mt-1">Silakan login dengan password baru Anda.</p>
+                    <h3 className="font-semibold text-lg text-[var(--klk-ink)]">Password Berhasil Direset!</h3>
+                    <p className="text-sm text-[var(--klk-ink-3)] mt-1">Silakan login dengan password baru Anda.</p>
                   </div>
                   <Button
                     onClick={closeForgotModal}
@@ -392,23 +394,23 @@ export default function LoginPage() {
                 </div>
               ) : (
                 <form onSubmit={handleResetPassword} className="space-y-4">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-[var(--klk-ink-2)]">
                     Masukkan private key dan password baru. Password hanya berubah setelah Anda menekan Simpan Password Baru.
                   </p>
 
                   {resetError && (
-                    <div role="alert" className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700">
+                    <div role="alert" className="flex items-center gap-2 p-3 rounded-lg bg-[var(--klk-red-tint)] border border-[var(--klk-red)] text-[var(--klk-red)]">
                       <AlertCircle className="h-4 w-4 flex-shrink-0" />
                       <p className="text-sm">{resetError}</p>
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="secretKey" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="secretKey" className="text-sm font-semibold text-[var(--klk-ink-2)]">
                       Private Key
                     </Label>
                     <div className="relative">
-                      <KeyRound className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                      <KeyRound className="absolute left-3 top-3 h-5 w-5 text-[var(--klk-ink-3)]" />
                       <Input
                         id="secretKey"
                         type="password"
@@ -425,11 +427,11 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="newPassword" className="text-sm font-semibold text-[var(--klk-ink-2)]">
                       Password Baru
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-[var(--klk-ink-3)]" />
                       <Input
                         id="newPassword"
                         type={showNewPassword ? "text" : "password"}
@@ -446,24 +448,24 @@ export default function LoginPage() {
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
                         aria-label={showNewPassword ? "Sembunyikan password baru" : "Tampilkan password baru"}
-                        className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                        className="absolute right-3 top-3 text-[var(--klk-ink-3)] hover:text-[var(--klk-ink-2)] transition-colors"
                       >
                         {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
                     {/* Password length validation */}
-                    <div className={`flex items-center gap-2 text-sm ${isPasswordLongEnough ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    <div className={`flex items-center gap-2 text-sm ${isPasswordLongEnough ? 'text-[var(--success-ink)]' : 'text-[var(--klk-ink-3)]'}`}>
                       {isPasswordLongEnough ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                       <span>Minimal 6 karakter</span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="confirmPassword" className="text-sm font-semibold text-[var(--klk-ink-2)]">
                       Konfirmasi Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-[var(--klk-ink-3)]" />
                       <Input
                         id="confirmPassword"
                         type={showNewPassword ? "text" : "password"}
@@ -479,7 +481,7 @@ export default function LoginPage() {
                     </div>
                     {/* Password match validation */}
                     {confirmPassword.length > 0 && (
-                      <div className={`flex items-center gap-2 text-sm ${doPasswordsMatch ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <div className={`flex items-center gap-2 text-sm ${doPasswordsMatch ? 'text-[var(--success-ink)]' : 'text-[var(--klk-red)]'}`}>
                         {doPasswordsMatch ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                         <span>{doPasswordsMatch ? 'Password cocok' : 'Password tidak cocok'}</span>
                       </div>
