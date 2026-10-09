@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { ProductBrand } from "@/components/ProductBrand"
 import { ThemeControl } from "@/components/marketing/ThemeControl"
 import {
@@ -213,7 +212,7 @@ export default function LoginPage() {
         <div className={styles.pattern} />
         <div className={styles.scrim} />
         <div className={styles.pc}>
-          <Link href="/" className={styles.brandLink} aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
+          <div className={styles.brandLink}><ProductBrand /></div>
           <div>
             <p className={styles.panelEyebrow}>ADMINISTRASI RAPI. BISNIS TERUS BERGERAK.</p>
             <h2 className={styles.headline}>Lebih sedikit kerumitan.<br /><span>Lebih banyak ruang untuk bisnis.</span></h2>
@@ -229,15 +228,14 @@ export default function LoginPage() {
         <div className={styles.pattern} />
         <div className={styles.scrim} />
         <div className={styles.heroContent}>
-          <Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
-          <Link href="/" className={styles.backLink}>Kembali ke beranda ↗</Link>
+          <ProductBrand />
         </div>
       </div>
 
       {/* Form column */}
       <main className={styles.form}>
         <div className={styles.formInner}>
-          <div className={styles.themeBar}><ThemeControl locale="id" system /><ThemeControl locale="id" /></div>
+          <div className={styles.themeBar}><ThemeControl system /><ThemeControl /></div>
           <p className={styles.eyebrow}>RUANG KERJA ANDA</p>
           <h1 className={styles.h1}>Selamat datang kembali</h1>
           <p className={styles.sub}>Masuk ke akun KLK Invoice untuk mengelola invoice dan transaksi bisnis Anda.</p>
@@ -347,7 +345,6 @@ export default function LoginPage() {
 
           <div className={styles.footer}>
             <span>© {new Date().getFullYear()} KLK Invoice</span>
-            <Link href="/">Kembali ke beranda ↗</Link>
           </div>
         </div>
       </main>

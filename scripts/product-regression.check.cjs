@@ -126,12 +126,6 @@ async function main() {
     await page.getByText('Invoice berhasil dipulihkan',{exact:true}).waitFor()
     assert.equal(ctx.restored,true)
     check('Restore invoice from trash (mocked persistence)')
-    await page.goto(base)
-    await page.locator('video').evaluate(async video=>{video.muted=true;await video.play()})
-    await page.waitForFunction(()=>document.querySelector('video').currentTime>0.2)
-    assert.equal(await page.locator('video').evaluate(v=>v.videoWidth),1280)
-    await page.locator('video').evaluate(v=>v.pause())
-    check('Provided video decodes and plays from local media URL')
     assert.deepEqual(errors, [], 'Product browser runtime errors')
     fs.writeFileSync(path.join(__dirname,'../qa/landing/product-results.json'),JSON.stringify({passed,calls,mode:'Mocked API; real frontend interactions and real in-process PDF generation; no database'},null,2))
   } finally {await browser.close()}
