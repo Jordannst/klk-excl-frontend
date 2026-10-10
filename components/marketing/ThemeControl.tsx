@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
+import type { LandingLocale } from "@/lib/landing-locale"
 import styles from "./marketing.module.css"
 
 type Preference = "system" | "light" | "dark"
@@ -41,13 +42,13 @@ function subscribe(onChange: () => void) {
 const snapshot = () => `${document.documentElement.dataset.landingPreference}:${document.documentElement.dataset.landingTheme}`
 const serverSnapshot = () => ""
 
-export function ThemeControl({ system = false }: { system?: boolean }) {
+export function ThemeControl({ locale, system = false }: { locale: LandingLocale; system?: boolean }) {
   const theme = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
   const isDark = theme.endsWith(":dark")
   const isSystem = theme.startsWith("system:")
   const label = system
-    ? "Ikuti tema sistem"
-    : (isDark ? "Gunakan tema terang" : "Gunakan tema gelap")
+    ? (locale === "id" ? "Ikuti tema sistem" : "Use system theme")
+    : (locale === "id" ? (isDark ? "Gunakan tema terang" : "Gunakan tema gelap") : (isDark ? "Use light theme" : "Use dark theme"))
 
   const change = () => {
     const preference = system ? "system" : isDark ? "light" : "dark"

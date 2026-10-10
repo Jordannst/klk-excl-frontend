@@ -17,8 +17,8 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://klkinvoice.my.id"),
-  title: { default: "KLK Invoice", template: "%s | KLK Invoice" },
-  description: "Kelola transaksi, susun invoice, dan ekspor dokumen PDF dalam satu alur kerja.",
+  title: { default: "KLK Invoice — Invoice yang mengikuti cara kerja bisnis Anda", template: "%s | KLK Invoice" },
+  description: "Kelola transaksi, susun invoice, dan ekspor dokumen PDF dalam satu alur kerja. Kenali KLK Invoice dan rencana pengembangannya.",
   openGraph: {
     type: "website",
     locale: "id_ID",
