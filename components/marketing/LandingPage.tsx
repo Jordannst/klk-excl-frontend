@@ -11,6 +11,7 @@ import styles from "@/components/marketing/marketing.module.css"
 
 export function LandingPage({ locale }: { locale: LandingLocale }) {
   const t = landingTranslator(locale)
+  const demoHref = `mailto:hello@klkinvoice.my.id?subject=${encodeURIComponent(t("Permintaan demo KLK Invoice"))}`
   const features = [
     { icon: FileText, title: t("Satu invoice, semua transaksi."), text: t("Susun transaksi dalam satu invoice. Simpan, buka kembali, lalu lanjutkan saat pekerjaan bertambah.") },
     { icon: ListFilter, title: t("Detail yang tetap terkendali."), text: t("Catat pengirim, penerima, berat, dan tarif. Periksa rincian transaksi sebelum dokumen dibagikan.") },
@@ -72,7 +73,17 @@ export function LandingPage({ locale }: { locale: LandingLocale }) {
 
         <section id="tentang" className={styles.about} aria-labelledby="about-title"><div className={styles.section} data-reveal=""><div className={styles.aboutMark}><Layers strokeWidth={1.1} /></div><p className={styles.eyebrow}>{t("BERAWAL DARI KEBUTUHAN NYATA")}</p><h2 id="about-title">{t("Dibangun dari operasional.")}<br /><span>{t("Dirancang untuk berkembang.")}</span></h2><p>{t("KLK Invoice berawal dari kebutuhan administrasi ekspedisi: mencatat transaksi dengan rapi dan menyiapkan invoice tanpa proses yang berulang. Fondasi itu kami kembangkan menuju platform yang dapat mendukung berbagai perusahaan dan industri.")}</p><div className={styles.aboutFoot}><span>{t("Fokus hari ini: alur invoice yang tertata.")}</span><span>{t("Arah berikutnya: kebutuhan bisnis yang lebih luas.")}</span></div></div></section>
 
-        <section className={`${styles.section} ${styles.closing}`} aria-labelledby="closing-title"><div data-reveal=""><p className={styles.eyebrow}>{t("RUANG UNTUK BEKERJA LEBIH RAPI")}</p><h2 id="closing-title">{t("Invoice beres.")}<br /><span>{t("Lanjutkan langkah bisnis Anda.")}</span></h2></div><Link href="/login" prefetch={false} className={styles.primary}>{t("Masuk ke Aplikasi")} <ArrowRight size={18} /></Link></section>
+        <section id="kontak" className={`${styles.section} ${styles.closing}`} aria-labelledby="closing-title">
+          <div data-reveal="">
+            <p className={styles.eyebrow}>{t("KENALI KLK INVOICE LEBIH DEKAT")}</p>
+            <h2 id="closing-title">{t("Penasaran cara kerjanya?")}<br /><span>{t("Mari jadwalkan demo.")}</span></h2>
+            <p className={styles.contactDescription}>{t("Ceritakan kebutuhan bisnis Anda. Hubungi kami untuk membahas demo KLK Invoice.")}</p>
+          </div>
+          <div className={styles.contactActions}>
+            <a href={demoHref} className={styles.primary}>{t("Hubungi kami untuk demo")} <ArrowUpRight size={18} /></a>
+            <a href="mailto:hello@klkinvoice.my.id" className={styles.contactEmail}>hello@klkinvoice.my.id</a>
+          </div>
+        </section>
       </main>
 
       <footer className={styles.footer}><div className={styles.footerInner}><Link href={`/${locale}`} aria-label={t("KLK Invoice — Beranda")}><ProductBrand /></Link><p>{t("Administrasi rapi. Bisnis terus bergerak.")}</p><nav aria-label={t("Navigasi footer")}><a href="#fitur">{t("Fitur")}</a><a href="#demo">Demo</a><a href="#roadmap">Roadmap</a><Link href="/login" prefetch={false}>{t("Masuk")} <ArrowUpRight size={13} /></Link></nav></div><div className={styles.footerBottom}><span>© {new Date().getFullYear()} KLK Invoice.</span><ThemeControl locale={locale} system /><a href="mailto:hello@klkinvoice.my.id">hello@klkinvoice.my.id</a></div></footer>

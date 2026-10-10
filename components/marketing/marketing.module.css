@@ -1023,6 +1023,11 @@
   flex: none;
 }
 
+.closing .contactDescription { max-width: 440px; margin-top: 18px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.contactActions { display: flex; flex-direction: column; align-items: center; gap: 14px; flex: none; }
+.contactEmail { color: var(--muted); font-size: 12px; }
+.contactEmail:hover { color: var(--blue); }
+
 .footer {
   border-top: 1px solid var(--line);
   padding: 40px 36px 22px;
