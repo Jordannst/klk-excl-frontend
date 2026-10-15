@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Instrument_Sans, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import { landingThemeScript } from "@/lib/landing-theme";
 
@@ -13,6 +13,12 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--klk-font-mono",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--klk-font-serif",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export default function Document({
   return (
     <html lang={lang} data-landing={landing ? "" : undefined} suppressHydrationWarning={landing || undefined}>
       {landing && <head><script dangerouslySetInnerHTML={{ __html: landingThemeScript }} /></head>}
-      <body className={`${instrumentSans.className} ${instrumentSans.variable} ${plexMono.variable}`}>
+      <body className={`${instrumentSans.className} ${instrumentSans.variable} ${plexMono.variable} ${sourceSerif.variable}`}>
         {children}
       </body>
     </html>

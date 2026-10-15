@@ -170,10 +170,11 @@
 }
 
 .hero h1 {
+  font-family: var(--klk-font-serif), Georgia, serif;
   font-size: clamp(42px,5.15vw,72px);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.085;
-  letter-spacing: -.055em;
+  letter-spacing: -0.02em;
 }
 
 .hero h1 span {
@@ -637,10 +638,11 @@
 }
 
 .root h2 {
+  font-family: var(--klk-font-serif), Georgia, serif;
   font-size: clamp(31px,3vw,42px);
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.2;
-  letter-spacing: -.045em;
+  letter-spacing: -0.02em;
 }
 
 .root h2 span {
@@ -1363,7 +1365,7 @@
   .hero h1 {
     font-size: 42px;
     line-height: 1.1;
-    letter-spacing: -.055em;
+    letter-spacing: -0.02em;
   }
 
   .heroActions {

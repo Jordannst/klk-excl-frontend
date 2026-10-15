@@ -102,10 +102,11 @@
 }
 
 .headline {
+  font-family: var(--klk-font-serif), Georgia, serif;
   font-size: clamp(31px,3vw,44px);
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.14;
-  letter-spacing: -.045em;
+  letter-spacing: -0.02em;
   max-width: 17ch;
   text-wrap: pretty;
   margin: 0 0 18px;
