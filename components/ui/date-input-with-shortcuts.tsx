@@ -118,7 +118,7 @@ export function DateInputWithShortcuts({
         </div>
 
         {/* Display Label */}
-        <div className="text-[11px] text-slate-500 font-medium mt-1">
+        <div className="text-[0.6875rem] text-slate-500 font-medium mt-1">
           {getDisplayText() && (
             <span className={cn(
               "inline-flex items-center gap-1",

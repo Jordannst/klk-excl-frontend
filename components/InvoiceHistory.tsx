@@ -152,7 +152,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
     <div className="flex w-full flex-col">
       {/* Header row */}
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-klk-mono text-[9.5px] uppercase tracking-[.12em] text-klk-ink-3">
+        <span className="font-klk-mono text-[0.59375rem] uppercase tracking-[.12em] text-klk-ink-3">
           Riwayat Invoice
         </span>
         <button
@@ -173,7 +173,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
             placeholder="Cari invoice..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-accent focus:ring-[3px] focus:ring-klk-accent/15"
+            className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[0.78125rem] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-accent focus:ring-[3px] focus:ring-klk-accent/15"
           />
           {searchQuery && (
             <button
@@ -197,7 +197,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
           <button
             key={filter.key}
             onClick={() => handleDateFilterChange(filter.key as DateFilter)}
-            className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
+            className={`h-6 rounded-md px-2 text-[0.6875rem] font-semibold transition-colors ${
               dateFilter === filter.key
                 ? "bg-klk-accent text-white"
                 : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-accent/40 hover:text-klk-accent-deep"
@@ -210,7 +210,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
 
       {/* Active filters indicator */}
       {hasActiveFilters && (
-        <div className="mb-2 flex items-center justify-between text-[11px] text-klk-ink-3">
+        <div className="mb-2 flex items-center justify-between text-[0.6875rem] text-klk-ink-3">
           <span>{pagination?.total || 0} hasil ditemukan</span>
           <button onClick={clearFilters} className="font-semibold text-klk-accent-deep hover:underline">
             Reset filter
@@ -256,7 +256,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
           <div className="space-y-3">
             {monthGroups.map((group) => (
               <div key={group.label}>
-                <div className="mb-1.5 font-klk-mono text-[9.5px] uppercase tracking-[.12em] text-klk-ink-3">
+                <div className="mb-1.5 font-klk-mono text-[0.59375rem] uppercase tracking-[.12em] text-klk-ink-3">
                   {group.label}
                 </div>
                 <div className="space-y-2">
@@ -269,21 +269,21 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
                         tabIndex={0}
                         onClick={() => onSelectInvoice?.(invoice.id)}
                         onKeyDown={(e) => e.key === 'Enter' && onSelectInvoice?.(invoice.id)}
-                        className={`group relative w-full cursor-pointer rounded-[9px] border px-3 py-2.5 text-left transition-colors ${
+                        className={`group relative w-full cursor-pointer rounded-[0.5625rem] border px-3 py-2.5 text-left transition-colors ${
                           isActive
                             ? "border-klk-accent/45 bg-klk-accent-tint"
                             : "border-klk-line bg-white hover:border-klk-accent/30"
                         }`}
                       >
                         {isActive && (
-                          <span className="absolute bottom-[9px] left-0 top-[9px] w-[3px] rounded-r bg-klk-accent" />
+                          <span className="absolute bottom-[0.5625rem] left-0 top-[0.5625rem] w-[3px] rounded-r bg-klk-accent" />
                         )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[12.5px] font-semibold text-klk-ink">
+                            <div className="truncate text-[0.78125rem] font-semibold text-klk-ink">
                               {invoice.title || "Invoice"}
                             </div>
-                            <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.04em] text-klk-ink-3">
+                            <div className="mt-0.5 font-klk-mono text-[0.59375rem] uppercase tracking-[.04em] text-klk-ink-3">
                               {invoice.count} trx · Rp {invoice.total.toLocaleString("id-ID")}
                             </div>
                           </div>
@@ -311,18 +311,18 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
               <button
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
-                className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                className="flex h-7 w-7 items-center justify-center rounded-[0.4375rem] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
                 aria-label="Halaman sebelumnya"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="font-klk-mono text-[10px] uppercase tracking-[.08em] text-klk-ink-3">
+              <span className="font-klk-mono text-[0.625rem] uppercase tracking-[.08em] text-klk-ink-3">
                 {currentPage} / {pagination.totalPages}
               </span>
               <button
                 onClick={handleNextPage}
                 disabled={currentPage === pagination.totalPages}
-                className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                className="flex h-7 w-7 items-center justify-center rounded-[0.4375rem] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
                 aria-label="Halaman berikutnya"
               >
                 <ChevronRight className="h-4 w-4" />

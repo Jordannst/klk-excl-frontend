@@ -92,7 +92,7 @@ function DashboardContent() {
 
       {/* Content Area */}
       <main className="max-w-7xl mx-auto pt-20 px-4 sm:px-6 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[248px_1fr] gap-[18px]">
+        <div className="grid grid-cols-1 lg:grid-cols-[15.5rem_1fr] gap-[1.125rem]">
           {/* Left Sidebar - Invoice History */}
           <div>
             <TransaksiSearch onSelect={handleSearchSelect} onQueryChange={setInvoiceSearchQuery} />
@@ -104,7 +104,7 @@ function DashboardContent() {
           </div>
 
           {/* Right Side - Form and Table */}
-          <div className="min-w-0 space-y-[18px]">
+          <div className="min-w-0 space-y-[1.125rem]">
             {showForm && (
               <div ref={formRef}>
                 <ExpeditionForm

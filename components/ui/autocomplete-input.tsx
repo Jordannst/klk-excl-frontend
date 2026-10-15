@@ -201,7 +201,7 @@ export function AutocompleteInput({
             ) : (
               <History className="h-3 w-3 text-slate-500" />
             )}
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+            <span className="text-[0.625rem] uppercase tracking-wider font-bold text-slate-500">
               {isSearching ? "Hasil Pencarian" : "Riwayat Terakhir"}
             </span>
           </div>
@@ -226,7 +226,7 @@ export function AutocompleteInput({
                 )} />
                 <span className="flex-1 truncate">{suggestion}</span>
                 {selectedIndex === index && (
-                  <span className="text-[10px] font-medium text-klk-accent-deep bg-klk-accent-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
+                  <span className="text-[0.625rem] font-medium text-klk-accent-deep bg-klk-accent-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
                     Pilih
                   </span>
                 )}

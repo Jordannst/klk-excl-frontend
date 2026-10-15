@@ -382,14 +382,14 @@ export function TransactionTable({
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-klk-line bg-white shadow-[0_1px_2px_rgba(16,24,40,.05)]">
-      <div className="border-b border-klk-line px-4 py-3.5 sm:px-[18px]">
+      <div className="border-b border-klk-line px-4 py-3.5 sm:px-[1.125rem]">
         <div className="space-y-4">
           <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
             <div className="min-w-0 w-full xl:w-auto">
-              <h2 className="truncate text-[15.5px] font-semibold tracking-[-.01em] text-klk-ink">
+              <h2 className="truncate text-[0.96875rem] font-semibold tracking-[-.01em] text-klk-ink">
                 {title || 'Laporan Transaksi'}
               </h2>
-              <p className="mt-0.5 font-klk-mono text-[10px] uppercase tracking-[.12em] text-klk-ink-3">
+              <p className="mt-0.5 font-klk-mono text-[0.625rem] uppercase tracking-[.12em] text-klk-ink-3">
                 {rows.length} transaksi
               </p>
             </div>
@@ -399,9 +399,9 @@ export function TransactionTable({
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
-                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
+                  className="flex-1 sm:flex-none h-[2.0625rem] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[0.78125rem] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
                 >
-                  <RefreshCw className={`h-[15px] w-[15px] ${isRefreshing ? "animate-spin" : ""}`} />
+                  <RefreshCw className={`h-[0.9375rem] w-[0.9375rem] ${isRefreshing ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">Refresh</span>
                 </Button>
               )}
@@ -410,9 +410,9 @@ export function TransactionTable({
                 size="sm"
                 onClick={exportToExcel}
                 disabled={rows.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
+                className="flex-1 sm:flex-none h-[2.0625rem] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[0.78125rem] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
               >
-                <Download className="h-[15px] w-[15px]" />
+                <Download className="h-[0.9375rem] w-[0.9375rem]" />
                 <span className="hidden sm:inline">Excel</span>
                 <span className="sm:hidden">Excel</span>
               </Button>
@@ -421,9 +421,9 @@ export function TransactionTable({
                 size="sm"
                 onClick={() => setIsPrintModalOpen(true)}
                 disabled={rows.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-accent bg-klk-accent text-[12.5px] font-semibold text-white shadow-none hover:bg-klk-accent-hover hover:border-klk-accent-hover transition-colors"
+                className="flex-1 sm:flex-none h-[2.0625rem] gap-1.5 rounded-lg border border-klk-accent bg-klk-accent text-[0.78125rem] font-semibold text-white shadow-none hover:bg-klk-accent-hover hover:border-klk-accent-hover transition-colors"
               >
-                <Printer className="h-[15px] w-[15px]" />
+                <Printer className="h-[0.9375rem] w-[0.9375rem]" />
                 <span className="hidden sm:inline">Print / PDF</span>
                 <span className="sm:hidden">Print/PDF</span>
               </Button>
@@ -491,11 +491,11 @@ export function TransactionTable({
             { label: "Total Kg", value: totalKg.toLocaleString("id-ID"), accent: false },
             { label: "Nilai Invoice", value: `Rp ${grandTotal.toLocaleString("id-ID")}`, accent: true },
           ].map((kpi, i) => (
-            <div key={kpi.label} className={`px-[18px] py-[13px] ${i > 0 ? "sm:border-l sm:border-klk-line" : ""}`}>
-              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-accent-deep" : "text-klk-ink"}`}>
+            <div key={kpi.label} className={`px-[1.125rem] py-[0.8125rem] ${i > 0 ? "sm:border-l sm:border-klk-line" : ""}`}>
+              <div className={`text-[1.1875rem] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-accent-deep" : "text-klk-ink"}`}>
                 {kpi.value}
               </div>
-              <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
+              <div className="mt-0.5 font-klk-mono text-[0.59375rem] uppercase tracking-[.1em] text-klk-ink-3">
                 {kpi.label}
               </div>
             </div>
@@ -517,20 +517,20 @@ export function TransactionTable({
         ) : (
           <div>
             <div className="transaction-table-scroll overflow-x-auto">
-              <Table className="min-w-[980px]">
+              <Table className="min-w-[61.25rem]">
                 <TableHeader>
                   <TableRow className="border-b border-klk-line bg-klk-canvas hover:bg-klk-canvas">
-                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">No</TableHead>
-                    {showDateColumn && <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tgl</TableHead>}
-                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">No STT</TableHead>
-                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Pengirim</TableHead>
-                    <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Penerima</TableHead>
-                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Coly</TableHead>
-                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Kg</TableHead>
-                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Min</TableHead>
-                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tarif</TableHead>
-                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Jumlah</TableHead>
-                    {currentShowKeteranganColumn && <TableHead className="h-9 px-3 font-klk-mono text-[9.5px] font-medium uppercase tracking-[.1em] text-klk-ink-3">Ket</TableHead>}
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">No</TableHead>
+                    {showDateColumn && <TableHead className="h-9 px-3 font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tgl</TableHead>}
+                    <TableHead className="h-9 px-3 font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">No STT</TableHead>
+                    <TableHead className="h-9 px-3 font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Pengirim</TableHead>
+                    <TableHead className="h-9 px-3 font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Penerima</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Coly</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Kg</TableHead>
+                    <TableHead className="h-9 px-3 text-center font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Min</TableHead>
+                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Tarif</TableHead>
+                    <TableHead className="h-9 px-3 text-right font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Jumlah</TableHead>
+                    {currentShowKeteranganColumn && <TableHead className="h-9 px-3 font-klk-mono text-[0.59375rem] font-medium uppercase tracking-[.1em] text-klk-ink-3">Ket</TableHead>}
                     <TableHead className="h-9 px-3"><span className="sr-only">Aksi</span></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -546,40 +546,40 @@ export function TransactionTable({
                           index === highlightIndex && isFlashing ? "bg-klk-accent-tint" : ""
                         }`}
                       >
-                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-3">
+                        <TableCell className="px-3 py-2.5 text-center text-[0.78125rem] tabular-nums text-klk-ink-3">
                           {index + 1}
                         </TableCell>
                         {showDateColumn && (
-                          <TableCell className="px-3 py-2.5 text-[12.5px] tabular-nums text-klk-ink-2">
+                          <TableCell className="px-3 py-2.5 text-[0.78125rem] tabular-nums text-klk-ink-2">
                             {formatTableDate(item.tanggal)}
                           </TableCell>
                         )}
-                        <TableCell className="px-3 py-2.5 font-klk-mono text-[11.5px] text-klk-blue">
+                        <TableCell className="px-3 py-2.5 font-klk-mono text-[0.71875rem] text-klk-blue">
                           {item.noResi}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-[0.78125rem] text-klk-ink-2">
                           {item.pengirim}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-[0.78125rem] text-klk-ink-2">
                           {item.penerima}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-center text-[0.78125rem] tabular-nums text-klk-ink-2">
                           {item.coly}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-center text-[0.78125rem] tabular-nums text-klk-ink-2">
                           {item.berat}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-center text-[0.78125rem] tabular-nums text-klk-ink-2">
                           {item.min}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-right text-[12.5px] tabular-nums text-klk-ink-2">
+                        <TableCell className="px-3 py-2.5 text-right text-[0.78125rem] tabular-nums text-klk-ink-2">
                           {(item.tarif || 0).toLocaleString("id-ID")}
                         </TableCell>
-                        <TableCell className="px-3 py-2.5 text-right text-[12.5px] font-semibold tabular-nums text-klk-ink">
+                        <TableCell className="px-3 py-2.5 text-right text-[0.78125rem] font-semibold tabular-nums text-klk-ink">
                           {item.total.toLocaleString("id-ID")}
                         </TableCell>
                         {currentShowKeteranganColumn && (
-                          <TableCell className="px-3 py-2.5 text-[12.5px] text-klk-ink-2">
+                          <TableCell className="px-3 py-2.5 text-[0.78125rem] text-klk-ink-2">
                             {item.keterangan || "-"}
                           </TableCell>
                         )}
@@ -587,7 +587,7 @@ export function TransactionTable({
                           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-[.12s] focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent-deep"
+                              className="flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent-deep"
                               onClick={() => startEdit(item)}
                               aria-label={`Edit transaksi STT ${item.noResi}`}
                             >
@@ -595,7 +595,7 @@ export function TransactionTable({
                             </button>
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red disabled:opacity-40"
+                              className="flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red disabled:opacity-40"
                               onClick={() => setDeleteTarget(item)}
                               disabled={deleteTransaksiMutation.isPending}
                               aria-label={`Hapus transaksi STT ${item.noResi}`}
@@ -613,7 +613,7 @@ export function TransactionTable({
 
             {/* Footer: range, pagination, total */}
             <div className="flex flex-col gap-2 border-t border-klk-line px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <span className="font-klk-mono text-[10px] uppercase tracking-[.1em] text-klk-ink-3">
+              <span className="font-klk-mono text-[0.625rem] uppercase tracking-[.1em] text-klk-ink-3">
                 Menampilkan {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, rows.length)} dari {rows.length}
               </span>
               {totalPages > 1 && (
@@ -622,20 +622,20 @@ export function TransactionTable({
                     type="button"
                     onClick={() => setPage(Math.max(1, page - 1))}
                     disabled={page === 1}
-                    className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                    className="flex h-7 w-7 items-center justify-center rounded-[0.4375rem] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
                     aria-label="Halaman sebelumnya"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   {pageItems.map((item, i) =>
                     item === "…" ? (
-                      <span key={`e${i}`} className="px-1 text-[12px] text-klk-ink-3">…</span>
+                      <span key={`e${i}`} className="px-1 text-[0.75rem] text-klk-ink-3">…</span>
                     ) : (
                       <button
                         key={item}
                         type="button"
                         onClick={() => setPage(item)}
-                        className={`h-7 min-w-7 rounded-[7px] px-1.5 text-[12px] font-semibold tabular-nums transition-colors ${
+                        className={`h-7 min-w-7 rounded-[0.4375rem] px-1.5 text-[0.75rem] font-semibold tabular-nums transition-colors ${
                           page === item
                             ? "bg-klk-accent text-white"
                             : "border border-klk-line text-klk-ink-2 hover:bg-klk-canvas"
@@ -651,14 +651,14 @@ export function TransactionTable({
                     type="button"
                     onClick={() => setPage(Math.min(totalPages, page + 1))}
                     disabled={page === totalPages}
-                    className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
+                    className="flex h-7 w-7 items-center justify-center rounded-[0.4375rem] border border-klk-line text-klk-ink-2 transition-colors hover:bg-klk-canvas disabled:opacity-40"
                     aria-label="Halaman berikutnya"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               )}
-              <span className="text-[13px] font-semibold text-klk-accent-deep">
+              <span className="text-[0.8125rem] font-semibold text-klk-accent-deep">
                 TOTAL&ensp;Rp {grandTotal.toLocaleString("id-ID")}
               </span>
             </div>
