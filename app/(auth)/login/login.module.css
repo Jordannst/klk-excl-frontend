@@ -494,32 +494,32 @@
 .root, .form { background: var(--canvas); }
 .root, .gate { transition: none; }
 .h1 { color: var(--ink); }
-.gate { background: var(--canvas); color: var(--blue); }
+.gate { background: var(--canvas); color: var(--accent-text); }
 .themeBar { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-bottom: 32px; }
-.root :is(a,button):focus-visible { outline-color: var(--blue); }
+.root :is(a,button):focus-visible { outline-color: var(--accent-text); }
 .pattern { background: radial-gradient(ellipse at 90% 30%, var(--tint) 0, transparent 65%), var(--surface-soft); }
 .scrim { background: linear-gradient(0deg,var(--surface-soft),transparent); }
 .pc, .heroContent { color: var(--ink); }
 .hero { background: var(--surface-soft); }
 .panel { border-right: 1px solid var(--line); }
-.panelEyebrow, .eyebrow, .link, .link:hover, .footer a:hover { color: var(--blue); }
-.headline span { color: var(--blue); }
+.panelEyebrow, .eyebrow, .link, .link:hover, .footer a:hover { color: var(--accent-text); }
+.headline span { color: var(--accent-text); }
 .rule { background: var(--control-line); }
 .meta, .backLink { color: var(--muted); }
 .documentArt { background: var(--surface); border-color: var(--control-line); box-shadow: 0 22px 40px -20px #08152c55; }
 .documentArt>div, .documentArt small, .documentArt>p { color: var(--subtle); }
-.documentArt>div:first-child { color: var(--blue); border-color: var(--line); }
-.documentArt b { color: var(--blue); }
+.documentArt>div:first-child { color: var(--accent-text); border-color: var(--line); }
+.documentArt b { color: var(--accent-text); }
 .documentLines i { background: linear-gradient(90deg,var(--line) 65%,transparent 65%,transparent 80%,var(--tint) 80%); }
 .inputBox { border-color: var(--control-line); }
-.inputBox:focus-within { border-color: var(--blue); }
+.inputBox:focus-within { border-color: var(--accent); }
 .inputError, .inputError:focus-within { border-color: var(--klk-red); }
 .input:autofill { -webkit-text-fill-color: var(--ink); box-shadow: 0 0 0 100px var(--surface) inset; }
 .caps { color: var(--muted); }
 .resetCard { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
 .resetCard input { border-color: var(--control-line); color: var(--ink); background: var(--canvas); }
 .resetCard input::placeholder { color: var(--subtle); }
-.resetCard input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.resetCard input:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
 .resetCard button:disabled { cursor: not-allowed; }
 .resetCard button[type="submit"] { color: white; }
 @media (max-width: 900px) { .themeBar { margin-top: -24px; margin-bottom: 26px; } }
