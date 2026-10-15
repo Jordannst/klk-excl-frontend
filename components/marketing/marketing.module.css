@@ -505,7 +505,7 @@
 
 .mockButton {
   background: var(--accent);
-  color: white;
+  color: var(--accent-ink);
   padding: 8px 10px;
   border-radius: 5px;
   display: flex;

@@ -304,13 +304,13 @@
 }
 
 .alertSuccess {
-  border-color: color-mix(in oklch, var(--klk-accent) 34%, var(--klk-line));
-  background: var(--klk-accent-tint);
-  color: var(--klk-accent-deep);
+  border-color: color-mix(in oklch, var(--success-ink) 34%, var(--klk-line));
+  background: var(--success-tint);
+  color: var(--success-ink);
 }
 
 .alertSuccess svg {
-  color: var(--klk-accent);
+  color: var(--success-ink);
 }
 
 .alertTitle {
