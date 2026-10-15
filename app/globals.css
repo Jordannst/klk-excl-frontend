@@ -132,6 +132,14 @@ body {
   color: var(--color-foreground);
 }
 
+/* Dashboard reads at 110% on desktop. rem sizes scale; rem breakpoints use the
+   browser default, so layouts don't switch. Landing/login carry data-landing. */
+@media (min-width: 64rem) {
+  html:not([data-landing]) {
+    font-size: 110%;
+  }
+}
+
 /* Smooth transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
