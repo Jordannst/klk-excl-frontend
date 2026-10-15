@@ -771,7 +771,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             variant="outline"
             onClick={handlePreviewPdf}
             disabled={isPreviewLoading || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 border-klk-green/40 text-klk-green hover:bg-klk-green-tint hover:text-klk-green-hover"
+            className="w-full sm:w-auto px-6 border-klk-accent/40 text-klk-accent hover:bg-klk-accent-tint hover:text-klk-accent-hover"
           >
             {isPreviewLoading ? (
               <>
@@ -788,7 +788,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <Button
             onClick={handleDownloadPdf}
             disabled={isDownloadingPdf || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-klk-green hover:bg-klk-green-hover text-white"
+            className="w-full sm:w-auto px-6 bg-klk-accent hover:bg-klk-accent-hover text-white"
           >
             {isDownloadingPdf ? (
               <>
@@ -805,7 +805,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <Button
             onClick={handlePrint}
             disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-klk-green-deep hover:bg-klk-green text-white"
+            className="w-full sm:w-auto px-6 bg-klk-accent-deep hover:bg-klk-accent text-white"
           >
             {isPrinting ? (
               <>
@@ -847,7 +847,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                 <Button
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
-                  className="h-9 bg-klk-green px-4 text-[12.5px] hover:bg-klk-green-hover"
+                  className="h-9 bg-klk-accent px-4 text-[12.5px] hover:bg-klk-accent-hover"
                 >
                   {isDownloadingPdf ? (
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

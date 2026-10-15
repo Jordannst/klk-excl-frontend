@@ -78,7 +78,7 @@ export function TransaksiSearch({ onSelect, onQueryChange }: TransaksiSearchProp
           onFocus={() => setIsOpen(true)}
           placeholder="Cari No STT atau invoice…"
           aria-label="Cari No STT atau invoice"
-          className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-green focus:ring-[3px] focus:ring-klk-green/15"
+          className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-accent focus:ring-[3px] focus:ring-klk-accent/15"
         />
         {isFetching && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />

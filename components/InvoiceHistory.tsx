@@ -158,7 +158,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
         <button
           onClick={() => refetch()}
           disabled={isLoading}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-green-tint hover:text-klk-green"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent"
           aria-label="Muat ulang riwayat"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -173,7 +173,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
             placeholder="Cari invoice..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-green focus:ring-[3px] focus:ring-klk-green/15"
+            className="h-9 w-full rounded-lg border border-klk-line-strong bg-white pl-9 pr-8 text-[12.5px] text-klk-ink shadow-[0_1px_2px_rgba(16,24,40,.05)] outline-none placeholder:text-klk-ink-3 focus:border-klk-accent focus:ring-[3px] focus:ring-klk-accent/15"
           />
           {searchQuery && (
             <button
@@ -199,8 +199,8 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
             onClick={() => handleDateFilterChange(filter.key as DateFilter)}
             className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
               dateFilter === filter.key
-                ? "bg-klk-green text-white"
-                : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-green/40 hover:text-klk-green"
+                ? "bg-klk-accent text-white"
+                : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-accent/40 hover:text-klk-accent"
             }`}
           >
             {filter.label}
@@ -212,7 +212,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
       {hasActiveFilters && (
         <div className="mb-2 flex items-center justify-between text-[11px] text-klk-ink-3">
           <span>{pagination?.total || 0} hasil ditemukan</span>
-          <button onClick={clearFilters} className="font-semibold text-klk-green hover:underline">
+          <button onClick={clearFilters} className="font-semibold text-klk-accent hover:underline">
             Reset filter
           </button>
         </div>
@@ -221,7 +221,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
       {/* Loading State */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <Loader2 className="mb-2 h-5 w-5 animate-spin text-klk-green" />
+          <Loader2 className="mb-2 h-5 w-5 animate-spin text-klk-accent" />
           <p className="text-xs text-klk-ink-3">Memuat...</p>
         </div>
       )}
@@ -271,12 +271,12 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
                         onKeyDown={(e) => e.key === 'Enter' && onSelectInvoice?.(invoice.id)}
                         className={`group relative w-full cursor-pointer rounded-[9px] border px-3 py-2.5 text-left transition-colors ${
                           isActive
-                            ? "border-klk-green/45 bg-klk-green-tint"
-                            : "border-klk-line bg-white hover:border-klk-green/30"
+                            ? "border-klk-accent/45 bg-klk-accent-tint"
+                            : "border-klk-line bg-white hover:border-klk-accent/30"
                         }`}
                       >
                         {isActive && (
-                          <span className="absolute bottom-[9px] left-0 top-[9px] w-[3px] rounded-r bg-klk-green" />
+                          <span className="absolute bottom-[9px] left-0 top-[9px] w-[3px] rounded-r bg-klk-accent" />
                         )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">

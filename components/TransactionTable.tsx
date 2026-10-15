@@ -399,7 +399,7 @@ export function TransactionTable({
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
-                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
+                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent transition-colors"
                 >
                   <RefreshCw className={`h-[15px] w-[15px] ${isRefreshing ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -410,7 +410,7 @@ export function TransactionTable({
                 size="sm"
                 onClick={exportToExcel}
                 disabled={rows.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-green/40 hover:bg-klk-green-tint hover:text-klk-green transition-colors"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent transition-colors"
               >
                 <Download className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Excel</span>
@@ -421,7 +421,7 @@ export function TransactionTable({
                 size="sm"
                 onClick={() => setIsPrintModalOpen(true)}
                 disabled={rows.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-green bg-klk-green text-[12.5px] font-semibold text-white shadow-none hover:bg-klk-green-hover hover:border-klk-green-hover transition-colors"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-accent bg-klk-accent text-[12.5px] font-semibold text-white shadow-none hover:bg-klk-accent-hover hover:border-klk-accent-hover transition-colors"
               >
                 <Printer className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Print / PDF</span>
@@ -492,7 +492,7 @@ export function TransactionTable({
             { label: "Nilai Invoice", value: `Rp ${grandTotal.toLocaleString("id-ID")}`, accent: true },
           ].map((kpi, i) => (
             <div key={kpi.label} className={`px-[18px] py-[13px] ${i > 0 ? "sm:border-l sm:border-klk-line" : ""}`}>
-              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-green" : "text-klk-ink"}`}>
+              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-accent" : "text-klk-ink"}`}>
                 {kpi.value}
               </div>
               <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
@@ -587,7 +587,7 @@ export function TransactionTable({
                           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-[.12s] focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-green-tint hover:text-klk-green"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent"
                               onClick={() => startEdit(item)}
                               aria-label={`Edit transaksi STT ${item.noResi}`}
                             >
@@ -637,7 +637,7 @@ export function TransactionTable({
                         onClick={() => setPage(item)}
                         className={`h-7 min-w-7 rounded-[7px] px-1.5 text-[12px] font-semibold tabular-nums transition-colors ${
                           page === item
-                            ? "bg-klk-green text-white"
+                            ? "bg-klk-accent text-white"
                             : "border border-klk-line text-klk-ink-2 hover:bg-klk-canvas"
                         }`}
                         aria-label={`Halaman ${item}`}
@@ -658,7 +658,7 @@ export function TransactionTable({
                   </button>
                 </div>
               )}
-              <span className="text-[13px] font-semibold text-klk-green-deep">
+              <span className="text-[13px] font-semibold text-klk-accent-deep">
                 TOTAL&ensp;Rp {grandTotal.toLocaleString("id-ID")}
               </span>
             </div>

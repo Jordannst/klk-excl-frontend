@@ -12,10 +12,10 @@
   --klk-surface: var(--surface);
   --klk-canvas: var(--surface-soft);
 
-  --klk-green: #2463eb;
-  --klk-green-hover: #174fd0;
-  --klk-green-deep: var(--tint-ink);
-  --klk-green-tint: var(--tint);
+  --klk-accent: #2463eb;
+  --klk-accent-hover: #174fd0;
+  --klk-accent-deep: var(--tint-ink);
+  --klk-accent-tint: var(--tint);
 
   --klk-red: var(--error-ink);
   --klk-red-tint: var(--error-tint);
@@ -196,13 +196,13 @@
 }
 
 .alertSuccess {
-  border-color: color-mix(in oklch, var(--klk-green) 34%, var(--klk-line));
-  background: var(--klk-green-tint);
-  color: var(--klk-green-deep);
+  border-color: color-mix(in oklch, var(--klk-accent) 34%, var(--klk-line));
+  background: var(--klk-accent-tint);
+  color: var(--klk-accent-deep);
 }
 
 .alertSuccess svg {
-  color: var(--klk-green);
+  color: var(--klk-accent);
 }
 
 .alertTitle {
@@ -241,8 +241,8 @@
 }
 
 .inputBox:focus-within {
-  border-color: var(--klk-green);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--klk-green) 16%, transparent);
+  border-color: var(--klk-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--klk-accent) 16%, transparent);
 }
 
 .inputBox svg {
@@ -332,7 +332,7 @@
 .link {
   font-size: 13px;
   font-weight: 500;
-  color: var(--klk-green);
+  color: var(--klk-accent);
   background: none;
   border: 0;
   padding: 0;
@@ -341,7 +341,7 @@
 }
 
 .link:hover {
-  color: var(--klk-green-hover);
+  color: var(--klk-accent-hover);
   text-decoration: underline;
 }
 
@@ -352,7 +352,7 @@
   gap: 9px;
   height: 46px;
   width: 100%;
-  background: var(--klk-green);
+  background: var(--klk-accent);
   color: #fff;
   border: 0;
   border-radius: var(--klk-r-md);
@@ -364,11 +364,11 @@
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--klk-green-hover);
+  background: var(--klk-accent-hover);
 }
 
 .btnLoading {
-  background: var(--klk-green-hover);
+  background: var(--klk-accent-hover);
   color: rgba(255, 255, 255, .85);
 }
 
@@ -413,7 +413,7 @@
   align-items: center;
   justify-content: center;
   background: var(--klk-canvas);
-  color: var(--klk-green);
+  color: var(--klk-accent);
 }
 
 /* ---------- Mobile ---------- */

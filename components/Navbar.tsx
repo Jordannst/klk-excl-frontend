@@ -34,7 +34,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
   const initial = (user?.username || 'K').charAt(0).toUpperCase()
 
   const newInvoiceButton = (
-    <span className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-klk-green px-3.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-klk-green-hover">
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-klk-accent px-3.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-klk-accent-hover">
       <Plus className="h-4 w-4" />
       Invoice Baru
     </span>
@@ -66,7 +66,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3 py-[7px] text-[13px] font-semibold transition-colors',
                   isActive
-                    ? 'bg-klk-green-tint text-klk-green'
+                    ? 'bg-klk-accent-tint text-klk-accent'
                     : 'text-klk-ink-2 hover:bg-klk-canvas hover:text-klk-ink'
                 )}
               >
@@ -93,7 +93,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
 
           {/* User */}
           <div className="hidden items-center gap-2.5 xl:flex">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-klk-green-deep text-[13px] font-semibold text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-klk-accent-deep text-[13px] font-semibold text-white">
               {initial}
             </span>
             <span className="leading-tight">
@@ -149,7 +149,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors',
                     isActive
-                      ? 'bg-klk-green-tint text-klk-green'
+                      ? 'bg-klk-accent-tint text-klk-accent'
                       : 'text-klk-ink-2 hover:bg-klk-canvas'
                   )}
                 >
