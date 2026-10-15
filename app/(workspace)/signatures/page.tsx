@@ -193,7 +193,7 @@ function SignaturesContent() {
           </div>
           <Button
             onClick={() => setShowCreateForm(true)}
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-klk-accent hover:bg-klk-accent-hover text-white"
             disabled={showCreateForm}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -255,7 +255,7 @@ function SignaturesContent() {
                   <Button
                     onClick={handleSaveSignature}
                     disabled={!newSignatureLabel.trim() || createSignature.isPending}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    className="flex-1 bg-klk-accent hover:bg-klk-accent-hover"
                   >
                     {createSignature.isPending ? (
                       <>
@@ -286,7 +286,7 @@ function SignaturesContent() {
           {/* Loading State */}
           {isLoadingSignatures && (
             <div className="py-12 text-center">
-              <Loader2 className="h-8 w-8 mx-auto mb-3 text-violet-500 animate-spin" />
+              <Loader2 className="h-8 w-8 mx-auto mb-3 text-klk-accent animate-spin" />
               <p className="text-sm text-slate-500">Memuat tanda tangan...</p>
             </div>
           )}
@@ -302,7 +302,7 @@ function SignaturesContent() {
               {!showCreateForm && (
                 <Button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-violet-600 hover:bg-violet-700"
+                  className="bg-klk-accent hover:bg-klk-accent-hover"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Buat Tanda Tangan

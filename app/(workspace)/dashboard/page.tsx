@@ -122,7 +122,7 @@ function DashboardContent() {
             {/* Loading state when fetching invoice */}
             {!showForm && isLoadingInvoice && (
               <div className="py-16 text-center">
-                <Loader2 className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-spin" />
+                <Loader2 className="h-12 w-12 mx-auto mb-4 text-klk-accent animate-spin" />
                 <p className="text-slate-500">Memuat data invoice...</p>
               </div>
             )}
@@ -134,7 +134,7 @@ function DashboardContent() {
                   <Button
                     onClick={handleContinueInvoice}
                     variant="outline"
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                    className="border-klk-accent/30 text-klk-accent-deep hover:bg-klk-accent-tint"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Lanjutkan Invoice
@@ -161,7 +161,7 @@ function DashboardContent() {
                 <p className="text-slate-400 mb-4">
                   Pilih invoice dari riwayat di sebelah kiri atau buat invoice baru
                 </p>
-                <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleCreateNew} className="bg-klk-accent hover:bg-klk-accent-hover">
                   <Plus className="h-4 w-4 mr-2" />
                   Buat Invoice Baru
                 </Button>

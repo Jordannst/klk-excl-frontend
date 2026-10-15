@@ -652,7 +652,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
               <div className="space-y-1 text-center sm:text-left">
                 <Label className="text-xs text-slate-500">Biaya Handling</Label>
-                <p className="text-xl font-bold text-emerald-600">Rp {formatRupiah(biayaHandling)}</p>
+                <p className="text-xl font-bold text-klk-olive">Rp {formatRupiah(biayaHandling)}</p>
                 <p className="text-[10px] text-slate-400">Otomatis dari tabel</p>
               </div>
               <div className="space-y-1">
@@ -671,7 +671,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               </div>
               <div className="space-y-1 text-center sm:text-right">
                 <Label className="text-xs text-slate-500">Total Tagihan</Label>
-                <p className="text-xl font-bold text-blue-600">Rp {formatRupiah(totalTagihan)}</p>
+                <p className="text-xl font-bold text-klk-accent-deep">Rp {formatRupiah(totalTagihan)}</p>
                 <p className="text-[10px] text-slate-400">Handling + Kirim Doc</p>
               </div>
             </div>
@@ -700,7 +700,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                       const sig = signatures?.find(s => s.id === e.target.value) || null
                       setSelectedSignatureKiri(sig)
                     }}
-                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-klk-accent-ring focus:border-transparent"
                   >
                     <option value="">Tanpa tanda tangan</option>
                     {signatures?.map((sig) => (
@@ -738,7 +738,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                       const sig = signatures?.find(s => s.id === e.target.value) || null
                       setSelectedSignatureKanan(sig)
                     }}
-                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-klk-accent-ring focus:border-transparent"
                   >
                     <option value="">Tanpa tanda tangan</option>
                     {signatures?.map((sig) => (
@@ -771,7 +771,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             variant="outline"
             onClick={handlePreviewPdf}
             disabled={isPreviewLoading || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 border-klk-accent/40 text-klk-accent hover:bg-klk-accent-tint hover:text-klk-accent-hover"
+            className="w-full sm:w-auto px-6 border-klk-accent/40 text-klk-accent-deep hover:bg-klk-accent-tint hover:text-klk-accent-hover"
           >
             {isPreviewLoading ? (
               <>

@@ -184,7 +184,7 @@ export function AutocompleteInput({
           )}
           autoComplete="off"
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-klk-accent transition-colors">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-klk-accent-deep transition-colors">
           {isSearching ? (
             <Search className="h-4 w-4 animate-in fade-in zoom-in duration-300" />
           ) : (
@@ -226,7 +226,7 @@ export function AutocompleteInput({
                 )} />
                 <span className="flex-1 truncate">{suggestion}</span>
                 {selectedIndex === index && (
-                  <span className="text-[10px] font-medium text-klk-accent bg-klk-accent-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
+                  <span className="text-[10px] font-medium text-klk-accent-deep bg-klk-accent-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
                     Pilih
                   </span>
                 )}

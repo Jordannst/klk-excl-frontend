@@ -158,7 +158,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
         <button
           onClick={() => refetch()}
           disabled={isLoading}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent-deep"
           aria-label="Muat ulang riwayat"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -200,7 +200,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
             className={`h-6 rounded-md px-2 text-[11px] font-semibold transition-colors ${
               dateFilter === filter.key
                 ? "bg-klk-accent text-white"
-                : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-accent/40 hover:text-klk-accent"
+                : "border border-klk-line bg-white text-klk-ink-2 hover:border-klk-accent/40 hover:text-klk-accent-deep"
             }`}
           >
             {filter.label}
@@ -212,7 +212,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
       {hasActiveFilters && (
         <div className="mb-2 flex items-center justify-between text-[11px] text-klk-ink-3">
           <span>{pagination?.total || 0} hasil ditemukan</span>
-          <button onClick={clearFilters} className="font-semibold text-klk-accent hover:underline">
+          <button onClick={clearFilters} className="font-semibold text-klk-accent-deep hover:underline">
             Reset filter
           </button>
         </div>
@@ -221,7 +221,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
       {/* Loading State */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <Loader2 className="mb-2 h-5 w-5 animate-spin text-klk-accent" />
+          <Loader2 className="mb-2 h-5 w-5 animate-spin text-klk-accent-deep" />
           <p className="text-xs text-klk-ink-3">Memuat...</p>
         </div>
       )}
@@ -354,7 +354,7 @@ export function InvoiceHistory({ selectedId, onSelectInvoice, searchOverride }: 
             <p className="font-semibold text-slate-700 mb-4">
               {invoiceToDelete?.title || "Invoice"}
             </p>
-            <p className="text-xs text-emerald-600 mb-6">
+            <p className="text-xs text-klk-success mb-6">
               💡 Invoice dapat dipulihkan dari halaman Sampah.
             </p>
             <div className="flex gap-3">

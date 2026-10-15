@@ -399,7 +399,7 @@ export function TransactionTable({
                   variant="outline"
                   size="sm"
                   onClick={handleRefresh}
-                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent transition-colors"
+                  className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
                 >
                   <RefreshCw className={`h-[15px] w-[15px] ${isRefreshing ? "animate-spin" : ""}`} />
                   <span className="hidden sm:inline">Refresh</span>
@@ -410,7 +410,7 @@ export function TransactionTable({
                 size="sm"
                 onClick={exportToExcel}
                 disabled={rows.length === 0}
-                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent transition-colors"
+                className="flex-1 sm:flex-none h-[33px] gap-1.5 rounded-lg border border-klk-line-strong bg-white text-[12.5px] font-semibold text-klk-ink-2 shadow-none hover:border-klk-accent/40 hover:bg-klk-accent-tint hover:text-klk-accent-deep transition-colors"
               >
                 <Download className="h-[15px] w-[15px]" />
                 <span className="hidden sm:inline">Excel</span>
@@ -492,7 +492,7 @@ export function TransactionTable({
             { label: "Nilai Invoice", value: `Rp ${grandTotal.toLocaleString("id-ID")}`, accent: true },
           ].map((kpi, i) => (
             <div key={kpi.label} className={`px-[18px] py-[13px] ${i > 0 ? "sm:border-l sm:border-klk-line" : ""}`}>
-              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-accent" : "text-klk-ink"}`}>
+              <div className={`text-[19px] font-semibold tabular-nums tracking-[-.01em] ${kpi.accent ? "text-klk-accent-deep" : "text-klk-ink"}`}>
                 {kpi.value}
               </div>
               <div className="mt-0.5 font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
@@ -543,7 +543,7 @@ export function TransactionTable({
                         key={item.id || index}
                         ref={index === highlightIndex ? highlightRowRef : undefined}
                         className={`group border-b border-klk-line transition-colors hover:bg-klk-canvas ${
-                          index === highlightIndex && isFlashing ? "bg-amber-100" : ""
+                          index === highlightIndex && isFlashing ? "bg-klk-accent-tint" : ""
                         }`}
                       >
                         <TableCell className="px-3 py-2.5 text-center text-[12.5px] tabular-nums text-klk-ink-3">
@@ -587,7 +587,7 @@ export function TransactionTable({
                           <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity duration-[.12s] focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-accent-tint hover:text-klk-accent-deep"
                               onClick={() => startEdit(item)}
                               aria-label={`Edit transaksi STT ${item.noResi}`}
                             >
@@ -717,7 +717,7 @@ export function TransactionTable({
               <p className="mb-1 text-sm text-slate-500">Transaksi ini akan dihapus permanen:</p>
               <p className="mb-4 font-semibold text-slate-700">STT {deleteTarget.noResi}</p>
               {rows.length === 1 && (
-                <p className="mb-6 rounded-lg bg-amber-50 p-3 text-xs font-medium text-amber-700">
+                <p className="mb-6 rounded-lg bg-klk-warning-tint p-3 text-xs font-medium text-klk-warning">
                   Ini transaksi terakhir. Menghapusnya juga akan menghapus invoice ini secara permanen.
                 </p>
               )}

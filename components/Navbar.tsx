@@ -66,7 +66,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
                 className={cn(
                   'flex items-center gap-2 rounded-lg px-3 py-[7px] text-[13px] font-semibold transition-colors',
                   isActive
-                    ? 'bg-klk-accent-tint text-klk-accent'
+                    ? 'bg-klk-accent-tint text-klk-accent-deep'
                     : 'text-klk-ink-2 hover:bg-klk-canvas hover:text-klk-ink'
                 )}
               >
@@ -149,7 +149,7 @@ export function Navbar({ className, onNewInvoice }: NavbarProps) {
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors',
                     isActive
-                      ? 'bg-klk-accent-tint text-klk-accent'
+                      ? 'bg-klk-accent-tint text-klk-accent-deep'
                       : 'text-klk-ink-2 hover:bg-klk-canvas'
                   )}
                 >

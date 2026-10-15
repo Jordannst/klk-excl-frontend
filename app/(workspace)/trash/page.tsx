@@ -112,7 +112,7 @@ function TrashCard({ invoice, onRestore, onPermanentDelete, isRestoring }: Trash
           size="sm"
           onClick={() => onRestore(invoice)}
           disabled={isRestoring}
-          className="flex-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+          className="flex-1 border-klk-accent/30 text-klk-accent-deep hover:bg-klk-accent-tint hover:border-klk-accent/50"
         >
           {isRestoring ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

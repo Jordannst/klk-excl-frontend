@@ -124,7 +124,7 @@ export function SignaturePad({ onSave, onCancel, isLoading = false }: SignatureP
           size="sm"
           onClick={handleSave}
           disabled={isEmpty || isLoading}
-          className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700"
+          className="flex-1 sm:flex-none bg-klk-accent hover:bg-klk-accent-hover"
         >
           <Check className="h-4 w-4 mr-2" />
           {isLoading ? 'Menyimpan...' : 'Simpan'}
