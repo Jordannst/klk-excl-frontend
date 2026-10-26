@@ -92,7 +92,7 @@ export function SegmentedInvoiceInput({
       placeholder="520/INV/KLK/MDC/2026"
       className={cn(
         "w-full h-10 px-3 text-sm border border-slate-200 rounded-lg",
-        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+        "focus:outline-none focus:ring-2 focus:ring-klk-accent-ring focus:border-transparent",
         "placeholder:text-slate-400",
         className
       )}

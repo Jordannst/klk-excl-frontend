@@ -60,8 +60,8 @@ export function InvoiceDateModeField({
               className={cn(
                 "h-auto min-h-20 flex-col items-start justify-start gap-1 px-4 py-3 text-left whitespace-normal",
                 isActive
-                  ? "border-klk-green bg-klk-green text-white hover:bg-klk-green-hover disabled:border-klk-green disabled:bg-klk-green disabled:text-white"
-                  : "border-klk-line text-klk-ink-2 hover:border-klk-green/40 hover:bg-klk-green-tint disabled:border-klk-line disabled:bg-white disabled:text-klk-ink-3",
+                  ? "border-klk-accent bg-klk-accent text-white hover:bg-klk-accent-hover disabled:border-klk-accent disabled:bg-klk-accent disabled:text-white"
+                  : "border-klk-line text-klk-ink-2 hover:border-klk-accent/40 hover:bg-klk-accent-tint disabled:border-klk-line disabled:bg-white disabled:text-klk-ink-3",
                 disabled && "cursor-not-allowed opacity-70"
               )}
               aria-pressed={isActive}

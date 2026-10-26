@@ -230,7 +230,6 @@ export default function LoginPage() {
         <div className={styles.scrim} />
         <div className={styles.heroContent}>
           <Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
-          <Link href="/" className={styles.backLink}>Kembali ke beranda ↗</Link>
         </div>
       </div>
 
@@ -347,7 +346,6 @@ export default function LoginPage() {
 
           <div className={styles.footer}>
             <span>© {new Date().getFullYear()} KLK Invoice</span>
-            <Link href="/">Kembali ke beranda ↗</Link>
           </div>
         </div>
       </main>
@@ -387,7 +385,7 @@ export default function LoginPage() {
                   </div>
                   <Button
                     onClick={closeForgotModal}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]"
                   >
                     Kembali ke Login
                   </Button>
@@ -491,7 +489,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={isResetting || !isFormValid}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]"
                   >
                     {isResetting ? (
                       <>

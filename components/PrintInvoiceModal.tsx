@@ -652,8 +652,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
               <div className="space-y-1 text-center sm:text-left">
                 <Label className="text-xs text-slate-500">Biaya Handling</Label>
-                <p className="text-xl font-bold text-emerald-600">Rp {formatRupiah(biayaHandling)}</p>
-                <p className="text-[10px] text-slate-400">Otomatis dari tabel</p>
+                <p className="text-xl font-bold text-klk-olive">Rp {formatRupiah(biayaHandling)}</p>
+                <p className="text-[0.625rem] text-slate-400">Otomatis dari tabel</p>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Biaya Kirim Doc</Label>
@@ -671,8 +671,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               </div>
               <div className="space-y-1 text-center sm:text-right">
                 <Label className="text-xs text-slate-500">Total Tagihan</Label>
-                <p className="text-xl font-bold text-blue-600">Rp {formatRupiah(totalTagihan)}</p>
-                <p className="text-[10px] text-slate-400">Handling + Kirim Doc</p>
+                <p className="text-xl font-bold text-klk-accent-deep">Rp {formatRupiah(totalTagihan)}</p>
+                <p className="text-[0.625rem] text-slate-400">Handling + Kirim Doc</p>
               </div>
             </div>
           </div>
@@ -700,7 +700,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                       const sig = signatures?.find(s => s.id === e.target.value) || null
                       setSelectedSignatureKiri(sig)
                     }}
-                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-klk-accent-ring focus:border-transparent"
                   >
                     <option value="">Tanpa tanda tangan</option>
                     {signatures?.map((sig) => (
@@ -738,7 +738,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                       const sig = signatures?.find(s => s.id === e.target.value) || null
                       setSelectedSignatureKanan(sig)
                     }}
-                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-9 px-3 pr-8 text-sm border border-slate-200 rounded-lg bg-white appearance-none cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-klk-accent-ring focus:border-transparent"
                   >
                     <option value="">Tanpa tanda tangan</option>
                     {signatures?.map((sig) => (
@@ -771,7 +771,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             variant="outline"
             onClick={handlePreviewPdf}
             disabled={isPreviewLoading || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 border-klk-green/40 text-klk-green hover:bg-klk-green-tint hover:text-klk-green-hover"
+            className="w-full sm:w-auto px-6 border-klk-accent/40 text-klk-accent-deep hover:bg-klk-accent-tint hover:text-klk-accent-hover"
           >
             {isPreviewLoading ? (
               <>
@@ -788,7 +788,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <Button
             onClick={handleDownloadPdf}
             disabled={isDownloadingPdf || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-klk-green hover:bg-klk-green-hover text-white"
+            className="w-full sm:w-auto px-6 bg-klk-accent hover:bg-klk-accent-hover text-white"
           >
             {isDownloadingPdf ? (
               <>
@@ -805,7 +805,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <Button
             onClick={handlePrint}
             disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-klk-green-deep hover:bg-klk-green text-white"
+            className="w-full sm:w-auto px-6 bg-klk-accent-deep hover:bg-klk-accent text-white"
           >
             {isPrinting ? (
               <>
@@ -829,8 +829,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           <div className="relative flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between gap-2 border-b border-klk-line px-4 py-3">
               <div className="min-w-0">
-                <h3 className="truncate text-[15px] font-semibold text-klk-ink">Preview PDF Final</h3>
-                <p className="font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
+                <h3 className="truncate text-[0.9375rem] font-semibold text-klk-ink">Preview PDF Final</h3>
+                <p className="font-klk-mono text-[0.59375rem] uppercase tracking-[.1em] text-klk-ink-3">
                   {formData.nomorInvoice || invoiceTitle || "Invoice"}
                 </p>
               </div>
@@ -839,7 +839,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                   href={previewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden h-9 items-center gap-1.5 rounded-lg border border-klk-line-strong px-3 text-[12.5px] font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas sm:inline-flex"
+                  className="hidden h-9 items-center gap-1.5 rounded-lg border border-klk-line-strong px-3 text-[0.78125rem] font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas sm:inline-flex"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Buka di tab baru
@@ -847,7 +847,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                 <Button
                   onClick={handleDownloadPdf}
                   disabled={isDownloadingPdf}
-                  className="h-9 bg-klk-green px-4 text-[12.5px] hover:bg-klk-green-hover"
+                  className="h-9 bg-klk-accent px-4 text-[0.78125rem] hover:bg-klk-accent-hover"
                 >
                   {isDownloadingPdf ? (
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

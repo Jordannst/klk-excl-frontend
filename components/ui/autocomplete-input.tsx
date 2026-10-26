@@ -178,13 +178,13 @@ export function AutocompleteInput({
           disabled={disabled}
           className={cn(
             "pr-10 transition-all duration-200",
-            showSuggestions && filteredSuggestions.length > 0 && "rounded-b-none border-b-transparent ring-1 ring-klk-green-tint",
+            showSuggestions && filteredSuggestions.length > 0 && "rounded-b-none border-b-transparent ring-1 ring-klk-accent-tint",
             disabled && "cursor-not-allowed bg-slate-100 text-slate-500",
             className
           )}
           autoComplete="off"
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-klk-green transition-colors">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-klk-accent-deep transition-colors">
           {isSearching ? (
             <Search className="h-4 w-4 animate-in fade-in zoom-in duration-300" />
           ) : (
@@ -201,7 +201,7 @@ export function AutocompleteInput({
             ) : (
               <History className="h-3 w-3 text-slate-500" />
             )}
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
+            <span className="text-[0.625rem] uppercase tracking-wider font-bold text-slate-500">
               {isSearching ? "Hasil Pencarian" : "Riwayat Terakhir"}
             </span>
           </div>
@@ -216,17 +216,17 @@ export function AutocompleteInput({
                 className={cn(
                   "w-full text-left px-4 py-2.5 text-sm transition-all flex items-center gap-3",
                   selectedIndex === index 
-                    ? "bg-klk-green-tint text-klk-green-deep pl-6" 
+                    ? "bg-klk-accent-tint text-klk-accent-deep pl-6" 
                     : "text-slate-700 hover:bg-slate-50"
                 )}
               >
                 <div className={cn(
                   "h-1.5 w-1.5 rounded-full transition-all",
-                  selectedIndex === index ? "bg-klk-green scale-125" : "bg-slate-200"
+                  selectedIndex === index ? "bg-klk-accent scale-125" : "bg-slate-200"
                 )} />
                 <span className="flex-1 truncate">{suggestion}</span>
                 {selectedIndex === index && (
-                  <span className="text-[10px] font-medium text-klk-green bg-klk-green-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
+                  <span className="text-[0.625rem] font-medium text-klk-accent-deep bg-klk-accent-tint/60 px-1.5 py-0.5 rounded animate-in fade-in slide-in-from-right-1">
                     Pilih
                   </span>
                 )}

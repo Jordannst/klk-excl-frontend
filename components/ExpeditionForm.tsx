@@ -778,7 +778,7 @@ export function ExpeditionForm({
               id="title"
               ref={titleInputRef}
               placeholder="Judul File"
-              className="h-12 text-base font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+              className="h-12 text-base font-semibold border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
               value={titleValue || ""}
               onChange={(e) => setValue("title", e.target.value, { shouldValidate: true })}
             />
@@ -845,7 +845,7 @@ export function ExpeditionForm({
               <Input
                 id="stt"
                 placeholder="Masukkan No. STT"
-                className="h-12 text-base font-bold text-lg border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                className="h-12 text-base font-bold text-lg border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 {...register("stt")}
               />
               {errors.stt && <p className="text-xs text-red-500">{errors.stt.message}</p>}
@@ -877,7 +877,7 @@ export function ExpeditionForm({
             </div>
 
             {draftPartyDefaults && (
-              <p className="text-xs text-emerald-600">
+              <p className="text-xs text-klk-success">
                 Default draft aktif. Setelah tambah/update/batal edit, Pengirim dan Penerima akan kembali ke nilai ini.
               </p>
             )}
@@ -885,7 +885,7 @@ export function ExpeditionForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sender" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <User className="h-4 w-4 text-klk-green" />
+                  <User className="h-4 w-4 text-klk-accent-deep" />
                   Pengirim
                 </Label>
                 <AutocompleteInput
@@ -895,13 +895,13 @@ export function ExpeditionForm({
                   storageKey="invoice_pengirim"
                   placeholder="Nama Pengirim"
                   disabled={isDraftPartyLocked}
-                  className="h-12 text-base border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                  className="h-12 text-base border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 />
                 {errors.sender && <p className="text-xs text-red-500">{errors.sender.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="receiver" className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-emerald-500" />
+                  <Building2 className="h-4 w-4 text-klk-accent" />
                   Penerima
                 </Label>
                 <AutocompleteInput
@@ -911,7 +911,7 @@ export function ExpeditionForm({
                   storageKey="invoice_penerima"
                   placeholder="Nama Penerima"
                   disabled={isDraftPartyLocked}
-                  className="h-12 text-base border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
+                  className="h-12 text-base border-slate-200 focus:border-klk-accent-ring focus:ring-klk-accent-ring"
                 />
                 {errors.receiver && <p className="text-xs text-red-500">{errors.receiver.message}</p>}
               </div>
@@ -926,7 +926,7 @@ export function ExpeditionForm({
                 id="coly"
                 type="number"
                 min={1}
-                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 {...register("coly")}
               />
             </div>
@@ -939,7 +939,7 @@ export function ExpeditionForm({
                 type="number"
                 step="0.1"
                 min={0}
-                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 {...register("kg")}
               />
             </div>
@@ -952,7 +952,7 @@ export function ExpeditionForm({
                 type="number"
                 step="1"
                 min={0}
-                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                className="h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 {...register("min")}
               />
             </div>
@@ -981,7 +981,7 @@ export function ExpeditionForm({
                       setTarifDisplay(formatRupiah(numValue))
                     }
                   }}
-                  className="pl-10 h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                  className="pl-10 h-12 text-base text-center font-semibold border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
                 />
               </div>
             </div>
@@ -995,7 +995,7 @@ export function ExpeditionForm({
                 onChange={(val) => setValue("keterangan", val, { shouldValidate: true })}
                 storageKey="invoice_keterangan"
                 placeholder="Keterangan..."
-                className="h-12 text-base border-klk-line-strong focus:border-klk-green focus:ring-klk-green"
+                className="h-12 text-base border-klk-line-strong focus:border-klk-accent focus:ring-klk-accent"
               />
             </div>
           </div>
@@ -1003,7 +1003,7 @@ export function ExpeditionForm({
           <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
             <div className="space-y-1 w-full sm:w-auto text-center sm:text-left">
               <Label className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Total Tagihan</Label>
-              <div className="text-4xl font-black text-klk-green tabular-nums">
+              <div className="text-4xl font-black text-klk-accent-deep tabular-nums">
                 Rp {(Number(watch("total")) || 0).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-slate-500 mt-1">
@@ -1027,7 +1027,7 @@ export function ExpeditionForm({
               <Button
                 type="submit"
                 variant="outline"
-                className="h-12 px-8 text-base font-bold border-2 border-klk-green text-klk-green hover:bg-klk-green hover:text-white transition-all shadow-md active:scale-95"
+                className="h-12 px-8 text-base font-bold border-2 border-klk-accent text-klk-accent-deep hover:bg-klk-accent hover:text-white transition-all shadow-md active:scale-95"
               >
                 {editingStt ? (
                   <>
@@ -1082,10 +1082,10 @@ export function ExpeditionForm({
                         )}
                         <TableCell className="text-slate-700">{item.sender}</TableCell>
                         <TableCell className="text-slate-700">{item.receiver}</TableCell>
-                        <TableCell className="text-right font-semibold text-amber-600">{item.coly}</TableCell>
+                        <TableCell className="text-right font-semibold text-klk-fig">{item.coly}</TableCell>
                         <TableCell className="text-right font-medium text-slate-700">{item.kg}</TableCell>
                         <TableCell className="text-right">
-                          <span className="font-bold text-emerald-600">Rp {item.total.toLocaleString("id-ID")}</span>
+                          <span className="font-bold text-klk-accent-deep">Rp {item.total.toLocaleString("id-ID")}</span>
                         </TableCell>
                         {showDraftKeteranganColumn && (
                           <TableCell className="text-slate-600">{item.keterangan || "-"}</TableCell>
@@ -1097,7 +1097,7 @@ export function ExpeditionForm({
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditItem(item.stt)}
-                              className="h-8 w-8 p-0 text-klk-green hover:text-klk-green-hover hover:bg-klk-green-tint"
+                              className="h-8 w-8 p-0 text-klk-accent-deep hover:text-klk-accent-hover hover:bg-klk-accent-tint"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -1114,12 +1114,12 @@ export function ExpeditionForm({
                         </TableCell>
                       </TableRow>
                     ))}
-                    <TableRow className="bg-emerald-50 font-bold border-t-2 border-emerald-200">
-                      <TableCell colSpan={grandTotalLabelColSpan} className="text-right text-emerald-800">
+                    <TableRow className="bg-klk-accent-tint font-bold border-t-2 border-klk-accent/30">
+                      <TableCell colSpan={grandTotalLabelColSpan} className="text-right text-klk-accent-deep">
                         GRAND TOTAL:
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-xl text-emerald-700">Rp {grandTotal.toLocaleString("id-ID")}</span>
+                        <span className="text-xl text-klk-accent-deep">Rp {grandTotal.toLocaleString("id-ID")}</span>
                       </TableCell>
                       {showDraftKeteranganColumn ? <TableCell></TableCell> : null}
                       <TableCell></TableCell>
@@ -1137,7 +1137,7 @@ export function ExpeditionForm({
               type="button"
               onClick={handleSaveReport}
               disabled={isSubmitting}
-              className="w-full h-14 text-lg font-bold bg-klk-green hover:bg-klk-green-hover text-white shadow-lg disabled:opacity-50"
+              className="w-full h-14 text-lg font-bold bg-klk-accent hover:bg-klk-accent-hover text-white shadow-lg disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
