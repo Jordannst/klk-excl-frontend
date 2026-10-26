@@ -42,6 +42,3 @@ next-env.d.ts
 
 # local worktrees
 .worktrees/
-
-# brainstorming companion
-.superpowers/

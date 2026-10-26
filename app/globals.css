@@ -2,94 +2,107 @@
 
 @plugin "tailwindcss-animate";
 
-/* KLK design tokens — Claude-inspired warm palette (ivory, slate, clay) */
+/* KLK Express design tokens (design_handoff_login / design_handoff_dashboard) */
 @theme inline {
-  --color-klk-ink: #141413;
-  --color-klk-ink-2: #5e5d59;
-  --color-klk-ink-3: #6b6a64;
-  --color-klk-line: #e8e6dc;
-  --color-klk-line-strong: #d1cfc5;
-  --color-klk-canvas: #faf9f5;
-  --color-klk-accent: #b85836;
-  --color-klk-accent-hover: #a24b2c;
-  --color-klk-accent-deep: #9a4529;
-  --color-klk-accent-tint: #f5e4dc;
-  --color-klk-accent-ring: #d97757;
-  --color-klk-red: #c43c3c;
-  --color-klk-red-tint: #f9e3e0;
-  --color-klk-blue: #3d6a99;
-  --color-klk-blue-tint: #e3edf6;
-  --color-klk-olive: #5a6e40;
-  --color-klk-olive-tint: #e9eedf;
-  --color-klk-success: #5a6e40;
-  --color-klk-success-tint: #e9eedf;
-  --color-klk-warning: #8a5d0f;
-  --color-klk-warning-tint: #f8ecd4;
-  --color-klk-caution: #7a6510;
-  --color-klk-caution-tint: #f7f0d2;
-  --color-klk-fig: #a1456a;
-  --color-klk-fig-tint: #f6e3ea;
+  --color-klk-ink: #26292f;
+  --color-klk-ink-2: #5b6068;
+  --color-klk-ink-3: #8b9098;
+  --color-klk-line: #e6e7ea;
+  --color-klk-line-strong: #d1d3d8;
+  --color-klk-canvas: #f7f7f9;
+  --color-klk-green: #12775c;
+  --color-klk-green-hover: #0d6650;
+  --color-klk-green-deep: #103c31;
+  --color-klk-green-tint: #eaf7f1;
+  --color-klk-red: #c1392c;
+  --color-klk-red-tint: #fdefec;
+  --color-klk-blue: #2b5fc4;
   --font-klk-sans: var(--klk-font-sans), ui-sans-serif, system-ui, sans-serif;
   --font-klk-mono: var(--klk-font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* Warm neutral scale. Each step matches the luminance of Tailwind's slate step,
-   so existing text/background contrast is preserved. */
-@theme {
-  --color-slate-50: #faf9f5;
-  --color-slate-100: #f0eee6;
-  --color-slate-200: #e8e6dc;
-  --color-slate-300: #d1cfc5;
-  --color-slate-400: #a5a295;
-  --color-slate-500: #767365;
-  --color-slate-600: #5e5d59;
-  --color-slate-700: #3d3d3a;
-  --color-slate-800: #30302e;
-  --color-slate-900: #1f1e1d;
-  --color-slate-950: #141413;
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Ivory canvas, slate ink, clay primary */
-  --background: 48 33% 97%;
-  --foreground: 60 3% 8%;
-
+  /* Modern blue-slate palette */
+  --background: 220 17% 97%; 
+  --foreground: 222 47% 11%;
+  
   --card: 0 0% 100%;
-  --card-foreground: 60 3% 8%;
-
+  --card-foreground: 222 47% 11%;
+ 
   --popover: 0 0% 100%;
-  --popover-foreground: 60 3% 8%;
-
-  /* Clay #b85836 (white text 4.68:1) */
-  --primary: 16 55% 47%;
+  --popover-foreground: 222 47% 11%;
+ 
+  /* KLK primary green (#12775c) */
+  --primary: 164 74% 27%;
   --primary-foreground: 0 0% 100%;
+ 
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+ 
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+ 
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+ 
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
 
-  --secondary: 48 25% 92%;
-  --secondary-foreground: 60 3% 8%;
-
-  --muted: 48 25% 92%;
-  --muted-foreground: 48 3% 36%;
-
-  --accent: 48 25% 92%;
-  --accent-foreground: 60 3% 8%;
-
-  --destructive: 0 54% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 50 21% 89%;
-  --input: 50 21% 89%;
-  --ring: 15 63% 60%;
-
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 164 74% 27%;
+ 
   --radius: 0.75rem;
-
+  
   /* Custom colors for the dashboard */
-  --success: 86 26% 34%;
+  --success: 142 71% 45%;
   --success-foreground: 0 0% 100%;
-
-  --warning: 38 80% 30%;
+  
+  --warning: 38 92% 50%;
   --warning-foreground: 0 0% 100%;
-
-  --info: 211 43% 42%;
+  
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
+}
+ 
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+ 
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+ 
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+ 
+  --primary: 164 74% 27%;
+  --primary-foreground: 0 0% 100%;
+ 
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+ 
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+ 
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+ 
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+ 
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 164 74% 27%;
+  
+  --success: 142 71% 45%;
+  --success-foreground: 0 0% 100%;
+  
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
+  
+  --info: 199 89% 48%;
   --info-foreground: 0 0% 100%;
 }
 
@@ -113,14 +126,14 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-
+  
   --color-success: hsl(var(--success));
   --color-success-foreground: hsl(var(--success-foreground));
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
   --color-info: hsl(var(--info));
   --color-info-foreground: hsl(var(--info-foreground));
-
+  
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
@@ -130,14 +143,25 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Dashboard reads at 110% on desktop. rem sizes scale; rem breakpoints use the
-   browser default, so layouts don't switch. Landing/login carry data-landing. */
-@media (min-width: 64rem) {
-  html:not([data-landing]) {
-    font-size: 110%;
-  }
+/* Custom gradient backgrounds */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 50%) 100%);
+}
+
+.gradient-card {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 1));
+}
+
+/* Enhanced shadows */
+.shadow-soft {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 6px 20px -3px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-elevation {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 12px 28px -4px rgba(0, 0, 0, 0.12);
 }
 
 /* Smooth transitions */

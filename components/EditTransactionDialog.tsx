@@ -416,9 +416,9 @@ export function EditTransactionDialog({
             </p>
           )}
 
-          <div className="mt-5 rounded-lg border border-klk-accent/20 bg-klk-accent-tint px-4 py-3">
-            <p className="text-sm font-medium text-klk-accent-deep">Total baru</p>
-            <p className="text-xl font-bold text-klk-accent-deep">
+          <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-sm font-medium text-emerald-800">Total baru</p>
+            <p className="text-xl font-bold text-emerald-700">
               Rp {total.toLocaleString("id-ID")}
             </p>
           </div>
@@ -433,7 +433,7 @@ export function EditTransactionDialog({
           >
             Batal
           </Button>
-          <Button type="submit" disabled={isBusy || hasNumericErrors} className="bg-klk-accent hover:bg-klk-accent-hover">
+          <Button type="submit" disabled={isBusy || hasNumericErrors} className="bg-emerald-600 hover:bg-emerald-700">
             {isBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

@@ -6,12 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test:landing": "node scripts/landing.check.cjs",
-    "test:landing-locales": "node scripts/landing-locale.check.cjs",
-    "test:landing-themes": "node scripts/landing-theme.check.cjs",
-    "test:landing-motion": "node scripts/landing-motion.check.cjs",
-    "test:product": "node scripts/product-regression.check.cjs"
+    "lint": "eslint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -45,7 +40,6 @@
     "@types/xlsx": "^0.0.35",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
-    "playwright": "1.58.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

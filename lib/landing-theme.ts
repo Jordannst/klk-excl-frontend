@@ -1,2 +1,0 @@
-// Runs before the first paint; values from storage are restricted to these two themes.
-export const landingThemeScript = `(()=>{let p="system";try{const s=localStorage.getItem("klk_landing_theme");if(s==="dark"||s==="light")p=s}catch{}const r=document.documentElement;r.dataset.landingPreference=p;r.dataset.landingTheme=p==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):p})()`
