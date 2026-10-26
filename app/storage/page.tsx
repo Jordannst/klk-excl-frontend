@@ -37,16 +37,16 @@ function StorageContent() {
   // Determine status color based on usage
   const getStatusColor = (percent: number) => {
     if (percent >= 90) return "text-red-600"
-    if (percent >= 70) return "text-klk-warning"
-    if (percent >= 50) return "text-klk-caution"
-    return "text-klk-success"
+    if (percent >= 70) return "text-orange-500"
+    if (percent >= 50) return "text-yellow-500"
+    return "text-emerald-600"
   }
 
   const getProgressColor = (percent: number) => {
     if (percent >= 90) return "bg-red-500"
-    if (percent >= 70) return "bg-klk-warning"
-    if (percent >= 50) return "bg-klk-caution"
-    return "bg-klk-success"
+    if (percent >= 70) return "bg-orange-500"
+    if (percent >= 50) return "bg-yellow-500"
+    return "bg-emerald-500"
   }
 
   return (
@@ -92,7 +92,7 @@ function StorageContent() {
         {isLoading && !stats && (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <RefreshCw className="h-8 w-8 mx-auto mb-3 text-klk-accent animate-spin" />
+              <RefreshCw className="h-8 w-8 mx-auto mb-3 text-blue-500 animate-spin" />
               <p className="text-slate-500">Memuat data...</p>
             </div>
           </div>
@@ -102,11 +102,11 @@ function StorageContent() {
         {stats && (
           <div className="space-y-6">
             {/* Database Usage Card */}
-            <Card className="shadow-lg border-t-4 border-t-klk-accent">
+            <Card className="shadow-lg border-t-4 border-t-blue-600">
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-klk-accent-tint">
-                    <HardDrive className="h-6 w-6 text-klk-accent-deep" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                    <HardDrive className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
                     <CardTitle>Database Storage</CardTitle>
@@ -151,14 +151,14 @@ function StorageContent() {
                   <div className={`p-4 rounded-lg ${
                     stats.database.usagePercent >= 90 
                       ? "bg-red-50 border border-red-200" 
-                      : "bg-klk-warning-tint border border-klk-warning/30"
+                      : "bg-orange-50 border border-orange-200"
                   }`}>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className={`h-5 w-5 ${
-                        stats.database.usagePercent >= 90 ? "text-red-500" : "text-klk-warning"
+                        stats.database.usagePercent >= 90 ? "text-red-500" : "text-orange-500"
                       }`} />
                       <span className={`font-medium ${
-                        stats.database.usagePercent >= 90 ? "text-red-700" : "text-klk-warning"
+                        stats.database.usagePercent >= 90 ? "text-red-700" : "text-orange-700"
                       }`}>
                         {stats.database.usagePercent >= 90 
                           ? "Storage hampir penuh! Segera hapus data yang tidak diperlukan."
@@ -177,9 +177,9 @@ function StorageContent() {
                       {(stats.database.limitMB - stats.database.sizeMB).toFixed(2)} MB
                     </p>
                   </div>
-                  <div className="p-4 bg-klk-fig-tint rounded-lg text-center">
-                    <p className="text-sm text-slate-600 mb-1">Signature Storage</p>
-                    <p className="text-2xl font-bold text-klk-fig">
+                  <div className="p-4 bg-violet-50 rounded-lg text-center">
+                    <p className="text-sm text-slate-500 mb-1">Signature Storage</p>
+                    <p className="text-2xl font-bold text-violet-600">
                       {stats.storage.signatureKB.toFixed(2)} KB
                     </p>
                   </div>
@@ -193,12 +193,12 @@ function StorageContent() {
               <Card className="shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-klk-olive-tint">
-                      <FileText className="h-5 w-5 text-klk-olive" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                      <FileText className="h-5 w-5 text-emerald-600" />
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Invoice</p>
-                      <p className="text-2xl font-bold text-klk-olive">
+                      <p className="text-2xl font-bold text-emerald-600">
                         {stats.counts.invoices}
                       </p>
                     </div>
@@ -210,12 +210,12 @@ function StorageContent() {
               <Card className="shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-klk-blue-tint">
-                      <Hash className="h-5 w-5 text-klk-blue" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                      <Hash className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Transaksi</p>
-                      <p className="text-2xl font-bold text-klk-blue">
+                      <p className="text-2xl font-bold text-blue-600">
                         {stats.counts.transactions}
                       </p>
                     </div>
@@ -227,12 +227,12 @@ function StorageContent() {
               <Card className="shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-klk-fig-tint">
-                      <PenTool className="h-5 w-5 text-klk-fig" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
+                      <PenTool className="h-5 w-5 text-violet-600" />
                     </div>
                     <div>
                       <p className="text-sm text-slate-500">Tanda Tangan</p>
-                      <p className="text-2xl font-bold text-klk-fig">
+                      <p className="text-2xl font-bold text-violet-600">
                         {stats.counts.signatures}
                       </p>
                     </div>

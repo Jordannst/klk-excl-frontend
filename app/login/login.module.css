@@ -1,0 +1,454 @@
+/* KLK login — design tokens & primitives from design_handoff_login (varian "F — Panel") */
+
+.root {
+  --klk-font: var(--klk-font-sans), -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --klk-mono: var(--klk-font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --klk-ink: oklch(0.24 0.014 250);
+  --klk-ink-2: oklch(0.45 0.016 250);
+  --klk-ink-3: oklch(0.62 0.014 250);
+  --klk-line: oklch(0.915 0.006 250);
+  --klk-line-strong: oklch(0.85 0.008 250);
+  --klk-surface: #fff;
+  --klk-canvas: oklch(0.972 0.004 250);
+
+  --klk-green: oklch(0.48 0.098 163);
+  --klk-green-hover: oklch(0.43 0.098 163);
+  --klk-green-deep: oklch(0.29 0.055 168);
+  --klk-green-tint: oklch(0.965 0.022 163);
+
+  --klk-red: oklch(0.55 0.17 25);
+  --klk-red-tint: oklch(0.965 0.025 25);
+
+  --klk-r-md: 9px;
+  --klk-shadow-1: 0 1px 2px rgba(16, 24, 40, .05);
+
+  display: flex;
+  min-height: 100vh;
+  background: var(--klk-surface);
+  font-family: var(--klk-font);
+  color: var(--klk-ink);
+}
+
+/* ---------- Left brand panel (desktop) ---------- */
+
+.panel {
+  width: 544px;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.pattern {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .045) 0 2px, transparent 2px 11px),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .03) 0 2px, transparent 2px 11px),
+    radial-gradient(120% 80% at 78% 8%, oklch(0.44 0.09 168 / .9), transparent 60%),
+    linear-gradient(160deg, oklch(0.33 0.06 168), oklch(0.21 0.04 170));
+}
+
+.scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 58%;
+  background: linear-gradient(to top, oklch(0.19 0.035 168 / .92), oklch(0.19 0.035 168 / .55) 42%, transparent);
+}
+
+.pc {
+  position: absolute;
+  inset: 0;
+  padding: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.logoChip {
+  background: #fff;
+  border-radius: 9px;
+  padding: 9px 13px;
+  width: max-content;
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .5);
+}
+
+.logoChip img {
+  width: 88px;
+  display: block;
+}
+
+.headline {
+  font-size: 31px;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  max-width: 15ch;
+  text-wrap: pretty;
+  margin: 0 0 18px;
+}
+
+.rule {
+  width: 38px;
+  height: 2px;
+  background: rgba(255, 255, 255, .4);
+  margin-bottom: 16px;
+}
+
+.meta {
+  font-family: var(--klk-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .66);
+}
+
+/* ---------- Mobile hero ---------- */
+
+.hero {
+  display: none;
+  position: relative;
+  height: 248px;
+  overflow: hidden;
+}
+
+.hero .scrim {
+  height: 64%;
+}
+
+.heroContent {
+  position: absolute;
+  inset: 0;
+  padding: 26px 26px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.hero .logoChip img {
+  width: 76px;
+}
+
+/* ---------- Right form column ---------- */
+
+.form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 82px;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 372px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--klk-mono);
+  font-size: 10.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--klk-ink-3);
+}
+
+.h1 {
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  margin: 9px 0 6px;
+}
+
+.sub {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--klk-ink-3);
+  margin: 0 0 26px;
+}
+
+/* ---------- Alert ---------- */
+
+.alert {
+  display: flex;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in oklch, var(--klk-red) 30%, var(--klk-line));
+  background: var(--klk-red-tint);
+  border-radius: var(--klk-r-md);
+  font-size: 13px;
+  line-height: 1.45;
+  color: oklch(0.42 0.14 25);
+  margin-bottom: 16px;
+}
+
+.alert svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--klk-red);
+}
+
+.alertSuccess {
+  border-color: color-mix(in oklch, var(--klk-green) 34%, var(--klk-line));
+  background: var(--klk-green-tint);
+  color: var(--klk-green-deep);
+}
+
+.alertSuccess svg {
+  color: var(--klk-green);
+}
+
+.alertTitle {
+  font-weight: 600;
+}
+
+.alertDetail {
+  margin-top: 1px;
+}
+
+/* ---------- Fields ---------- */
+
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--klk-ink-2);
+  margin-bottom: 6px;
+  letter-spacing: .01em;
+}
+
+.inputBox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 44px;
+  padding: 0 12px;
+  background: var(--klk-surface);
+  border: 1px solid var(--klk-line-strong);
+  border-radius: var(--klk-r-md);
+  box-shadow: var(--klk-shadow-1);
+}
+
+.inputBox:focus-within {
+  border-color: var(--klk-green);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--klk-green) 16%, transparent);
+}
+
+.inputBox svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--klk-ink-3);
+}
+
+.inputError,
+.inputError:focus-within {
+  border-color: var(--klk-red);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--klk-red) 14%, transparent);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: var(--klk-font);
+  font-size: 14.5px;
+  color: var(--klk-ink);
+}
+
+.input::placeholder {
+  color: var(--klk-ink-3);
+}
+
+.eyeBtn {
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--klk-ink-3);
+  display: flex;
+}
+
+.eyeBtn:hover {
+  color: var(--klk-ink-2);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--klk-red);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hint svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.caps {
+  font-family: var(--klk-mono);
+  font-size: 10.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: oklch(0.55 0.09 75);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.caps i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ---------- Row & button ---------- */
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 20px 0;
+}
+
+.link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--klk-green);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--klk-font);
+}
+
+.link:hover {
+  color: var(--klk-green-hover);
+  text-decoration: underline;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  width: 100%;
+  background: var(--klk-green);
+  color: #fff;
+  border: 0;
+  border-radius: var(--klk-r-md);
+  font-family: var(--klk-font);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--klk-green-hover);
+}
+
+.btnLoading {
+  background: var(--klk-green-hover);
+  color: rgba(255, 255, 255, .85);
+}
+
+.btn:disabled {
+  cursor: default;
+}
+
+.btnLocked {
+  opacity: .5;
+}
+
+.spin {
+  animation: klkRot .7s linear infinite;
+}
+
+@keyframes klkRot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  border-top: 1px solid var(--klk-line);
+  margin-top: 26px;
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--klk-mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--klk-ink-3);
+}
+
+/* ---------- Auth-loading gate ---------- */
+
+.gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--klk-canvas);
+  color: var(--klk-green);
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 900px) {
+  .root {
+    flex-direction: column;
+    background: var(--klk-canvas);
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .hero {
+    display: block;
+    flex: none;
+  }
+
+  .form {
+    background: #fff;
+    border-radius: 22px 22px 0 0;
+    margin-top: -22px;
+    position: relative;
+    padding: 26px 26px 22px;
+    justify-content: flex-start;
+    flex: 1;
+  }
+
+  .h1 {
+    font-size: 24px;
+  }
+
+  .footer {
+    justify-content: center;
+    gap: 8px;
+  }
+}
