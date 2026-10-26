@@ -230,7 +230,6 @@ export default function LoginPage() {
         <div className={styles.scrim} />
         <div className={styles.heroContent}>
           <Link href="/" aria-label="KLK Invoice — Beranda"><ProductBrand /></Link>
-          <Link href="/" className={styles.backLink}>Kembali ke beranda ↗</Link>
         </div>
       </div>
 
@@ -347,7 +346,6 @@ export default function LoginPage() {
 
           <div className={styles.footer}>
             <span>© {new Date().getFullYear()} KLK Invoice</span>
-            <Link href="/">Kembali ke beranda ↗</Link>
           </div>
         </div>
       </main>

@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Landing page is hidden for now: /, /id and /en go straight to login.
+  // Temporary (307) so browsers don't cache it; remove to bring the landing back.
+  async redirects() {
+    return [
+      { source: "/", destination: "/login", permanent: false },
+      { source: "/:locale(id|en)", destination: "/login", permanent: false },
+    ];
+  },
   // Proxy /api/* to the backend server-side so the browser only ever talks
   // to this origin — auth cookies stay first-party (incognito/Safari safe).
   async rewrites() {
