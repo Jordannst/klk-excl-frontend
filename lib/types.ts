@@ -1,6 +1,7 @@
 // Backend API Types - synchronized with Prisma schema
 
 import type { InvoiceDateMode } from './invoice-date-mode'
+import type { InvoicePdfColumnWidths } from './invoice-pdf-columns'
 
 export type { InvoiceDateMode } from './invoice-date-mode'
 
@@ -43,6 +44,7 @@ export interface InvoicePrintSettings {
   penandatanganKanan?: string
   signatureKiriId?: string | null
   signatureKananId?: string | null
+  columnWidths?: InvoicePdfColumnWidths
 }
 
 // List item (without transactions)
