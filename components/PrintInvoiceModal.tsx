@@ -18,7 +18,9 @@ import {
 import { downloadInvoicePdf } from "@/lib/api"
 import { useUpdateInvoice } from "@/lib/hooks"
 import { useInvoicePdfPreview } from "@/lib/hooks/useInvoicePdfPreview"
+import type { InvoicePdfColumnWidths } from "@/lib/invoice-pdf-columns"
 import type { InvoicePrintSettings, Transaksi, Signature } from "@/lib/types"
+import { InvoiceColumnWidthEditor } from "./InvoiceColumnWidthEditor"
 import { InvoiceDocument } from "./InvoiceDocument"
 
 interface InvoicePdfPaginationOptions {
@@ -168,7 +170,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   })
   const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
   const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
-
+  // Table column widths the user changed (mm); the rest follow the defaults.
+  const [columnWidths, setColumnWidths] = React.useState<InvoicePdfColumnWidths>({})
 
   // Signature selection state
   const [selectedSignatureKiri, setSelectedSignatureKiri] = React.useState<Signature | null>(null)
@@ -235,6 +238,13 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       penandatanganKanan: saved?.penandatanganKanan || "",
     })
     setBiayaKirimDocDisplay(saved?.biayaKirimDoc ? saved.biayaKirimDoc.toLocaleString("id-ID") : "")
+    // printSettings is free-form JSON from the database: accept only a plain object.
+    const savedWidths: unknown = saved?.columnWidths
+    setColumnWidths(
+      typeof savedWidths === "object" && savedWidths !== null && !Array.isArray(savedWidths)
+        ? (savedWidths as InvoicePdfColumnWidths)
+        : {}
+    )
     setSelectedSignatureKiri(
       saved?.signatureKiriId ? signatures?.find((s) => s.id === saved.signatureKiriId) || null : null
     )
@@ -441,6 +451,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   }, [isPrintingActive, measuredChunks, invoiceTitle, onClose])
 
   const updateInvoiceMutation = useUpdateInvoice()
+  const hasColumnWidths = Object.keys(columnWidths).length > 0
 
   const buildPrintSettings = React.useCallback((): InvoicePrintSettings => ({
     tanggalSurat: formData.tanggalSurat,
@@ -452,7 +463,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     penandatanganKanan: formData.penandatanganKanan,
     signatureKiriId: selectedSignatureKiri?.id ?? null,
     signatureKananId: selectedSignatureKanan?.id ?? null,
-  }), [formData, selectedSignatureKiri, selectedSignatureKanan])
+    ...(hasColumnWidths ? { columnWidths } : {}),
+  }), [formData, selectedSignatureKiri, selectedSignatureKanan, hasColumnWidths, columnWidths])
 
   const persistSettings = React.useCallback(() => {
     if (!invoiceId) return
@@ -470,7 +482,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     const timer = setTimeout(persistSettings, 1200)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, selectedSignatureKiri, selectedSignatureKanan])
+  }, [formData, selectedSignatureKiri, selectedSignatureKanan, columnWidths])
 
   const handleClose = () => {
     if (isOpen && invoiceId && !skipNextAutosaveRef.current) {
@@ -488,6 +500,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       selectedSignatureKiri,
       selectedSignatureKanan,
       logoBase64,
+      ...(hasColumnWidths ? { columnWidths } : {}),
       transactions: data,
     }),
     [
@@ -498,6 +511,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       selectedSignatureKiri,
       selectedSignatureKanan,
       logoBase64,
+      hasColumnWidths,
+      columnWidths,
       data,
     ]
   )
@@ -741,6 +756,14 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               </div>
             </div>
           </div>
+
+          {/* Lebar kolom tabel pada PDF */}
+          <InvoiceColumnWidthEditor
+            showDate={showDateColumn}
+            showKet={currentShowKeteranganColumn}
+            value={columnWidths}
+            onChange={setColumnWidths}
+          />
         </div>
         
         {/* Preview */}
