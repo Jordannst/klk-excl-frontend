@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Printer, Loader2, Download, ChevronDown, Eye, ExternalLink } from "lucide-react"
+import { X, Printer, Loader2, Download, ChevronDown, ExternalLink, RefreshCw } from "lucide-react"
 import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import {
 } from "@/lib/invoice-date-mode"
 import { downloadInvoicePdf } from "@/lib/api"
 import { useUpdateInvoice } from "@/lib/hooks"
+import { useInvoicePdfPreview } from "@/lib/hooks/useInvoicePdfPreview"
 import type { InvoicePrintSettings, Transaksi, Signature } from "@/lib/types"
 import { InvoiceDocument } from "./InvoiceDocument"
 
@@ -166,19 +167,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     penandatanganKanan: "",
   })
   const [isDownloadingPdf, setIsDownloadingPdf] = React.useState(false)
-  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false)
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
   const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
 
-  // Drop the preview (and its object URL) whenever the modal closes
-  React.useEffect(() => {
-    if (isOpen) return
-    setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return null
-    })
-  }, [isOpen])
-  
+
   // Signature selection state
   const [selectedSignatureKiri, setSelectedSignatureKiri] = React.useState<Signature | null>(null)
   const [selectedSignatureKanan, setSelectedSignatureKanan] = React.useState<Signature | null>(null)
@@ -488,16 +479,31 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     onClose()
   }
 
-  const buildPdfPayload = () => ({
-    invoiceTitle,
-    dateMode: currentDateMode,
-    showKeteranganColumn: currentShowKeteranganColumn,
-    formData,
-    selectedSignatureKiri,
-    selectedSignatureKanan,
-    logoBase64,
-    transactions: data,
-  })
+  const pdfPayload = React.useMemo(
+    () => ({
+      invoiceTitle,
+      dateMode: currentDateMode,
+      showKeteranganColumn: currentShowKeteranganColumn,
+      formData,
+      selectedSignatureKiri,
+      selectedSignatureKanan,
+      logoBase64,
+      transactions: data,
+    }),
+    [
+      invoiceTitle,
+      currentDateMode,
+      currentShowKeteranganColumn,
+      formData,
+      selectedSignatureKiri,
+      selectedSignatureKanan,
+      logoBase64,
+      data,
+    ]
+  )
+
+  // The preview is the real PDF from the backend, refreshed as the form changes.
+  const preview = useInvoicePdfPreview(pdfPayload, isOpen)
 
   const handleDownloadPdf = async () => {
     persistSettings()
@@ -509,7 +515,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         .replace(/\s+/g, '_')
         .trim()
 
-      const pdf = await downloadInvoicePdf(buildPdfPayload())
+      const pdf = await downloadInvoicePdf(pdfPayload)
 
       saveBlob(pdf, `${sanitizedTitle}.pdf`)
       onClose()
@@ -518,31 +524,6 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     } finally {
       setIsDownloadingPdf(false)
     }
-  }
-
-  const handlePreviewPdf = async () => {
-    persistSettings()
-    setIsPreviewLoading(true)
-
-    try {
-      const pdf = await downloadInvoicePdf(buildPdfPayload())
-      const url = URL.createObjectURL(pdf)
-      setPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return url
-      })
-    } catch (error) {
-      console.error("Error previewing PDF:", error)
-    } finally {
-      setIsPreviewLoading(false)
-    }
-  }
-
-  const closePreview = () => {
-    setPreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return null
-    })
   }
 
   if (!isOpen) return null
@@ -589,22 +570,26 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+      <div className="relative m-3 flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:m-4">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold text-slate-800">Data Invoice untuk Print</h2>
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white p-4">
+          <h2 className="text-lg font-bold text-slate-800">Editor PDF Invoice</h2>
           <button
             onClick={handleClose}
+            aria-label="Tutup editor"
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        
-        {/* Content */}
-        <div className="p-6 space-y-5">
+
+        {/* Body: settings on the left, live PDF preview on the right.
+            Below lg the two stack and the body scrolls as one. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+        {/* Settings */}
+        <div className="space-y-5 p-5 lg:w-[380px] lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-slate-200">
           {/* Tanggal & Nomor Invoice */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Tanggal Surat</Label>
               <Input
@@ -624,7 +609,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           </div>
           
           {/* Penerima */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-slate-700">Nama Penerima</Label>
               <AutocompleteInput
@@ -649,8 +634,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           
           {/* Biaya */}
           <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
-              <div className="space-y-1 text-center sm:text-left">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Biaya Handling</Label>
                 <p className="text-xl font-bold text-emerald-600">Rp {formatRupiah(biayaHandling)}</p>
                 <p className="text-[10px] text-slate-400">Otomatis dari tabel</p>
@@ -669,7 +654,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
                   />
                 </div>
               </div>
-              <div className="space-y-1 text-center sm:text-right">
+              <div className="space-y-1">
                 <Label className="text-xs text-slate-500">Total Tagihan</Label>
                 <p className="text-xl font-bold text-blue-600">Rp {formatRupiah(totalTagihan)}</p>
                 <p className="text-[10px] text-slate-400">Handling + Kirim Doc</p>
@@ -678,7 +663,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           </div>
           
           {/* Penandatangan */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-slate-700">Penandatangan (PT. KLK Mdc)</Label>
@@ -758,8 +743,61 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           </div>
         </div>
         
+        {/* Preview */}
+        <div className="flex h-[70vh] shrink-0 flex-col border-t border-slate-200 bg-klk-canvas lg:h-auto lg:min-w-0 lg:flex-1 lg:shrink lg:border-t-0">
+          <div className="flex min-h-10 shrink-0 items-center justify-between gap-2 border-b border-klk-line bg-white px-4 py-2">
+            <div className="flex min-w-0 items-center gap-2 text-[12.5px]" aria-live="polite">
+              {preview.error ? (
+                <>
+                  <span className="font-medium text-klk-red">Preview gagal diperbarui</span>
+                  <button
+                    type="button"
+                    onClick={preview.retry}
+                    className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-klk-line-strong px-2.5 font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Coba lagi
+                  </button>
+                </>
+              ) : preview.isLoading ? (
+                <span className="inline-flex items-center gap-1.5 text-klk-ink-3">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {preview.url ? "Memperbarui..." : "Membuat preview..."}
+                </span>
+              ) : (
+                <span className="text-klk-ink-3">Preview PDF</span>
+              )}
+            </div>
+            {preview.url && (
+              <a
+                href={preview.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-klk-line-strong px-2.5 text-[12.5px] font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Buka di tab baru
+              </a>
+            )}
+          </div>
+          {preview.url ? (
+            <iframe
+              src={preview.url}
+              title="Preview PDF invoice"
+              className="min-h-0 w-full flex-1 border-0"
+            />
+          ) : (
+            <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-sm text-klk-ink-3">
+              {preview.error
+                ? "Preview belum bisa dibuat. Periksa koneksi lalu coba lagi."
+                : "Preview PDF akan muncul di sini."}
+            </div>
+          )}
+        </div>
+        </div>
+
         {/* Footer */}
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50">
+        <div className="flex shrink-0 flex-col-reverse justify-end gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:flex-row">
           <Button
             variant="outline"
             onClick={handleClose}
@@ -769,19 +807,19 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
           </Button>
           <Button
             variant="outline"
-            onClick={handlePreviewPdf}
-            disabled={isPreviewLoading || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 border-klk-green/40 text-klk-green hover:bg-klk-green-tint hover:text-klk-green-hover"
+            onClick={handlePrint}
+            disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
+            className="w-full sm:w-auto px-6"
           >
-            {isPreviewLoading ? (
+            {isPrinting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Membuat preview...
+                Memproses...
               </>
             ) : (
               <>
-                <Eye className="mr-2 h-4 w-4" />
-                Preview PDF
+                <Printer className="mr-2 h-4 w-4" />
+                Print Invoice
               </>
             )}
           </Button>
@@ -802,77 +840,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               </>
             )}
           </Button>
-          <Button
-            onClick={handlePrint}
-            disabled={isPrinting || !formData.nomorInvoice || !formData.namaPenerima}
-            className="w-full sm:w-auto px-6 bg-klk-green-deep hover:bg-klk-green text-white"
-          >
-            {isPrinting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Invoice
-              </>
-            )}
-          </Button>
         </div>
       </div>
-
-      {/* PDF Preview Overlay */}
-      {previewUrl && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-6">
-          <div className="absolute inset-0 bg-black/60" onClick={closePreview} />
-          <div className="relative flex h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-2 border-b border-klk-line px-4 py-3">
-              <div className="min-w-0">
-                <h3 className="truncate text-[15px] font-semibold text-klk-ink">Preview PDF Final</h3>
-                <p className="font-klk-mono text-[9.5px] uppercase tracking-[.1em] text-klk-ink-3">
-                  {formData.nomorInvoice || invoiceTitle || "Invoice"}
-                </p>
-              </div>
-              <div className="flex flex-shrink-0 items-center gap-2">
-                <a
-                  href={previewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden h-9 items-center gap-1.5 rounded-lg border border-klk-line-strong px-3 text-[12.5px] font-semibold text-klk-ink-2 transition-colors hover:bg-klk-canvas sm:inline-flex"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  Buka di tab baru
-                </a>
-                <Button
-                  onClick={handleDownloadPdf}
-                  disabled={isDownloadingPdf}
-                  className="h-9 bg-klk-green px-4 text-[12.5px] hover:bg-klk-green-hover"
-                >
-                  {isDownloadingPdf ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Download className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Download
-                </Button>
-                <button
-                  onClick={closePreview}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-klk-ink-3 hover:bg-klk-canvas hover:text-klk-ink"
-                  aria-label="Tutup preview"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <iframe
-              src={previewUrl}
-              title="Preview PDF invoice"
-              className="w-full flex-1 border-0 bg-klk-canvas"
-            />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
