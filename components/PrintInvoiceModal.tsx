@@ -804,7 +804,10 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             )}
           </div>
           {preview.url ? (
+            // A fresh iframe per PDF: changing `src` in place would add a browser
+            // history entry for every refresh, each pointing at a revoked blob.
             <iframe
+              key={preview.url}
               src={preview.url}
               title="Preview PDF invoice"
               className="min-h-0 w-full flex-1 border-0"
