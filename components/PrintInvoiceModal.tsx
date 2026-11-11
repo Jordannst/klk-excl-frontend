@@ -140,6 +140,58 @@ const LETTER_LAYOUT_OPTIONS: { value: InvoiceLetterLayout; label: string }[] = [
   { value: "tight", label: "Ringkas" },
 ]
 
+// Hides the viewer's own toolbar and side panel and fits the page to the width.
+const PDF_VIEWER_PARAMS = "#toolbar=0&navpanes=0&view=FitH"
+
+// The viewer reports `load` before it has painted the page, and offers no later
+// signal, so the previous PDF covers the new one for this long after `load`.
+// ponytail: fixed delay, a very large PDF may still blink; render pages to a
+// canvas with pdf.js if that ever matters.
+const PDF_PAINT_DELAY_MS = 400
+// For a browser that never fires `load` for a PDF.
+const PDF_LOAD_TIMEOUT_MS = 1500
+
+/**
+ * Shows the PDF at `url`. When the URL changes, the previous PDF stays on top
+ * until the new one is painted, so the preview does not blink to an empty viewer.
+ */
+function PdfPreviewFrames({ url }: { url: string }) {
+  const [shownUrl, setShownUrl] = React.useState(url)
+  const [loadedUrl, setLoadedUrl] = React.useState(url)
+
+  React.useEffect(() => {
+    const timer = setTimeout(
+      () => setShownUrl(url),
+      loadedUrl === url ? PDF_PAINT_DELAY_MS : PDF_LOAD_TIMEOUT_MS
+    )
+    return () => clearTimeout(timer)
+  }, [url, loadedUrl])
+
+  // One iframe per PDF: changing `src` in place would add a browser history
+  // entry for every refresh. Older first and never reordered, because moving
+  // an iframe in the DOM reloads it.
+  const frames = shownUrl === url ? [url] : [shownUrl, url]
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      {frames.map((frameUrl) => {
+        const isLatest = frameUrl === url
+        return (
+          <iframe
+            key={frameUrl}
+            src={frameUrl + PDF_VIEWER_PARAMS}
+            title={isLatest ? "Preview PDF invoice" : undefined}
+            aria-hidden={!isLatest}
+            tabIndex={isLatest ? undefined : -1}
+            onLoad={isLatest ? () => setLoadedUrl(frameUrl) : undefined}
+            className={`absolute inset-0 h-full w-full border-0 ${isLatest ? "" : "z-10"}`}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 interface PrintInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
@@ -204,7 +256,9 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     let isMounted = true
     const loadLogo = async () => {
       try {
-        const response = await fetch('/klkexpress.png')
+        // Same logo on white without transparency: the PDF engine embeds it as
+        // is, where the transparent one cost about 1 MB per PDF.
+        const response = await fetch('/klkexpress-pdf.png')
         const blob = await response.blob()
         const base64 = await new Promise<string>((resolve) => {
           const reader = new FileReader()
@@ -528,7 +582,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   )
 
   // The preview is the real PDF from the backend, refreshed as the form changes.
-  const preview = useInvoicePdfPreview(pdfPayload, isOpen)
+  // Width and layout are set by clicks, so they refresh sooner than typed text.
+  const preview = useInvoicePdfPreview(pdfPayload, isOpen, JSON.stringify([columnWidths, letterLayout]))
 
   const handleDownloadPdf = async () => {
     persistSettings()
@@ -848,14 +903,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
             )}
           </div>
           {preview.url ? (
-            // A fresh iframe per PDF: changing `src` in place would add a browser
-            // history entry for every refresh, each pointing at a revoked blob.
-            <iframe
-              key={preview.url}
-              src={preview.url}
-              title="Preview PDF invoice"
-              className="min-h-0 w-full flex-1 border-0"
-            />
+            <PdfPreviewFrames url={preview.url} />
           ) : (
             <div className="flex min-h-0 flex-1 items-center justify-center p-6 text-center text-sm text-klk-ink-3">
               {preview.error
