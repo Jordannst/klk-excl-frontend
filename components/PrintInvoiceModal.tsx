@@ -774,7 +774,10 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               {LETTER_LAYOUT_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-blue-500 ${
+                  // `relative` keeps the hidden radio inside its label. Without it the
+                  // radio is positioned against the editor box, sits below its visible
+                  // area, and focusing it scrolls the whole editor out of place.
+                  className={`relative cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-blue-500 ${
                     letterLayout === option.value
                       ? "border-klk-green bg-klk-green-tint text-klk-green"
                       : "border-slate-200 text-slate-600 hover:bg-slate-50"
