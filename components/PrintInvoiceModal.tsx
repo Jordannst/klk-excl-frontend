@@ -19,7 +19,7 @@ import { downloadInvoicePdf } from "@/lib/api"
 import { useUpdateInvoice } from "@/lib/hooks"
 import { useInvoicePdfPreview } from "@/lib/hooks/useInvoicePdfPreview"
 import type { InvoicePdfColumnWidths } from "@/lib/invoice-pdf-columns"
-import type { InvoicePrintSettings, Transaksi, Signature } from "@/lib/types"
+import type { InvoiceLetterLayout, InvoicePrintSettings, Transaksi, Signature } from "@/lib/types"
 import { InvoiceColumnWidthEditor } from "./InvoiceColumnWidthEditor"
 import { InvoiceDocument } from "./InvoiceDocument"
 
@@ -135,6 +135,11 @@ const paginateInvoicePdfRows = (rows: Transaksi[], options: InvoicePdfPagination
   return chunks
 }
 
+const LETTER_LAYOUT_OPTIONS: { value: InvoiceLetterLayout; label: string }[] = [
+  { value: "standard", label: "Standar" },
+  { value: "tight", label: "Ringkas" },
+]
+
 interface PrintInvoiceModalProps {
   isOpen: boolean
   onClose: () => void
@@ -172,6 +177,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
   const [biayaKirimDocDisplay, setBiayaKirimDocDisplay] = React.useState("")
   // Table column widths the user changed (mm); the rest follow the defaults.
   const [columnWidths, setColumnWidths] = React.useState<InvoicePdfColumnWidths>({})
+  const [letterLayout, setLetterLayout] = React.useState<InvoiceLetterLayout>("standard")
 
   // Signature selection state
   const [selectedSignatureKiri, setSelectedSignatureKiri] = React.useState<Signature | null>(null)
@@ -245,6 +251,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
         ? (savedWidths as InvoicePdfColumnWidths)
         : {}
     )
+    setLetterLayout(saved?.letterLayout === "tight" ? "tight" : "standard")
     setSelectedSignatureKiri(
       saved?.signatureKiriId ? signatures?.find((s) => s.id === saved.signatureKiriId) || null : null
     )
@@ -464,7 +471,8 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     signatureKiriId: selectedSignatureKiri?.id ?? null,
     signatureKananId: selectedSignatureKanan?.id ?? null,
     ...(hasColumnWidths ? { columnWidths } : {}),
-  }), [formData, selectedSignatureKiri, selectedSignatureKanan, hasColumnWidths, columnWidths])
+    ...(letterLayout === "tight" ? { letterLayout } : {}),
+  }), [formData, selectedSignatureKiri, selectedSignatureKanan, hasColumnWidths, columnWidths, letterLayout])
 
   const persistSettings = React.useCallback(() => {
     if (!invoiceId) return
@@ -482,7 +490,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     const timer = setTimeout(persistSettings, 1200)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, selectedSignatureKiri, selectedSignatureKanan, columnWidths])
+  }, [formData, selectedSignatureKiri, selectedSignatureKanan, columnWidths, letterLayout])
 
   const handleClose = () => {
     if (isOpen && invoiceId && !skipNextAutosaveRef.current) {
@@ -501,6 +509,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       selectedSignatureKanan,
       logoBase64,
       ...(hasColumnWidths ? { columnWidths } : {}),
+      ...(letterLayout === "tight" ? { letterLayout } : {}),
       transactions: data,
     }),
     [
@@ -513,6 +522,7 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
       logoBase64,
       hasColumnWidths,
       columnWidths,
+      letterLayout,
       data,
     ]
   )
@@ -756,6 +766,37 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
               </div>
             </div>
           </div>
+
+          {/* Tata letak surat pada PDF */}
+          <fieldset className="rounded-lg border border-slate-200 p-4">
+            <legend className="px-1 text-sm font-semibold text-slate-700">Tata letak surat</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {LETTER_LAYOUT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-blue-500 ${
+                    letterLayout === option.value
+                      ? "border-klk-green bg-klk-green-tint text-klk-green"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="letter-layout"
+                    value={option.value}
+                    checked={letterLayout === option.value}
+                    onChange={() => setLetterLayout(option.value)}
+                    className="sr-only"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Ringkas menaruh penerima di kanan dan rekening di samping rincian biaya, supaya lebih
+              banyak baris muat di satu halaman.
+            </p>
+          </fieldset>
 
           {/* Lebar kolom tabel pada PDF */}
           <InvoiceColumnWidthEditor

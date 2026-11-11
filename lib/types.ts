@@ -45,7 +45,12 @@ export interface InvoicePrintSettings {
   signatureKiriId?: string | null
   signatureKananId?: string | null
   columnWidths?: InvoicePdfColumnWidths
+  letterLayout?: InvoiceLetterLayout
 }
+
+// 'tight' puts the addressee beside the date and the bank details beside the
+// totals so more rows fit on one page. Absent means 'standard'.
+export type InvoiceLetterLayout = 'standard' | 'tight'
 
 // List item (without transactions)
 export interface InvoiceListItem {

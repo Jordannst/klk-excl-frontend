@@ -13,17 +13,20 @@ assert.deepEqual(visibleInvoicePdfColumns(true, true).at(-1), 'keterangan');
 
 // Same defaults as the backend for all four column combinations.
 assert.equal(resolve(true, true, undefined).textColumnWidth, 24.5);
-assert.equal(resolve(true, false, undefined).textColumnWidth, 30.5);
+assert.equal(resolve(true, false, undefined).textColumnWidth, 29.5);
 assert.equal(resolve(false, true, undefined).textColumnWidth, 34.5);
 assert.equal(resolve(false, false, undefined).textColumnWidth, 40.5);
 assert.equal(resolve(true, true, undefined).defaults.noResi, 34);
 assert.equal(resolve(true, false, undefined).defaults.noResi, 38);
+// The date column is wider without Ket, where the larger table font applies.
+assert.equal(resolve(true, true, undefined).defaults.tanggal, 20);
+assert.equal(resolve(true, false, undefined).defaults.tanggal, 22);
 
 // Overrides apply and the text columns absorb the difference.
 const custom = resolve(true, false, { noResi: 30, berat: 11 });
 assert.equal(custom.widths.noResi, 30);
 assert.equal(custom.widths.berat, 11);
-assert.equal(custom.textColumnWidth, 33);
+assert.equal(custom.textColumnWidth, 32);
 assert.equal(custom.overridesApplied, true);
 
 // Finite numbers are clamped to 6..60 and rounded to 0.5 mm.

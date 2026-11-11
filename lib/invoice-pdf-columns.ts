@@ -49,8 +49,8 @@ export function visibleInvoicePdfColumns(showDate: boolean, showKet: boolean): I
 
 function defaultWidth(key: InvoicePdfColumnKey, showKet: boolean): number {
   switch (key) {
-    case 'tanggal': return 20
     // The Ket column also selects the dense font, which needs less width.
+    case 'tanggal': return showKet ? 20 : 22
     case 'noResi': return showKet ? 34 : 38
     case 'coly': return 10
     case 'berat': return 8
