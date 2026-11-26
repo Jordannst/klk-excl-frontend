@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node tests/invoice-pdf-columns.check.mjs"
+    "test": "node tests/invoice-pdf-columns.check.mjs && node --test tests/pending-transaction-deletes.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
