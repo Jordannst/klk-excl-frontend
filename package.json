@@ -2,11 +2,15 @@
   "name": "my-app",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/invoice-pdf-columns.check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -15,31 +19,30 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.90.12",
     "@types/react-signature-canvas": "^1.0.7",
-    "axios": "^1.13.2",
+    "axios": "^1.21.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.560.0",
-    "next": "16.0.8",
+    "next": "16.4.6",
     "next-nprogress-bar": "^2.4.7",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "react-hook-form": "^7.68.0",
     "react-signature-canvas": "^1.1.0-alpha.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "xlsx": "^0.18.5",
-    "zod": "^4.1.13"
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@types/xlsx": "^0.0.35",
+    "@types/node": "^24",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.8",
+    "eslint-config-next": "16.4.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

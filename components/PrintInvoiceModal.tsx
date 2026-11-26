@@ -280,13 +280,12 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
 
   // Seed the form from the invoice's saved print settings every time the
   // modal opens, so previously entered data comes back automatically.
-  const printSettingsRef = React.useRef(printSettings)
-  printSettingsRef.current = printSettings
+  const readPrintSettings = React.useEffectEvent(() => printSettings)
   const skipNextAutosaveRef = React.useRef(true)
 
   React.useEffect(() => {
     if (!isOpen) return
-    const saved = printSettingsRef.current
+    const saved = readPrintSettings()
     skipNextAutosaveRef.current = true
     setFormData({
       tanggalSurat: saved?.tanggalSurat || `Manado, ${format(new Date(), "dd MMMM yyyy", { locale: id })}`,
@@ -314,7 +313,6 @@ export function PrintInvoiceModal({ isOpen, onClose, data, invoiceTitle, dateMod
     )
     setMeasuredChunks([])
     setIsPrintingActive(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, invoiceKey, signatures])
 
   // Calculate totals

@@ -62,33 +62,15 @@ export function SegmentedInvoiceInput({
   onChange,
   className,
 }: SegmentedInvoiceInputProps) {
-  const [inputValue, setInputValue] = React.useState(value || "")
-  
-  // Sync with external value
-  React.useEffect(() => {
-    if (value !== inputValue) {
-      setInputValue(value || "")
-    }
-  }, [value])
-  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value
-    const formatted = formatInvoiceNumber(raw)
-    setInputValue(formatted)
-    onChange(formatted)
-  }
-  
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow slash key to be typed but it will be auto-formatted
-    // No special handling needed
+    onChange(formatInvoiceNumber(e.target.value))
   }
 
   return (
     <input
       type="text"
-      value={inputValue}
+      value={value}
       onChange={handleChange}
-      onKeyDown={handleKeyDown}
       placeholder="520/INV/KLK/MDC/2026"
       className={cn(
         "w-full h-10 px-3 text-sm border border-slate-200 rounded-lg",
