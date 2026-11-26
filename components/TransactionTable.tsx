@@ -302,9 +302,7 @@ export function TransactionTable({
   }
 
   const cancelDelete = () => {
-    if (!deleteTransaksiMutation.isPending) {
-      setDeleteTarget(null)
-    }
+    setDeleteTarget(null)
   }
 
   const unhideRow = (id: number) => {
@@ -574,9 +572,8 @@ export function TransactionTable({
                             </button>
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red disabled:opacity-40"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red"
                               onClick={() => setDeleteTarget(item)}
-                              disabled={deleteTransaksiMutation.isPending}
                               aria-label={`Hapus transaksi STT ${item.noResi}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -706,24 +703,15 @@ export function TransactionTable({
                   variant="outline"
                   onClick={cancelDelete}
                   className="flex-1"
-                  disabled={deleteTransaksiMutation.isPending}
                 >
                   Batal
                 </Button>
                 <Button
                   type="button"
                   onClick={confirmDelete}
-                  disabled={deleteTransaksiMutation.isPending}
                   className="flex-1 bg-red-600 text-white hover:bg-red-700"
                 >
-                  {deleteTransaksiMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Menghapus...
-                    </>
-                  ) : (
-                    "Hapus"
-                  )}
+                  Hapus
                 </Button>
               </div>
             </div>
