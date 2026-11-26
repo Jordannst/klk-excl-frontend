@@ -1,9 +1,3 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": {
-    "deploymentEnabled": {
-      "codex/maintenance-node24-next16": false,
-      "codex/maintenance-transaction-pagehide": false
-    }
-  }
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
