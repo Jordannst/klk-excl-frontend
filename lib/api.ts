@@ -146,7 +146,11 @@ export const transaksiApi = {
 
   // Delete transaction
   delete: async (id: number): Promise<DeleteResponse> => {
-    const { data } = await api.delete<DeleteResponse>(`/transaksi/${id}`)
+    // Keep a confirmed delete in flight if the document is dismissed.
+    const { data } = await api.delete<DeleteResponse>(`/transaksi/${id}`, {
+      adapter: 'fetch',
+      fetchOptions: { keepalive: true },
+    })
     return data
   },
 }

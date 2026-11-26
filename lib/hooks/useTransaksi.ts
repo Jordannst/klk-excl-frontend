@@ -104,13 +104,14 @@ export function useDeleteTransaksi() {
 
   return useMutation({
     mutationFn: (id: number) => transaksiApi.delete(id),
+    networkMode: 'always',
     onSuccess: (_data, id) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: transaksiKeys.detail(id) })
-      // Invalidate list
-      queryClient.invalidateQueries({ queryKey: transaksiKeys.lists() })
-      // Invalidate all invoices since we don't know which one was affected
-      queryClient.invalidateQueries({ queryKey: invoiceKeys.all })
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: transaksiKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: invoiceKeys.all }),
+      ])
     },
   })
 }

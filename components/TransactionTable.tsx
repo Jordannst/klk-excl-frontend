@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { id } from "date-fns/locale"
 import * as XLSX from "xlsx"
 import { toast } from "sonner"
+import { PendingTransactionDeletes } from "@/lib/pending-transaction-deletes"
 
 import {
   Table,
@@ -55,7 +56,7 @@ export function TransactionTable({
 
   // Rows hidden optimistically while their delete can still be undone
   const [pendingDeleteIds, setPendingDeleteIds] = React.useState<Set<number>>(new Set())
-  const pendingTimersRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+  const [pendingDeletes] = React.useState(() => new PendingTransactionDeletes())
 
   const rows = React.useMemo(
     () => (pendingDeleteIds.size === 0 ? data : data.filter((item) => !pendingDeleteIds.has(item.id))),
@@ -301,9 +302,7 @@ export function TransactionTable({
   }
 
   const cancelDelete = () => {
-    if (!deleteTransaksiMutation.isPending) {
-      setDeleteTarget(null)
-    }
+    setDeleteTarget(null)
   }
 
   const unhideRow = (id: number) => {
@@ -315,13 +314,9 @@ export function TransactionTable({
   }
 
   const commitDelete = (id: number, noResi: string) => {
-    pendingTimersRef.current.delete(id)
-    deleteTransaksiMutation.mutate(id, {
-      onSuccess: () => {
-        unhideRow(id) // server data no longer contains the row after invalidation
-      },
-      onError: (error: unknown) => {
-        unhideRow(id)
+    toast.dismiss("delete-transaksi-" + id)
+    void deleteTransaksiMutation.mutateAsync(id)
+      .catch((error: unknown) => {
         const errorMessage = error instanceof Error ? error.message : "Gagal menghapus transaksi"
         if (typeof error === "object" && error !== null && "response" in error) {
           const axiosError = error as { response?: { data?: { error?: string } } }
@@ -329,15 +324,12 @@ export function TransactionTable({
         } else {
           toast.error(`STT ${noResi}: ${errorMessage}`)
         }
-      },
-    })
+      })
+      .finally(() => unhideRow(id))
   }
 
   const undoDelete = (id: number, noResi: string) => {
-    const timer = pendingTimersRef.current.get(id)
-    if (!timer) return // already committed
-    clearTimeout(timer)
-    pendingTimersRef.current.delete(id)
+    if (!pendingDeletes.cancel(id)) return
     unhideRow(id)
     toast.success(`Penghapusan STT ${noResi} dibatalkan`)
   }
@@ -350,10 +342,10 @@ export function TransactionTable({
     setDeleteTarget(null)
 
     setPendingDeleteIds((prev) => new Set(prev).add(targetId))
-    const timer = setTimeout(() => commitDelete(targetId, noResi), 5000)
-    pendingTimersRef.current.set(targetId, timer)
+    pendingDeletes.schedule(targetId, () => commitDelete(targetId, noResi))
 
     toast("Transaksi dihapus", {
+      id: "delete-transaksi-" + targetId,
       description: `STT ${noResi}`,
       duration: 5000,
       action: {
@@ -363,19 +355,7 @@ export function TransactionTable({
     })
   }
 
-  // If the table unmounts mid-window, commit the pending deletes right away
-  // so a confirmed delete is never silently lost.
-  const flushDelete = React.useEffectEvent(commitDelete)
-  React.useEffect(() => {
-    const timers = pendingTimersRef.current
-    return () => {
-      for (const [id, timer] of timers) {
-        clearTimeout(timer)
-        flushDelete(id, "")
-      }
-      timers.clear()
-    }
-  }, [])
+  React.useEffect(() => pendingDeletes.listen(window), [pendingDeletes])
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-klk-line bg-white shadow-[0_1px_2px_rgba(16,24,40,.05)]">
@@ -592,9 +572,8 @@ export function TransactionTable({
                             </button>
                             <button
                               type="button"
-                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red disabled:opacity-40"
+                              className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-klk-ink-3 transition-colors hover:bg-klk-red-tint hover:text-klk-red"
                               onClick={() => setDeleteTarget(item)}
-                              disabled={deleteTransaksiMutation.isPending}
                               aria-label={`Hapus transaksi STT ${item.noResi}`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -724,24 +703,15 @@ export function TransactionTable({
                   variant="outline"
                   onClick={cancelDelete}
                   className="flex-1"
-                  disabled={deleteTransaksiMutation.isPending}
                 >
                   Batal
                 </Button>
                 <Button
                   type="button"
                   onClick={confirmDelete}
-                  disabled={deleteTransaksiMutation.isPending}
                   className="flex-1 bg-red-600 text-white hover:bg-red-700"
                 >
-                  {deleteTransaksiMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Menghapus...
-                    </>
-                  ) : (
-                    "Hapus"
-                  )}
+                  Hapus
                 </Button>
               </div>
             </div>
