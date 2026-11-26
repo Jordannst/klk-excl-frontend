@@ -365,14 +365,13 @@ export function TransactionTable({
 
   // If the table unmounts mid-window, commit the pending deletes right away
   // so a confirmed delete is never silently lost.
-  const commitDeleteRef = React.useRef(commitDelete)
-  commitDeleteRef.current = commitDelete
+  const flushDelete = React.useEffectEvent(commitDelete)
   React.useEffect(() => {
     const timers = pendingTimersRef.current
     return () => {
       for (const [id, timer] of timers) {
         clearTimeout(timer)
-        commitDeleteRef.current(id, "")
+        flushDelete(id, "")
       }
       timers.clear()
     }
